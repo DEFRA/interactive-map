@@ -153,6 +153,50 @@ describe('Panel', () => {
       expect(panel).not.toHaveAttribute('tabIndex')
       expect(document.activeElement).not.toBe(panel)
     })
+
+    describe('scrolling to an opened panel', () => {
+      let focusSpy, scrollSpy
+
+      beforeEach(() => {
+        focusSpy = jest.spyOn(HTMLElement.prototype, 'focus')
+        // jsdom has no scrollIntoView
+        HTMLElement.prototype.scrollIntoView = jest.fn()
+        scrollSpy = HTMLElement.prototype.scrollIntoView
+      })
+
+      afterEach(() => {
+        focusSpy.mockRestore()
+        delete HTMLElement.prototype.scrollIntoView
+      })
+
+      const openPanel = (interfaceType, top) => {
+        useApp.mockReturnValue({ dispatch, breakpoint: 'desktop', layoutRefs, interfaceType })
+        jest.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ top })
+        renderPanel({ focus: true })
+        HTMLElement.prototype.getBoundingClientRect.mockRestore()
+      }
+
+      it('leaves the browser to scroll to the panel for keyboard users', () => {
+        openPanel('keyboard', 2000)
+        expect(focusSpy).toHaveBeenCalledWith()
+        expect(scrollSpy).not.toHaveBeenCalled()
+      })
+
+      it.each(['mouse', 'touch'])('doesn\'t scroll for %s users when the top of the panel is on screen', (interfaceType) => {
+        openPanel(interfaceType, 100)
+        expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true })
+        expect(scrollSpy).not.toHaveBeenCalled()
+      })
+
+      it.each([
+        ['below the screen', 2000],
+        ['above the screen', -50]
+      ])('scrolls only as far as needed for mouse users when the top of the panel is %s', (_name, top) => {
+        openPanel('mouse', top)
+        expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true })
+        expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' })
+      })
+    })
   })
 
   describe('close functionality', () => {

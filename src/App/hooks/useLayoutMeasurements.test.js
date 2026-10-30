@@ -124,6 +124,138 @@ describe('useLayoutMeasurements', () => {
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '65px')
   })
 
+  // Default left column: offset top 60, offset bottom 500 - 400 + 8 = 108, height 400 - 60 - 8 = 332
+  const actionsBar = (layoutRefs, props) => {
+    const bar = appendChild(layoutRefs.actionsRef.current, props)
+    bar.className = 'im-c-actions'
+  }
+
+  // Without the bar the left column ends 108 above main's bottom (500), at 392. Items reach down
+  // to there unless a test says otherwise
+  const slotItem = (slotRef, rect) => appendChild(slotRef.current, { getClientRects: () => [{}], rect: { bottom: 392, ...rect } })
+
+  const bar = { offsetHeight: 60, rect: { top: 380, left: 300, right: 500 } }
+
+  test.each([
+    ['bottom sub-slot in line with the bar raises the column', 'leftBottom', { left: 8, right: 320 }, bar, '128px', '312px', 'none'], // 500 - 380 + 8, 332 - 20
+    ['top sub-slot in line with the bar is capped, column stays put', 'leftTop', { left: 8, right: 320 }, bar, '108px', '332px', '312px'], // bar top 380 - 8 - offset top 60
+    ['sub-slot clear of the bar moves nothing', 'leftBottom', { left: 8, right: 250 }, bar, '108px', '332px', 'none'],
+    ['sub-slot within the divider gap of the bar raises the column', 'leftBottom', { left: 8, right: 293 }, bar, '128px', '312px', 'none'], // 293 + 8 > bar left 300
+    ['empty bar moves nothing', 'leftBottom', { left: 8, right: 320 }, { ...bar, offsetHeight: 0 }, '108px', '332px', 'none'],
+    ['bar below the bottom row keeps the row clearance', 'leftBottom', { left: 8, right: 320 }, { ...bar, rect: { ...bar.rect, top: 420 } }, '108px', '332px', 'none']
+  ])('%s', (_name, slot, itemRect, barProps, offsetBottom, maxHeight, topSlotMaxHeight) => {
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    actionsBar(layoutRefs, barProps)
+    slotItem(layoutRefs[`${slot}Ref`], itemRect)
+    renderHook(() => useLayoutMeasurements())
+    const spy = layoutRefs.appContainerRef.current.style.setProperty
+    expect(spy).toHaveBeenCalledWith('--left-offset-bottom', offsetBottom)
+    expect(spy).toHaveBeenCalledWith('--left-top-max-height', maxHeight)
+    expect(spy).toHaveBeenCalledWith('--left-top-slot-max-height', topSlotMaxHeight)
+  })
+
+  test('leaves the column when a bottom sub-slot item in line with the bar ends above it', () => {
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    actionsBar(layoutRefs, bar)
+    slotItem(layoutRefs.leftBottomRef, { left: 8, right: 320, bottom: 300 }) // 300 < bar top 380 - 8
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-offset-bottom', '108px')
+    expect(layoutRefs.appContainerRef.current.style.setProperty).not.toHaveBeenCalledWith('--left-offset-bottom', '128px')
+  })
+
+  test('doesn\'t cap a top sub-slot whose wide item ends above the bar and whose long item is beside it', () => {
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    actionsBar(layoutRefs, bar)
+    slotItem(layoutRefs.leftTopRef, { left: 8, right: 320, bottom: 300 })
+    slotItem(layoutRefs.leftTopRef, { left: 8, right: 250, bottom: 392 })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-top-slot-max-height', 'none')
+    expect(layoutRefs.appContainerRef.current.style.setProperty).not.toHaveBeenCalledWith('--left-top-slot-max-height', '312px')
+  })
+
+  test('measures the side columns without the bar\'s lift or cap, then sets them', () => {
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    actionsBar(layoutRefs, bar)
+    slotItem(layoutRefs.leftTopRef, { left: 8, right: 320 })
+    slotItem(layoutRefs.leftBottomRef, { left: 8, right: 320 })
+    renderHook(() => useLayoutMeasurements())
+    const calls = (name) => layoutRefs.appContainerRef.current.style.setProperty.mock.calls.filter(([prop]) => prop === name).map(([, value]) => value)
+    expect(calls('--left-offset-bottom')).toEqual(['108px', '128px'])
+    expect(calls('--left-top-slot-max-height')).toEqual(['none', '312px'])
+  })
+
+  test('looks through control wrappers for what a sub-slot renders', () => {
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    actionsBar(layoutRefs, bar)
+    const wrapper = appendChild(layoutRefs.rightBottomRef.current)
+    wrapper.className = 'im-c-control-wrapper'
+    appendChild(wrapper, { getClientRects: () => [{}], rect: { left: 400, right: 760, bottom: 392 } })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-bottom', '128px')
+  })
+
+  test.each([
+    ['with the hidden attribute', { getClientRects: () => [{}], hidden: true }],
+    // jsdom gives every element empty client rects, i.e. the same as display:none
+    ['with display: none', {}]
+  ])('ignores sub-slot items %s when checking the actions bar', (_name, props) => {
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    actionsBar(layoutRefs, bar)
+    appendChild(layoutRefs.rightTopRef.current, { rect: { left: 400, right: 760 }, ...props })
+    appendChild(layoutRefs.rightBottomRef.current, { rect: { left: 400, right: 760 }, ...props })
+    renderHook(() => useLayoutMeasurements())
+    const spy = layoutRefs.appContainerRef.current.style.setProperty
+    expect(spy).toHaveBeenCalledWith('--right-offset-bottom', '116px') // 500 - 400 + attributions 16
+    expect(spy).toHaveBeenCalledWith('--right-top-slot-max-height', 'none')
+  })
+
+  test.each([
+    ['both sub-slots render', true, true, '8px'],
+    ['only the top sub-slot renders', true, false, '0px'],
+    ['only the bottom sub-slot renders', false, true, '0px']
+  ])('sets the sub-slot gap when %s', (_name, isTopRendered, isBottomRendered, expected) => {
+    const { layoutRefs } = setup()
+    // jsdom gives every element empty client rects, i.e. the same as display:none
+    appendChild(layoutRefs.rightTopRef.current, isTopRendered ? { getClientRects: () => [{}] } : {})
+    appendChild(layoutRefs.rightBottomRef.current, isBottomRendered ? { getClientRects: () => [{}] } : {})
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-slot-gap', expected)
+  })
+
+  test('copes with missing sub-slot and drawer elements', () => {
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    actionsBar(layoutRefs, bar)
+    layoutRefs.leftTopRef.current = null
+    layoutRefs.leftBottomRef.current = null
+    layoutRefs.rightTopRef.current = null
+    layoutRefs.rightBottomRef.current = null
+    layoutRefs.drawerRef.current = null
+    renderHook(() => useLayoutMeasurements())
+    const spy = layoutRefs.appContainerRef.current.style.setProperty
+    expect(spy).toHaveBeenCalledWith('--right-slot-gap', '0px')
+    expect(spy).toHaveBeenCalledWith('--left-top-slot-max-height', 'none')
+    expect(spy).not.toHaveBeenCalledWith('--drawer-max-height', expect.anything())
+  })
+
+  // Default column heights: left 332, right 326, both empty
+  test.each([
+    ['grows into the spare room left in the tighter side column', {}, '426px'], // 100 + 326
+    ['stops short of the side column buttons', { rightBottom: { offsetHeight: 300 } }, '126px'], // 100 + (326 - 300)
+    ['shrinks when the side column buttons no longer fit', { rightBottom: { offsetHeight: 400 } }, '26px'], // 100 + (326 - 400)
+    ['shrinks by what runs past the bottom of main', { main: { rect: { bottom: 500 } }, actions: { offsetTop: 450, rect: { bottom: 540 } }, rightBottom: { offsetHeight: 300 } }, '86px'] // 126 - 40
+  ])('drawer max height %s', (_name, refOverrides, expected) => {
+    const { layoutRefs } = setup({ refs: { drawer: { offsetHeight: 100 }, ...refOverrides } })
+    appendChild(layoutRefs.drawerRef.current, { getClientRects: () => [{}] })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--drawer-max-height', expected)
+  })
+
+  test('drawer has no max height when nothing in it renders', () => {
+    const { layoutRefs } = setup({ refs: { drawer: { offsetHeight: 0 } } })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--drawer-max-height', 'none')
+  })
+
   test('calculates and sets all CSS custom properties', () => {
     const { layoutRefs } = setup()
     renderHook(() => useLayoutMeasurements())
@@ -144,22 +276,6 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup({ refs: refOverrides })
     renderHook(() => useLayoutMeasurements())
     const varName = `--${name.replace(/ .+/, '')}`
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith(varName, expected)
-  })
-
-  test.each([
-    ['--left-top-panel-max-height', {}, '332px'],
-    ['--left-top-panel-max-height', { leftBottom: { offsetHeight: 50 } }, '274px'], // 332 - 50 - 8
-    ['--left-bottom-panel-max-height', {}, '332px'],
-    ['--left-bottom-panel-max-height', { leftTop: { offsetHeight: 40 } }, '284px'], // 332 - 40 - 8
-    // rightColumnHeight is 326 by default here (see the right-top-max-height case above)
-    ['--right-top-panel-max-height', {}, '326px'],
-    ['--right-top-panel-max-height', { rightBottom: { offsetHeight: 60 } }, '258px'], // 326 - 60 - 8
-    ['--right-bottom-panel-max-height', {}, '326px'],
-    ['--right-bottom-panel-max-height', { rightTop: { offsetHeight: 30 } }, '288px'] // 326 - 30 - 8
-  ])('calculates %s with sibling buttons=%o correctly', (varName, refOverrides, expected) => {
-    const { layoutRefs } = setup({ refs: refOverrides })
-    renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith(varName, expected)
   })
 
@@ -347,18 +463,6 @@ describe('useLayoutMeasurements', () => {
     expect(spy).toHaveBeenCalledWith('--right-offset-bottom', '168px')
     // rightEffectiveBottom = 400 + 0 - 20 - 40 = 340; 340 - 50 (rightOffsetTop) - 8 = 282
     expect(spy).toHaveBeenCalledWith('--right-top-max-height', '282px')
-  })
-
-  test('uses 0 when sub-slot refs have null current', () => {
-    const { layoutRefs } = setup()
-    layoutRefs.leftTopRef.current = null
-    layoutRefs.leftBottomRef.current = null
-    layoutRefs.rightTopRef.current = null
-    layoutRefs.rightBottomRef.current = null
-    renderHook(() => useLayoutMeasurements())
-    // With all sub-slot refs null, buttons = 0 ?? 0 = 0, so max-heights equal full column height
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-top-panel-max-height', '332px')
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-bottom-panel-max-height', '326px')
   })
 
   test('dispatches safe zone inset on desktop (post-batch RAF read only)', () => {
