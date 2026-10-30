@@ -1,6 +1,10 @@
 # Draw Plugin
 
-The draw plugin lets users draw and edit point, polygon and line features on the map — placing vertices by click, tap, or keyboard, snapping to existing map layers, and validating geometry as it's built. Polygons can also be split and merged. It works identically with both the MapLibre and OpenLayers map providers, determining the correct adapter to use from the `mapProvider` passed to `InteractiveMap` — there's nothing to configure in the plugin itself.
+The draw plugin lets users draw and edit points, lines and polygons on the map. They can place vertices by click, tap or keyboard, and snap to existing map layers. Shapes are checked as they're built. Polygons can also be split and merged.
+
+Hooks let you add your own checks at each stage: as vertices are placed, as the shape changes, and when it's finished. Use them to apply your own rules, help users fix or review their shapes, and attach your own data.
+
+It works the same with the MapLibre and OpenLayers map providers. The plugin picks the right one from the `mapProvider` you pass to `InteractiveMap`, so there's nothing to configure.
 
 > [!IMPORTANT]
 > **Using a bundler (ESM)?** This plugin includes adapters for more than one map provider, so your bundler needs to ignore the map engines you haven't installed. See [Bundler configuration](../getting-started.md#bundler-configuration-esm).
