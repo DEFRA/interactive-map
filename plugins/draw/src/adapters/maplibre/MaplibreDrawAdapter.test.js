@@ -761,6 +761,23 @@ describe('simple delegations', () => {
     })
   })
 
+  describe('setProperties()', () => {
+    test('writes each property in place, without re-adding the feature', () => {
+      const { adapter, draw } = setup()
+      adapter.setProperties('a', { name: 'North field', ref: null })
+      expect(draw.setFeatureProperty).toHaveBeenCalledWith('a', 'name', 'North field')
+      expect(draw.setFeatureProperty).toHaveBeenCalledWith('a', 'ref', null)
+      expect(draw.add).not.toHaveBeenCalled()
+    })
+
+    test('does nothing for an id with no existing feature', () => {
+      const { adapter, draw } = setup()
+      draw.get.mockReturnValue(undefined)
+      adapter.setProperties('missing', { name: 'x' })
+      expect(draw.setFeatureProperty).not.toHaveBeenCalled()
+    })
+  })
+
   test('setDrawingPreviewProperty tags the in-progress feature and re-renders', () => {
     const { adapter, map } = setup()
     const render = jest.fn()

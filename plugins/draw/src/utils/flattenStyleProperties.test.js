@@ -1,4 +1,4 @@
-import { flattenStyleProperties, definedOnly, mapStyleIds, toStyleChanges } from './flattenStyleProperties.js'
+import { flattenStyleProperties, definedOnly, mapStyleIds, toStyleChanges, isStyleProperty } from './flattenStyleProperties.js'
 
 describe('flattenStyleProperties', () => {
   test('returns an empty object for nullish input', () => {
@@ -88,5 +88,19 @@ describe('toStyleChanges', () => {
     expect(toStyleChanges(existing, { fill: undefined }, styleIds)).toEqual({})
     expect(toStyleChanges(existing, { name: 'hedge' }, styleIds)).toEqual({ name: 'hedge' })
     expect(toStyleChanges(undefined, undefined, undefined)).toEqual({})
+  })
+})
+
+describe('isStyleProperty', () => {
+  test('is true for stroke/fill/strokeWidth, their keys for a known map style, and symbol-family keys', () => {
+    const styleIds = ['outdoor', 'dark']
+    const styleKeys = ['stroke', 'fill', 'strokeWidth', 'strokeDark', 'fillOutdoor', 'strokeWidthDark', 'symbol', 'symbolBackgroundColor']
+    expect(styleKeys.every((key) => isStyleProperty(key, styleIds))).toBe(true)
+  })
+
+  test('is false for data properties and keys for a style that isn\'t configured', () => {
+    const styleIds = ['outdoor', 'dark']
+    expect(['fillType', 'strokeNote', 'strokeAerial', 'name', 'symbolImageId'].some((key) => isStyleProperty(key, styleIds))).toBe(false)
+    expect(isStyleProperty('strokeDark')).toBe(false)
   })
 })

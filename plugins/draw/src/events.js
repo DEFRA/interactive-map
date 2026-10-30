@@ -9,6 +9,8 @@ import { ADAPTER_EVENTS } from './adapterEvents.js'
 import { getCommitChecks, isSameGeometry } from './validation/commitChecks.js'
 import { MIN_VERTICES_REASONS } from './validation/rules.js'
 import { stripInternalProperties } from './utils/stripInternalProperties.js'
+import { mergeFeatureProperties } from './utils/mergeFeatureProperties.js'
+import { mapStyleIds } from './utils/flattenStyleProperties.js'
 import { isEditMode, isCheckedMode } from './utils/drawModes.js'
 
 const EDIT_VERTEX_MODE = 'edit_vertex'
@@ -32,6 +34,19 @@ const FINISH_PHASES = new Set(['create', 'edit-finish'])
 const needsFinishCheck = (draw, { result, context }) =>
   !FINISH_PHASES.has(context?.phase) && (typeof draw._finishValidator === 'function' || !!result?.recheckOnFinish)
 const finishValidatorFor = (draw) => draw._finishValidator ?? draw._commitValidator
+
+// A passing onGeometryFinish result's properties are merged into the finished shape, in
+// draw's store, before any listener sees it. Only that finishing check counts — not
+// onGeometryChange standing in for it, nor a result for different geometry. Called before
+// resetState(), which ends the check session. Returns the shape to emit.
+const applyFinishProperties = (draw, feature, mapState) => {
+  const { status, result, context, feature: checkedFeature } = getCommitChecks(draw).state
+  const isFinishResult = typeof draw._finishValidator === 'function' && FINISH_PHASES.has(context?.phase) &&
+    status === 'valid' && isSameGeometry(checkedFeature, feature)
+  if (!isFinishResult || !result.properties) { return feature }
+  mergeFeatureProperties(draw, feature.id, result.properties, { caller: 'onGeometryFinish', styleIds: mapStyleIds(mapState) })
+  return draw.get(feature.id)
+}
 
 // A shape that simply hasn't reached its minimum vertex count yet isn't a mistake —
 // it's the normal, expected state of "still being drawn" — so it's excluded below
@@ -61,13 +76,13 @@ const buildVertexMoveTarget = (draw) => ({
 // Vertex-selection handlers: sync pluginState.selectedVertexIndex, and claim/release
 // MapControls' D-pad via buildVertexMoveTarget above.
 const createVertexSelectionHandlers = ({ draw, pluginState, mapProvider, eventBus }) => ({
-  onVertexSelection: (e) => {
-    pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: e })
-    mapProvider.activeMoveTarget = e.index >= 0 ? buildVertexMoveTarget(draw) : null
-    eventBus.emit('draw:vertexselection', e)
+  onVertexSelection: (event) => {
+    pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: event })
+    mapProvider.activeMoveTarget = event.index >= 0 ? buildVertexMoveTarget(draw) : null
+    eventBus.emit('draw:vertexselection', event)
   },
-  onVertexChange: (e) => {
-    pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertices: e.numVertices } })
+  onVertexChange: (event) => {
+    pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertices: event.numVertices } })
     mapProvider.activeMoveTarget = null
   }
 })
@@ -153,10 +168,11 @@ const createCheckStateHandler = ({ draw, dispatch, emitGeometryInvalid, announce
 function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, eventBus, resetState }) {
   const checks = getCommitChecks(draw)
 
-  const create = (f) => {
+  const create = (feature) => {
+    const finished = applyFinishProperties(draw, feature, mapState)
     resetState()
     setTimeout(() => draw.changeMode('disabled'), 0)
-    eventBus.emit(CREATED_EVENT, stripInternalProperties(f))
+    eventBus.emit(CREATED_EVENT, stripInternalProperties(finished))
   }
 
   const reopen = (featureId, geometryType) => {
@@ -177,23 +193,23 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
   // same geometry is reused, so finishing doesn't repeat a server call; otherwise (a
   // point, which has no commits before it's created, a failed result, or a finishing check
   // — see needsFinishCheck) the shape is checked now with phase 'create'.
-  const checkFinished = (f) => {
+  const checkFinished = (feature) => {
     const { status, feature: checkedFeature } = checks.state
-    const isReusable = (status === 'valid' || status === 'pending') && isSameGeometry(checkedFeature, f) && !needsFinishCheck(draw, checks.state)
+    const isReusable = (status === 'valid' || status === 'pending') && isSameGeometry(checkedFeature, feature) && !needsFinishCheck(draw, checks.state)
     if (!isReusable) {
-      checks.run({ feature: f, context: { phase: 'create', mode: draw.getMode() }, onGeometryChange: finishValidatorFor(draw) })
+      checks.run({ feature, context: { phase: 'create', mode: draw.getMode() }, onGeometryChange: finishValidatorFor(draw) })
     }
     return checks.state
   }
 
-  const finish = (f) => {
-    const state = checkFinished(f)
+  const finish = (feature) => {
+    const state = checkFinished(feature)
     if (state.status === 'valid') {
-      create(f)
+      create(feature)
     } else if (state.status === 'pending') {
-      hold(f.id)
+      hold(feature.id)
     } else {
-      reopen(f.id, f.geometry?.type)
+      reopen(feature.id, feature.geometry?.type)
     }
   }
 
@@ -214,15 +230,16 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
         reopen(heldId, finished?.geometry?.type)
       }
     },
-    onEditFinish: (f) => {
+    onEditFinish: (feature) => {
+      const finished = applyFinishProperties(draw, feature, mapState)
       resetState()
       setTimeout(() => draw.changeMode('disabled'), 0)
       // A shape that was drawn-then-fixed reports as a creation, not an edit.
-      if (pendingCreateIds.get(draw) === f.id) {
+      if (pendingCreateIds.get(draw) === feature.id) {
         pendingCreateIds.delete(draw)
-        eventBus.emit(CREATED_EVENT, stripInternalProperties(f))
+        eventBus.emit(CREATED_EVENT, stripInternalProperties(finished))
       } else {
-        eventBus.emit('draw:edited', stripInternalProperties(f))
+        eventBus.emit('draw:edited', stripInternalProperties(finished))
       }
     }
   }
@@ -314,12 +331,12 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
     onCancel: () => { checks.reset() },
     ...createFinishHandlers({ appState, appConfig, mapState, draw, dispatch, eventBus, resetState }),
     ...createVertexSelectionHandlers({ draw, pluginState, mapProvider, eventBus }),
-    onUndoChange: (l) => { pluginState.dispatch({ type: 'SET_UNDO_STACK_LENGTH', payload: l }) },
-    onUpdate: (f) => { eventBus.emit('draw:updated', stripInternalProperties(f)) },
-    onGeometryChange: (e) => {
+    onUndoChange: (undoStackLength) => { pluginState.dispatch({ type: 'SET_UNDO_STACK_LENGTH', payload: undoStackLength }) },
+    onUpdate: (updatedFeature) => { eventBus.emit('draw:updated', stripInternalProperties(updatedFeature)) },
+    onGeometryChange: (event) => {
       // Only commit-level changes carry a `phase` ('change').
       // Preview events (e.g. split's live preview) have none and are ignored.
-      if (!e?.phase) { return }
+      if (!event?.phase) { return }
 
       // A commit that lands after the session has ended (the adapters defer them a tick)
       // is dropped rather than calling onGeometryChange.
@@ -330,32 +347,32 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       // interim invalid states while being built or reshaped. The result is applied
       // by the check-state handler once it settles.
       checks.run({
-        feature: e.feature,
-        context: { phase: e.phase, vertexIndex: e.vertexIndex, mode },
+        feature: event.feature,
+        context: { phase: event.phase, vertexIndex: event.vertexIndex, mode },
         onGeometryChange: draw._commitValidator
       })
     },
     // A vertex placement was rejected (placement rule or user callback veto). Surface it
     // on the public bus with phase 'place', and as a hint toast, so the reason is visible.
-    onPlacementBlocked: (e) => {
-      if (e.announcement) { announce?.(e.announcement, 'action') }
-      emitGeometryInvalid({ ...e, feature: stripInternalProperties(e.feature) })
+    onPlacementBlocked: (event) => {
+      if (event.announcement) { announce?.(event.announcement, 'action') }
+      emitGeometryInvalid({ ...event, feature: stripInternalProperties(event.feature) })
     },
     // Live (mid-drag) validity flip while editing — the displayed shape is exactly
     // what Done finishes there, so it gates the Done button in real time alongside
     // the commit-level check. Emitted by the adapters' edit wiring only, on flips only.
-    onValidityChange: (e) => {
-      pluginState.dispatch({ type: 'SET_PREVIEW_VALID', payload: e.valid })
+    onValidityChange: (event) => {
+      pluginState.dispatch({ type: 'SET_PREVIEW_VALID', payload: event.valid })
     },
     // Live placement-veto flip while drawing — gates the Add point button so it
     // never looks active when a tap would be rejected.
-    onCanPlaceChange: (e) => {
-      pluginState.dispatch({ type: 'SET_CAN_ADD_POINT', payload: e.canPlace })
+    onCanPlaceChange: (event) => {
+      pluginState.dispatch({ type: 'SET_CAN_ADD_POINT', payload: event.canPlace })
     },
     // The mode's interface type changed (device switch mid-draw, or the final
     // value on mode exit) — relay so the app can sync appState.interfaceType.
-    onInterfaceTypeChange: (e) => {
-      eventBus.emit('draw:interfacetypechange', { interfaceType: e.interfaceType })
+    onInterfaceTypeChange: (event) => {
+      eventBus.emit('draw:interfacetypechange', { interfaceType: event.interfaceType })
     }
   }
 }
