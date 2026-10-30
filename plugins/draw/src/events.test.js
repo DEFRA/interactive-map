@@ -1,5 +1,5 @@
 import { attachEvents } from './events.js'
-import { SLOW_CHECK_MS } from './validation/commitChecks.js'
+import { SLOW_CHECK_MS, getCommitChecks } from './validation/commitChecks.js'
 import { recheckGeometry } from './api/recheckGeometry.js'
 
 jest.useFakeTimers()
@@ -1096,6 +1096,27 @@ describe('async geometry checks', () => {
   describe('Done while the next check runs', () => {
     const canFinish = (dispatch) => dispatch.mock.calls.filter(([action]) => action.type === 'SET_CAN_FINISH').map(([action]) => action.payload).pop()
     const partDrawn = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [0, 0]]] } }
+
+    test('stays disabled while an existing feature’s edit-start check runs, then follows its result', async () => {
+      const passing = setup()
+      passing.draw.getMode.mockReturnValue('edit_vertex')
+      const passes = deferred()
+      getCommitChecks(passing.draw).run({ feature: square, context: { phase: 'edit-start', mode: 'edit_vertex' }, consumerCheck: () => passes.promise })
+      expect(canFinish(passing.dispatch)).toBe(false)
+      expect(passing.draw.setCanFinish).toHaveBeenLastCalledWith(false)
+      passes.resolve(true)
+      await flush()
+      expect(canFinish(passing.dispatch)).toBe(true)
+
+      const failing = setup()
+      failing.draw.getMode.mockReturnValue('edit_vertex')
+      const fails = deferred()
+      getCommitChecks(failing.draw).run({ feature: square, context: { phase: 'edit-start', mode: 'edit_vertex' }, consumerCheck: () => fails.promise })
+      fails.resolve(false)
+      await flush()
+      // Never enabled on the way to disabled
+      expect(failing.dispatch.mock.calls.filter(([action]) => action.type === 'SET_CAN_FINISH').map(([action]) => action.payload)).toEqual([false, false])
+    })
 
     test('stays disabled after a failed result, and enables only once the next check passes', async () => {
       const { draw, dispatch } = setup()

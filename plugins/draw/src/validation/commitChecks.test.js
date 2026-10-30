@@ -176,6 +176,12 @@ describe('canFinishCheck', () => {
     expect(canFinishCheck({ status: 'pending', lastResultStatus: 'invalid' })).toBe(false)
     expect(canFinishCheck({ status: 'pending', lastResultStatus: 'error' })).toBe(false)
   })
+
+  test('is false while an existing feature’s edit-start check is pending', () => {
+    expect(canFinishCheck({ status: 'pending', lastResultStatus: null, context: { phase: 'edit-start' } })).toBe(false)
+    expect(canFinishCheck({ status: 'valid', lastResultStatus: 'valid', context: { phase: 'edit-start' } })).toBe(true)
+    expect(canFinishCheck({ status: 'pending', lastResultStatus: null, context: { phase: 'change' } })).toBe(true)
+  })
 })
 
 describe('getCommitChecks', () => {

@@ -17,9 +17,12 @@ const BLOCKING_STATUSES = new Set(['invalid', 'error'])
 
 // Whether the shape can be finished (the Done button and the map's finish gestures). While a
 // check is pending, Done keeps the state from the last callback result, so a shape that
-// failed can't be finished in the gap before the next result. With no earlier result, it can.
-export const canFinishCheck = ({ status, lastResultStatus }) =>
-  status === 'valid' || (status === 'pending' && !BLOCKING_STATUSES.has(lastResultStatus))
+// failed can't be finished in the gap before the next result. With no earlier result, it can
+// — except an existing feature opened by editFeature, which may already be invalid, so it
+// waits for its 'edit-start' check rather than showing Done enabled and then disabled.
+export const canFinishCheck = ({ status, lastResultStatus, context }) =>
+  status === 'valid' ||
+  (status === 'pending' && context?.phase !== 'edit-start' && !BLOCKING_STATUSES.has(lastResultStatus))
 
 /**
  * Runs the commit-level check for each committed change: the built-in COMMIT_RULES first,
