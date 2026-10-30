@@ -98,33 +98,65 @@ describe('useCrossHair', () => {
     expect(mockElement.style.display).toBe('none')
   })
 
-  it('hide() is a no-op while isMapControlsOpen is set', () => {
+  const withMapControls = (isOpen) => useApp.mockReturnValue({
+    safeZoneInset: { left: 10, top: 20 },
+    expandedButtons: new Set(isOpen ? ['mapControls'] : [])
+  })
+
+  it('holds back hide() while the map controls are open', () => {
+    withMapControls(true)
     setup()
     act(() => mockCrossHair.show())
-    mockCrossHair.isMapControlsOpen = true
-
     act(() => mockCrossHair.hide())
     expect(mockElement.style.display).toBe('block')
     expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'UPDATE_CROSS_HAIR', payload: { isVisible: false } })
   })
 
-  it('keeps crossHair.isMapControlsOpen synced with expandedButtons, set during render', () => {
-    useApp.mockReturnValue({ safeZoneInset: { left: 10, top: 20 }, expandedButtons: new Set(['mapControls']) })
-    setup()
-    expect(mockCrossHair.isMapControlsOpen).toBe(true)
+  // UPDATE_CROSS_HAIR replaces the crossHair object, and a plugin can still call an older copy
+  // (draw's effect cleanup does)
+  const replaceCrossHair = (hook) => {
+    const olderCopy = mockCrossHair
+    mockCrossHair = { ...mockCrossHair }
+    useMap.mockReturnValue({ crossHair: mockCrossHair, dispatch: mockDispatch, mapSize: 'medium' })
+    hook.rerender()
+    act(() => hook.result.current.crossHairRef(mockElement))
+    return olderCopy
+  }
+
+  it('hides when an older copy calls hide() after the map controls close', () => {
+    withMapControls(true)
+    const hook = setup()
+    act(() => mockCrossHair.show())
+    const olderCopy = replaceCrossHair(hook)
+    withMapControls(false)
+    hook.rerender()
+    act(() => olderCopy.hide())
+    expect(mockElement.style.display).toBe('none')
   })
 
-  // A plugin's updateCrossHair effect can run before this hook re-renders, so its hide() meets
-  // the old isMapControlsOpen value as MapControls closes.
+  it('carries out a hide() held back on an older copy once the map controls close', () => {
+    withMapControls(true)
+    const hook = setup()
+    act(() => mockCrossHair.show())
+    const olderCopy = replaceCrossHair(hook)
+    act(() => olderCopy.hide())
+    expect(mockElement.style.display).toBe('block')
+    withMapControls(false)
+    hook.rerender()
+    expect(mockElement.style.display).toBe('none')
+  })
+
+  // A plugin's updateCrossHair effect can run before this hook re-renders, so its hide() is
+  // held back as the map controls close.
   const closeMapControlsAfterBlockedHide = ({ showInBetween } = {}) => {
-    useApp.mockReturnValue({ safeZoneInset: { left: 10, top: 20 }, expandedButtons: new Set(['mapControls']) })
+    withMapControls(true)
     const hook = setup()
     act(() => mockCrossHair.show())
     act(() => mockCrossHair.hide())
     if (showInBetween) {
       act(() => mockCrossHair.fixAtCenter())
     }
-    useApp.mockReturnValue({ safeZoneInset: { left: 10, top: 20 }, expandedButtons: new Set() })
+    withMapControls(false)
     hook.rerender()
   }
 

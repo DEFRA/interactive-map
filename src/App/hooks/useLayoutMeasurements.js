@@ -66,14 +66,24 @@ const renderedBoxes = (element) => Array.from(element?.children ?? []).flatMap(c
 })
 
 // How far the actions bar's top is above the bottom of main, when anything in the sub-slot lines
-// up with the bar, or comes within margin of it. Otherwise 0.
-const actionsBarOverlap = (mainRect, barRect, slotRef, margin) => {
+// up with the bar, or comes within margin of it. Otherwise 0. A bottom sub-slot also has to reach
+// down to the bar. It moves up with its column, so this checks where its items would be if the
+// column weren't lifted (lift), so lifting it doesn't undo itself the next time it's measured.
+// A top sub-slot is only capped, which does nothing if it ends above the bar anyway.
+const actionsBarOverlap = (mainRect, barRect, slotRef, margin, lift = null) => {
   if (!barRect) {
     return 0
   }
-  const isOverlapping = renderedBoxes(slotRef?.current).some(box => barRect.left - margin < box.right && barRect.right + margin > box.left)
+  const isInLine = (box) => barRect.left - margin < box.right && barRect.right + margin > box.left
+  const reachesBar = (box) => lift === null || box.bottom + lift > barRect.top - margin
+  const isOverlapping = renderedBoxes(slotRef?.current).some(box => isInLine(box) && reachesBar(box))
   return isOverlapping ? mainRect.bottom - barRect.top : 0
 }
+
+// How far a column has been lifted above where the bottom row alone would put it.
+const columnLift = (mainRect, rowOffsetBottom, columnRef) => columnRef?.current
+  ? Math.max(0, mainRect.bottom - rowOffsetBottom - columnRef.current.getBoundingClientRect().bottom)
+  : 0
 
 // On tablet and desktop the actions bar floats over the middle of the map. Only what would
 // overlap it moves: a bottom sub-slot lifts the whole column above the bar, and a top sub-slot
@@ -247,19 +257,19 @@ export function calculateLayout (layoutRefs, breakpoint) {
   const actions = actionsRef?.current
   const mainRect = main.getBoundingClientRect()
   const barRect = actionsBarRect(actions)
-  const clearBar = (rowOffsetBottom, offsetTop, topSlotRef, bottomSlotRef) => clearActionsBar({
+  const clearBar = (rowOffsetBottom, offsetTop, topSlotRef, bottomSlotRef, columnRef) => clearActionsBar({
     rowOffsetBottom,
     offsetTop,
     mainHeight: main.offsetHeight,
     topOverlap: actionsBarOverlap(mainRect, barRect, topSlotRef, dividerGap),
-    bottomOverlap: actionsBarOverlap(mainRect, barRect, bottomSlotRef, dividerGap),
+    bottomOverlap: actionsBarOverlap(mainRect, barRect, bottomSlotRef, dividerGap, columnLift(mainRect, rowOffsetBottom, columnRef)),
     gap: dividerGap
   })
 
   // === Left container offsets ===
   const leftOffsetTop = sideOffsetTop(topColHeight(topLeftCol))
   const leftRowOffsetBottom = main.offsetHeight - bottom.offsetTop + dividerGap
-  const leftBar = clearBar(leftRowOffsetBottom, leftOffsetTop, leftTopRef, leftBottomRef)
+  const leftBar = clearBar(leftRowOffsetBottom, leftOffsetTop, leftTopRef, leftBottomRef, leftRef)
   const leftColumnHeight = bottom.offsetTop - leftOffsetTop - dividerGap - (leftBar.offsetBottom - leftRowOffsetBottom)
   appContainer.style.setProperty('--left-offset-top', `${leftOffsetTop}px`)
   appContainer.style.setProperty('--left-offset-bottom', `${leftBar.offsetBottom}px`)
@@ -272,7 +282,7 @@ export function calculateLayout (layoutRefs, breakpoint) {
   const bottomContainerPad = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
   const rightOffsetTop = sideOffsetTop(topColHeight(topRightCol))
   const rightRowOffsetBottom = rightOffsetBottom(bottomContainerPad, bottomRightHeight, attributions.offsetHeight, attributionsLift, dividerGap)
-  const rightBar = clearBar(rightRowOffsetBottom, rightOffsetTop, rightTopRef, rightBottomRef)
+  const rightBar = clearBar(rightRowOffsetBottom, rightOffsetTop, rightTopRef, rightBottomRef, rightRef)
   const rightEffectiveBottom = bottom.offsetTop + bottom.offsetHeight - bottomRightHeight - attributionsLift
   const rightColumnHeight = rightEffectiveBottom - rightOffsetTop - dividerGap - (rightBar.offsetBottom - rightRowOffsetBottom)
   appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)

@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useConfig } from '../store/configContext.js'
 import { useApp } from '../store/appContext.js'
 import { useMap } from '../store/mapContext.js'
@@ -6,17 +6,19 @@ import { useService } from '../store/serviceContext.js'
 import { scaleFactor } from '../../config/appConfig.js'
 import { EVENTS as events } from '../../config/events.js'
 
-const assignCrossHairAPI = (crossHair, el, mapProvider, dispatch, updatePosition) => {
+// crossHairHideHeldByMapControls is shared by every copy of the crossHair object, because each
+// UPDATE_CROSS_HAIR replaces the object and a plugin can still call an older copy
+const assignCrossHairAPI = (crossHair, el, mapProvider, dispatch, updatePosition, crossHairHideHeldByMapControls) => {
   crossHair.pinToMap = (coords, state) => {
     const { x, y } = mapProvider.mapToScreen(coords)
-    crossHair.isHidePending = false
+    crossHairHideHeldByMapControls.isHideWaiting = false
     crossHair.coords = coords
     dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isPinnedToMap: true, isVisible: true, coords, state } })
     updatePosition(el, x, y)
   }
 
   crossHair.fixAtCenter = () => {
-    crossHair.isHidePending = false
+    crossHairHideHeldByMapControls.isHideWaiting = false
     el.style.left = '50%'
     el.style.top = '50%'
     el.style.transform = 'translate(0,0)'
@@ -30,7 +32,7 @@ const assignCrossHairAPI = (crossHair, el, mapProvider, dispatch, updatePosition
   }
 
   crossHair.show = () => {
-    crossHair.isHidePending = false
+    crossHairHideHeldByMapControls.isHideWaiting = false
     el.style.display = 'block'
     dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isVisible: true } })
   }
@@ -40,11 +42,11 @@ const assignCrossHairAPI = (crossHair, el, mapProvider, dispatch, updatePosition
   // user has asked for it. A hide asked for then is held back until the controls close, unless
   // something shows the crosshair again first.
   crossHair.hide = () => {
-    if (crossHair.isMapControlsOpen) {
-      crossHair.isHidePending = true
+    if (crossHairHideHeldByMapControls.isMapControlsOpen) {
+      crossHairHideHeldByMapControls.isHideWaiting = true
       return
     }
-    crossHair.isHidePending = false
+    crossHairHideHeldByMapControls.isHideWaiting = false
     el.style.display = 'none'
     dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isVisible: false } })
   }
@@ -70,6 +72,7 @@ export const useCrossHair = () => {
   const { safeZoneInset, expandedButtons } = useApp()
   const { eventBus } = useService()
   const { crossHair, dispatch, mapSize } = useMap()
+  const crossHairHideHeldByMapControlsRef = useRef({ isMapControlsOpen: false, isHideWaiting: false })
 
   const updatePosition = (el, x, y) => {
     if (!safeZoneInset) {
@@ -87,7 +90,7 @@ export const useCrossHair = () => {
       return undefined
     }
 
-    assignCrossHairAPI(crossHair, el, mapProvider, dispatch, updatePosition)
+    assignCrossHairAPI(crossHair, el, mapProvider, dispatch, updatePosition, crossHairHideHeldByMapControlsRef.current)
 
     const handleRender = () => {
       if (crossHair.coords && crossHair.isPinnedToMap) {
@@ -114,10 +117,10 @@ export const useCrossHair = () => {
   // as soon as possible, but a plugin can still call hide() before this component re-renders. So
   // when the controls close, carry out any hide that was held back.
   const isMapControlsOpen = !!expandedButtons?.has('mapControls')
-  crossHair.isMapControlsOpen = isMapControlsOpen
+  crossHairHideHeldByMapControlsRef.current.isMapControlsOpen = isMapControlsOpen
 
   useEffect(() => {
-    if (!isMapControlsOpen && crossHair.isHidePending) {
+    if (!isMapControlsOpen && crossHairHideHeldByMapControlsRef.current.isHideWaiting) {
       crossHair.hide()
     }
   }, [isMapControlsOpen])

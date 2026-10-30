@@ -248,13 +248,15 @@
   gap: var(--divider-gap);
 }
 
-// Only a slot with an open panel shrinks, so the panel is capped to the space left in its column
-// and the buttons in the other slot keep their size
+// Only a slot with an open panel of its own shrinks, so the panel is capped to the space left in its
+// column and the buttons in the other slot keep their size. A panel opened beside a button sits
+// inside the button and doesn't take up space in the slot, so it doesn't count. Closed HTML panels
+// are hidden with display: none rather than the hidden attribute
 .im-o-app__left-top,
 .im-o-app__left-bottom,
 .im-o-app__right-top,
 .im-o-app__right-bottom {
-  &:has(.im-c-panel:not([hidden])) {
+  &:has(> .im-c-panel:not([hidden]):not([style*="display: none"])) {
     flex-shrink: 1;
     min-height: 0;
   }

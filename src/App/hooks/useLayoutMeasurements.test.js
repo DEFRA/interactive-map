@@ -152,6 +152,19 @@ describe('useLayoutMeasurements', () => {
     expect(spy).toHaveBeenCalledWith('--left-top-slot-max-height', topSlotMaxHeight)
   })
 
+  // Without the bar the left column ends 108 above main's bottom (500), at 392
+  test.each([
+    ['raises the column when a bottom sub-slot item reaches down to the bar', 392, 392, '128px'],
+    ['leaves the column when a bottom sub-slot item ends above the bar', 392, 300, '108px'], // 300 < bar top 380 - 8
+    ['keeps the column raised once it has been lifted clear of the bar', 372, 372, '128px'] // lifted 20, so the item would end at 392
+  ])('%s', (_name, columnBottom, itemBottom, offsetBottom) => {
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } }, left: { rect: { bottom: columnBottom } } } })
+    actionsBar(layoutRefs, bar)
+    slotItem(layoutRefs.leftBottomRef, { left: 8, right: 320, bottom: itemBottom })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-offset-bottom', offsetBottom)
+  })
+
   test('looks through control wrappers for what a sub-slot renders', () => {
     const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
     actionsBar(layoutRefs, bar)
