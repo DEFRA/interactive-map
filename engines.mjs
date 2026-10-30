@@ -5,42 +5,55 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url)) // NOSONAR - Standard Node.js convention in bundler configs
 
+// Every provider has its own build, but engine packages bundle theirs into the core build
+const ENGINE_PROVIDERS = ['providers/maplibre', 'providers/openlayers', 'providers/esri']
+
+const CORE_ENTRY = 'src/index.js'
 const DATASETS_ADAPTER = 'plugins/datasets/src/adapters/importLayerAdapter.js'
 const DRAW_ADAPTER = 'plugins/draw/src/adapters/loadDrawAdapter.js'
 
 /**
  * - exclude: output folders of builds for other engines, left out of this package
  * - rename: output folders published under another path, so every package has the same imports
- * - replace: runtime adapter lookups, swapped for this engine's version, which imports its
- *   adapter directly so it's bundled with the plugin and no other engine is referenced
+ * - replace: modules swapped for this engine's version. The core entry becomes one whose
+ *   InteractiveMap creates the engine's provider, bundling the provider into the core build. The
+ *   runtime adapter lookups become versions that import the engine's adapter directly, so it's
+ *   bundled with its plugin and no other engine is referenced.
+ * - providerChunk: the name of the provider's lazy file in the core build
  * - umd: whether the package has UMD scripts
  */
 export const ENGINES = {
   maplibre: {
-    exclude: ['providers/openlayers', 'providers/esri', 'plugins/draw-es'],
+    exclude: [...ENGINE_PROVIDERS, 'plugins/draw-es'],
     rename: {},
     replace: {
+      [CORE_ENTRY]: 'src/engines/maplibre.js',
       [DATASETS_ADAPTER]: 'plugins/datasets/src/adapters/maplibre/importLayerAdapter.js',
       [DRAW_ADAPTER]: 'plugins/draw/src/adapters/maplibre/loadDrawAdapter.js'
     },
+    providerChunk: { maplibreProvider: 'im-maplibre-provider' },
     umd: true
   },
   openlayers: {
-    exclude: ['providers/maplibre', 'providers/esri', 'plugins/draw-es'],
+    exclude: [...ENGINE_PROVIDERS, 'plugins/draw-es'],
     rename: {},
     replace: {
+      [CORE_ENTRY]: 'src/engines/openlayers.js',
       [DATASETS_ADAPTER]: 'plugins/datasets/src/adapters/openlayers/importLayerAdapter.js',
       [DRAW_ADAPTER]: 'plugins/draw/src/adapters/openlayers/loadDrawAdapter.js'
     },
+    providerChunk: { openlayersProvider: 'im-openlayers-provider' },
     umd: true
   },
   // Esri's draw is its own, more basic plugin, published at the same path as the others'
   esri: {
-    exclude: ['providers/maplibre', 'providers/openlayers', 'plugins/draw'],
+    exclude: [...ENGINE_PROVIDERS, 'plugins/draw'],
     rename: { 'plugins/draw-es': 'plugins/draw' },
     replace: {
+      [CORE_ENTRY]: 'src/engines/esri.js',
       [DATASETS_ADAPTER]: 'plugins/datasets/src/adapters/esri/importLayerAdapter.js'
     },
+    providerChunk: { esriProvider: 'im-esri-provider' },
     umd: false
   }
 }
