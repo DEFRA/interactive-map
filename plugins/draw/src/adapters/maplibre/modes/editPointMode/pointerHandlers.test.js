@@ -101,6 +101,26 @@ describe('pointerHandlers', () => {
     expect(map._undoStack).toHaveLength(0)
   })
 
+  test('onDrag that pans the map (point not grabbed) fires no geometrychange, with or without snap', () => {
+    const { ctx, state, map } = createHarness()
+    state.canDragMove = false
+    ctx.onDrag(state, dragEvt(2, 2))
+    state.getSnapEnabled = () => true
+    map._snapInstance = { status: true, snapStatus: false, snapCoords: null, snapToClosestPoint: jest.fn() }
+    ctx.onDrag(state, dragEvt(3, 3))
+    expect(map.fire).not.toHaveBeenCalledWith('draw.geometrychange', expect.anything())
+    expect(state.feature.coordinates).toEqual([5, 5])
+  })
+
+  test('onDrag fires geometrychange after the point moves, carrying the new position', () => {
+    const { ctx, state, map } = createHarness()
+    Object.assign(state, { canDragMove: true, dragMoveLocation: { lng: 0, lat: 0 } })
+    const fired = []
+    map.on('draw.geometrychange', (feature) => fired.push([...feature.coordinates]))
+    ctx.onDrag(state, dragEvt(2, 2))
+    expect(fired).toEqual([[7, 7]])
+  })
+
   test('onDrag skips touch, delegates without snap, and snaps when enabled', () => {
     const { ctx, state, map } = createHarness()
     ctx.onDrag({ ...state, interfaceType: 'touch' }, dragEvt(1, 1))
