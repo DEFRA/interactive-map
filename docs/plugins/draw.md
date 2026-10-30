@@ -233,6 +233,8 @@ Called after each change to a shape.
 
 It's only called once the built-in rules pass, and only the result for the latest change counts. If it fails, throws or rejects, the shape can't be finished: call `recheckGeometry()` to retry. If the shape is finished while a check is running, draw waits for the result.
 
+While a check is running, Done stays as the last result of `onGeometryChange` or `onGeometryFinish` left it: disabled if that result failed, otherwise enabled. When `editFeature` opens a shape, Done is disabled until its `'edit-start'` check passes.
+
 ## `onGeometryFinish(event, context)`
 
 **Signature:** `onGeometryFinish(event, context) => result | Promise<result>`
@@ -244,7 +246,7 @@ Called when a shape is finished, to check the whole shape once. Without it, fini
 | `'create'` | A new shape or point was finished |
 | `'edit-finish'` | Done was pressed on an edit |
 
-Draw waits for the result. A new shape that fails reopens in edit mode ([`draw:reopened`](#drawreopened)), where Undo starts empty and Cancel discards it. An edit that fails stays open. If the latest `onGeometryChange` result failed, the shape can't be finished, so `onGeometryFinish` isn't called.
+Draw waits for the result. A new shape that fails reopens in edit mode ([`draw:reopened`](#drawreopened)), where Undo starts empty and Cancel discards it. An edit that fails stays open. If the latest `onGeometryChange` result failed, the shape can't be finished, so `onGeometryFinish` isn't called. If an `onGeometryChange` check is still running when the shape is finished, it's cancelled and `onGeometryFinish` decides.
 
 This updates a panel on every change, and validates the shape once it's finished:
 
@@ -258,7 +260,7 @@ createDrawPlugin({
 })
 ```
 
-Don't `await` the panel update. `onGeometryChange` would then be pending until the panel replies, and finishing would wait for it.
+Don't `await` the panel update. `onGeometryChange` would then be pending until the panel replies: a slow reply is announced as "Checking shape", and finishing the shape cancels it.
 
 #### Adding properties to the finished shape
 
