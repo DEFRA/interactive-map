@@ -943,6 +943,8 @@ interactiveMap.toggleButtonState('opt-a', 'pressed', true)
 
 Fit the map view to a bounding box or GeoJSON geometry. Safe zone padding is automatically applied so the content remains fully visible.
 
+The safe zone is the part of the map not covered by buttons, the footer, the action bar or large open panels. A side's open panels count once together they cover more than half the map's height or width. If open panels would leave less than a quarter of the room across or down the map, the safe zone ignores panels in that direction, so the content isn't fitted into a sliver. It may then sit partly behind a panel.
+
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `bounds` | `[number, number, number, number]` | Bounds as [west, south, east, north] or [minX, minY, maxX, maxY] depending on CRS |
