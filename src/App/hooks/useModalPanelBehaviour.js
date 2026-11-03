@@ -5,20 +5,22 @@ import { toggleInertElements } from '../../utils/toggleInertElements.js'
 import { useApp } from '../store/appContext.js'
 
 // Left/right slots reuse the layout CSS vars set by useLayoutMeasurements — no DOM measurement needed.
-// CSS var references resolve correctly at the panel element (inside .im-o-app) even though
-// --modal-inset is set on :root.
+// --modal-inset and --modal-max-height are set on the app container, beside those vars: a var()
+// inside a custom property resolves where that property is set, so on :root they'd be invalid. It
+// also keeps each map on a page to its own values.
+// The modal layer fills main, so a panel can be as tall as its column: main less both offsets.
+const columnMaxHeight = (side) => `calc(100% - var(--${side}-offset-top) - var(--${side}-offset-bottom))`
 const SLOT_MODAL_VARS = {
-  'left-top': { inset: 'var(--left-offset-top) auto auto var(--primary-gap)', maxHeight: 'var(--left-top-max-height)' },
-  'left-bottom': { inset: 'auto auto var(--left-offset-bottom) var(--primary-gap)', maxHeight: 'var(--left-top-max-height)' },
-  'right-top': { inset: 'var(--right-offset-top) var(--primary-gap) auto auto', maxHeight: 'var(--right-top-max-height)' },
-  'right-bottom': { inset: 'auto var(--primary-gap) var(--right-offset-bottom) auto', maxHeight: 'var(--right-top-max-height)' }
+  'left-top': { inset: 'var(--left-offset-top) auto auto var(--primary-gap)', maxHeight: columnMaxHeight('left') },
+  'left-bottom': { inset: 'auto auto var(--left-offset-bottom) var(--primary-gap)', maxHeight: columnMaxHeight('left') },
+  'right-top': { inset: 'var(--right-offset-top) var(--primary-gap) auto auto', maxHeight: columnMaxHeight('right') },
+  'right-bottom': { inset: 'auto var(--primary-gap) var(--right-offset-bottom) auto', maxHeight: columnMaxHeight('right') }
 }
 
 const MODAL_INSET = '--modal-inset'
 const MODAL_MAX_HEIGHT = '--modal-max-height'
 
-const setButtonCSSVar = (effectiveContainer, mainRef, dividerGap) => {
-  const root = document.documentElement
+const setButtonCSSVar = (appContainer, effectiveContainer, mainRef, dividerGap) => {
   const mainRect = mainRef.current.getBoundingClientRect()
   const buttonRect = effectiveContainer.getBoundingClientRect()
   const isBottomSlot = !!effectiveContainer.closest('.im-o-app__left-bottom, .im-o-app__right-bottom')
@@ -30,18 +32,16 @@ const setButtonCSSVar = (effectiveContainer, mainRef, dividerGap) => {
   const insetLeft = isLeftSlot ? `${Math.round(buttonRect.right - mainRect.left + dividerGap)}px` : 'auto'
   const anchor = isBottomSlot ? Math.round(mainRect.bottom - buttonRect.bottom) : Math.round(buttonRect.top - mainRect.top)
 
-  root.style.setProperty(MODAL_INSET, `${insetTop} ${insetRight} ${insetBottom} ${insetLeft}`)
-  root.style.setProperty(MODAL_MAX_HEIGHT, `${mainRect.height - anchor - dividerGap}px`)
+  appContainer.style.setProperty(MODAL_INSET, `${insetTop} ${insetRight} ${insetBottom} ${insetLeft}`)
+  appContainer.style.setProperty(MODAL_MAX_HEIGHT, `${mainRect.height - anchor - dividerGap}px`)
 }
 
-const setSlotCSSVar = (slot, layoutRefs, primaryMargin) => {
-  const root = document.documentElement
-
+const setSlotCSSVar = (appContainer, slot, layoutRefs, primaryMargin) => {
   // Left/right slots: delegate entirely to existing layout CSS vars
   const mapped = SLOT_MODAL_VARS[slot]
   if (mapped) {
-    root.style.setProperty(MODAL_INSET, mapped.inset)
-    root.style.setProperty(MODAL_MAX_HEIGHT, mapped.maxHeight)
+    appContainer.style.setProperty(MODAL_INSET, mapped.inset)
+    appContainer.style.setProperty(MODAL_MAX_HEIGHT, mapped.maxHeight)
     return
   }
 
@@ -58,8 +58,8 @@ const setSlotCSSVar = (slot, layoutRefs, primaryMargin) => {
   const relLeft = slotRect.left - mainRect.left
   const relTop = slotRect.top - mainRect.top
 
-  root.style.setProperty(MODAL_INSET, `${relTop}px auto auto ${relLeft}px`)
-  root.style.setProperty(MODAL_MAX_HEIGHT, `${mainRect.height - relTop - primaryMargin}px`)
+  appContainer.style.setProperty(MODAL_INSET, `${relTop}px auto auto ${relLeft}px`)
+  appContainer.style.setProperty(MODAL_MAX_HEIGHT, `${mainRect.height - relTop - primaryMargin}px`)
 }
 
 // Computes and applies --modal-inset/--modal-max-height for the panel's current slot. Shared by
@@ -67,12 +67,12 @@ const setSlotCSSVar = (slot, layoutRefs, primaryMargin) => {
 // open-triggered layout effect below (panels stay permanently mounted — see mapPanels.js — so
 // opening one doesn't itself resize mainRef and wouldn't otherwise trigger a recalc).
 const recalcModalPosition = ({ isModal, mainRef, panelRef, buttonContainerEl, layoutRefs }) => {
-  if (!isModal || !mainRef.current) {
+  const appContainer = layoutRefs.appContainerRef?.current
+  if (!isModal || !mainRef.current || !appContainer) {
     return
   }
 
-  const root = document.documentElement
-  const styles = getComputedStyle(root)
+  const styles = getComputedStyle(document.documentElement)
   const dividerGap = Number.parseInt(styles.getPropertyValue('--divider-gap'), 10)
   const primaryMargin = Number.parseInt(styles.getPropertyValue('--primary-gap'), 10)
   const slot = panelRef.current.dataset.slot
@@ -92,12 +92,12 @@ const recalcModalPosition = ({ isModal, mainRef, panelRef, buttonContainerEl, la
       return
     }
 
-    setButtonCSSVar(effectiveContainer, mainRef, dividerGap)
+    setButtonCSSVar(appContainer, effectiveContainer, mainRef, dividerGap)
     return
   }
 
   // Slot-based panels: derive position from the slot container element
-  setSlotCSSVar(slot, layoutRefs, primaryMargin)
+  setSlotCSSVar(appContainer, slot, layoutRefs, primaryMargin)
 }
 
 const useModalKeyHandler = (panelRef, isModal, handleClose) => {

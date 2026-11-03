@@ -172,6 +172,39 @@ describe('getSafeZoneInset — base structural insets', () => {
   })
 })
 
+// ─── Bottom row ──────────────────────────────────────────────────────────────
+
+describe('getSafeZoneInset — bottom row', () => {
+  const TOP_ROW_HEIGHT = 100
+  const noActions = { current: { offsetTop: MAIN_HEIGHT } }
+  // A bottom row made tall by its contents, such as the scale bar and map controls
+  const tallRow = { current: { offsetTop: 300, offsetHeight: MAIN_HEIGHT - 300 - GAP } }
+
+  // A top row column, with a child that shows or one that's hidden
+  const shownChild = { hidden: false, getClientRects: () => [{}], getBoundingClientRect: () => ({}) }
+  const hiddenChild = { hidden: true }
+  const topCol = (offsetHeight, children = [shownChild]) => ({ offsetHeight, children })
+  const topRow = (...cols) => ({ current: { children: cols } })
+
+  it('mirrors the top row and its margin, ignoring the bottom row', () => {
+    expect(getSafeZoneInset({ ...base(), actionsRef: noActions, bottomRef: tallRow, topRef: topRow(topCol(TOP_ROW_HEIGHT), topCol(40)) }).bottom)
+      .toBe(GAP + TOP_ROW_HEIGHT)
+  })
+  it('ignores a top row column whose items are all hidden', () => {
+    expect(getSafeZoneInset({ ...base(), actionsRef: noActions, bottomRef: tallRow, topRef: topRow(topCol(TOP_ROW_HEIGHT, [hiddenChild]), topCol(40)) }).bottom)
+      .toBe(GAP + 40)
+  })
+  it('collapses to the margin when there is no top row', () => {
+    expect(getSafeZoneInset({ ...base(), actionsRef: noActions, bottomRef: tallRow, topRef: topRow() }).bottom)
+      .toBe(GAP)
+  })
+  it('clears anything below the bottom row, such as the drawer', () => {
+    const rowBottom = 400
+    expect(getSafeZoneInset({ ...base(), actionsRef: noActions, bottomRef: { current: { offsetTop: rowBottom, offsetHeight: 0 } } }).bottom)
+      .toBe(MAIN_HEIGHT - rowBottom)
+  })
+})
+
 // ─── Left edge ───────────────────────────────────────────────────────────────
 
 describe('getSafeZoneInset — left edge', () => {
@@ -231,10 +264,14 @@ describe('getSafeZoneInset — top edge', () => {
   it('does not trigger when top panel is narrow, even if tall', () => {
     expect(getSafeZoneInset({ ...base(), rightTopRef: rightTop(item(PANEL_W_STANDARD, ABOVE_THRESHOLD)) }).top).toBe(BASE_TOP)
   })
-  it('triggers when a top panel is wide enough, capped at (MAX_RATIO-1)/MAX_RATIO of usable height', () => {
-    const result = getSafeZoneInset({ ...base(), leftTopRef: leftTop(item(ABOVE_W_THRESHOLD, ABOVE_CAP_TOP)) })
+  it('triggers when a top panel is wide enough but too short to clear its side', () => {
+    expect(getSafeZoneInset({ ...base(), leftTopRef: leftTop(item(ABOVE_W_THRESHOLD, BELOW_THRESHOLD)) }).top)
+      .toBe(topInset(BELOW_THRESHOLD))
+  })
+  it('triggers when a top panel is wider than its side\'s capped inset can clear, capped at (MAX_RATIO-1)/MAX_RATIO of usable height', () => {
+    const result = getSafeZoneInset({ ...base(), leftTopRef: leftTop(item(PANEL_W_XLARGE, ABOVE_CAP_TOP)) })
+    expect(result.left).toBe(CAP_WIDTH)
     expect(result.top).toBe(CAP_HEIGHT)
-    expect(result.left).toBe(leftInset(ABOVE_W_THRESHOLD))
   })
   it('does not trigger when combined width of two top panels is below threshold', () => {
     expect(getSafeZoneInset({
@@ -251,15 +288,15 @@ describe('getSafeZoneInset — bottom edge', () => {
   it('does not trigger when bottom panel is narrow, even if tall', () => {
     expect(getSafeZoneInset({ ...base(), rightBottomRef: rightBottom(item(PANEL_W_STANDARD, ABOVE_THRESHOLD)) }).bottom).toBe(BASE_BOTTOM)
   })
-  it('triggers when a bottom panel is wide enough, capped at (MAX_RATIO-1)/MAX_RATIO of usable height', () => {
-    const result = getSafeZoneInset({ ...base(), leftBottomRef: leftBottom(item(ABOVE_W_THRESHOLD, ABOVE_CAP_BOTTOM)) })
-    expect(result.bottom).toBe(CAP_HEIGHT)
-    expect(result.left).toBe(leftInset(ABOVE_W_THRESHOLD))
+  it('triggers when a bottom panel is wide enough but too short to clear its side', () => {
+    const result = getSafeZoneInset({ ...base(), rightBottomRef: rightBottom(item(ABOVE_W_THRESHOLD, BELOW_THRESHOLD)) })
+    expect(result.bottom).toBe(bottomInset(BELOW_THRESHOLD))
+    expect(result.right).toBe(BASE_RIGHT)
   })
-  it('triggers when a bottom panel is wide enough, using the taller of the two slots', () => {
-    const result = getSafeZoneInset({ ...base(), rightBottomRef: rightBottom(item(ABOVE_W_THRESHOLD, ABOVE_THRESHOLD)) })
-    expect(result.bottom).toBe(bottomInset(ABOVE_THRESHOLD))
-    expect(result.right).toBe(rightInset(ABOVE_W_THRESHOLD))
+  it('triggers when a bottom panel is wider than its side\'s capped inset can clear, capped at (MAX_RATIO-1)/MAX_RATIO of usable height', () => {
+    const result = getSafeZoneInset({ ...base(), leftBottomRef: leftBottom(item(PANEL_W_XLARGE, ABOVE_CAP_BOTTOM)) })
+    expect(result.left).toBe(CAP_WIDTH)
+    expect(result.bottom).toBe(CAP_HEIGHT)
   })
   it('does not trigger when combined width of two bottom panels is below threshold', () => {
     expect(getSafeZoneInset({
@@ -297,10 +334,21 @@ describe('getSafeZoneInset — row/column independence', () => {
     expect(result.top).toBe(topInset(BELOW_THRESHOLD))
     expect(result.left).toBe(BASE_LEFT)
   })
-  it('wide-and-tall panel triggers both its column and row insets at once', () => {
+  it('a wide-and-tall panel its side inset clears doesn\'t also push the top', () => {
     const result = getSafeZoneInset({ ...base(), leftTopRef: leftTop(item(ABOVE_W_THRESHOLD, ABOVE_THRESHOLD)) })
     expect(result.left).toBe(leftInset(ABOVE_W_THRESHOLD))
-    expect(result.top).toBe(topInset(ABOVE_THRESHOLD))
+    expect(result.top).toBe(BASE_TOP)
+  })
+  it('only panels on a side that isn\'t cleared count towards the top', () => {
+    // Left: two panels stacked, tall enough to clear the left. Right: one short panel. Together
+    // they'd be wide enough, but the right one alone isn't
+    const result = getSafeZoneInset({
+      ...base(),
+      leftTopRef: leftTop(item(PANEL_W_WIDE, COMBINED_BELOW), item(PANEL_W_WIDE, ABOVE_THRESHOLD)),
+      rightTopRef: rightTop(item(PANEL_W_WIDE, COMBINED_BELOW))
+    })
+    expect(result.left).toBe(leftInset(PANEL_W_WIDE))
+    expect(result.top).toBe(BASE_TOP)
   })
   it('two narrow panels in the same column collectively trigger left, independent of row', () => {
     // Each h=COMBINED_ABOVE (120) < hThreshold individually, combined 248 > 236 → left triggers
@@ -394,14 +442,17 @@ describe('getSafeZoneInset — fallback when there isn\'t room', () => {
     expect(result.top).toBe(topInset(ABOVE_THRESHOLD))
   })
   it('uses the structural top and bottom insets when panels leave too little height', () => {
+    // Wide, short panels top left and bottom right push the top and bottom, but neither column is
+    // tall enough to clear its side. Together they leave less than 1/MIN_RATIO of the height
     const result = getSafeZoneInset({
       ...base(),
       leftTopRef: leftTop(item(ABOVE_W_THRESHOLD, PANEL_H_HALF)),
-      leftBottomRef: leftBottom(item(ABOVE_W_THRESHOLD, PANEL_H_HALF))
+      rightBottomRef: rightBottom(item(ABOVE_W_THRESHOLD, PANEL_H_HALF))
     })
     expect(result.top).toBe(BASE_TOP)
     expect(result.bottom).toBe(BASE_BOTTOM)
-    expect(result.left).toBe(leftInset(ABOVE_W_THRESHOLD))
+    expect(result.left).toBe(BASE_LEFT)
+    expect(result.right).toBe(BASE_RIGHT)
   })
   it('keeps a single panel at the cap, which leaves enough room', () => {
     expect(getSafeZoneInset({ ...base(), leftTopRef: leftTop(item(PANEL_W_XLARGE, PANEL_W_XLARGE)) }).left).toBe(CAP_WIDTH)
