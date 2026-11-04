@@ -93,14 +93,15 @@ export const Layout = () => {
               <SlotRenderer slot={layoutSlots.RIGHT_BOTTOM} />
             </div>
           </div>
+          <Hints />
           <div className='im-o-app__bottom' ref={layoutRefs.bottomRef}>
-            <div className='im-o-app__bottom-col'>
+            <div className='im-o-app__bottom-col' ref={layoutRefs.bottomLeftColRef}>
               <Logo />
               <div className='im-o-app__bottom-left'>
                 <SlotRenderer slot={layoutSlots.BOTTOM_LEFT} />
               </div>
             </div>
-            <div className='im-o-app__bottom-col'>
+            <div className='im-o-app__bottom-col' ref={layoutRefs.bottomRightColRef}>
               <div className='im-o-app__bottom-right' ref={layoutRefs.bottomRightRef}>
                 <SlotRenderer slot={layoutSlots.BOTTOM_RIGHT} />
               </div>
@@ -125,7 +126,6 @@ export const Layout = () => {
           </div>
         </div>
       </div>
-      <Hints />
       <HtmlElementHost />
     </div>
   )

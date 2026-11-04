@@ -359,7 +359,9 @@ Each is documented in full in [Symbol Config](../api/symbol-config.md), under a 
 
 They follow the same resolution order and support style-keyed colour objects in the same way as markers.
 
-`haloColor` and `selectedColor` are not settable here — they are basemap-level properties set on [`MapStyleConfig`](../api/map-style-config.md).
+Any other `symbol*` property fills the [custom token](../api/symbol-config.md#custom-tokens) named after it without the prefix, so `symbolAccentColor` fills `{{accentColor}}`, on the map and in the key. Custom tokens are inherited by sublayers and can be changed with `setStyle`.
+
+`haloColor`, `selectedColor` and `activeColor` are not settable here — they are basemap-level properties set on [`MapStyleConfig`](../api/map-style-config.md).
 
 `symbolDescription` only affects how an entry looks in the Key panel — see [Map Key: Key display properties](./map-key.md#key-display-properties) for details.
 
@@ -391,6 +393,14 @@ style: {
   symbolViewBox: '0 0 38 38',
   symbolAnchor: [0.5, 0.5],
   symbolBackgroundColor: '#1d70b8'
+}
+
+// Point dataset — custom inline SVG with a custom token
+style: {
+  symbolSvgContent: '<circle cx="19" cy="19" r="12" fill="{{backgroundColor}}" stroke="{{accentColor}}"/>',
+  symbolViewBox: '0 0 38 38',
+  symbolBackgroundColor: '#1d70b8',
+  symbolAccentColor: { outdoor: '#ffdd00', dark: '#f47738' }
 }
 ```
 

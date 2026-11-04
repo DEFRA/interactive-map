@@ -1,4 +1,4 @@
-import { getExtentFromFlatCoords, getPointFromFlatCoords, getBboxFromGeoJSON } from './coords.js'
+import { getExtentFromFlatCoords, getPointFromFlatCoords, getBboxFromGeoJSON, padExtent } from './coords.js'
 
 jest.mock('@arcgis/core/geometry/Extent.js', () =>
   jest.fn().mockImplementation((opts) => ({ ...opts, type: 'extent' }))
@@ -121,6 +121,27 @@ describe('coords utils', () => {
       }
       const result = getBboxFromGeoJSON(feature)
       expect(result.spatialReference).toEqual({ wkid: 27700 })
+    })
+  })
+
+  describe('padExtent', () => {
+    // A 400 × 200 extent in a 1000 × 600 view. With 100px of view padding and 500px of extra
+    // padding off the width, 400px are left, so the fit uses 1 unit per pixel
+    const extent = { xmin: 0, ymin: 0, xmax: 400, ymax: 200, spatialReference: { wkid: 27700 } }
+    const view = { width: 1000, height: 600, padding: { left: 100, right: 0, top: 0, bottom: 0 } }
+
+    test('grows the extent by the padding at the resolution the fit will use', () => {
+      const result = padExtent(extent, { top: 10, right: 300, bottom: 20, left: 200 }, view)
+      expect(result).toEqual(expect.objectContaining({ xmin: -200, ymin: -20, xmax: 700, ymax: 210, spatialReference: { wkid: 27700 } }))
+    })
+
+    test('handles a view with no padding', () => {
+      const result = padExtent(extent, { top: 0, right: 100, bottom: 0, left: 100 }, { width: 600, height: 600, padding: null })
+      expect(result).toEqual(expect.objectContaining({ xmin: -100, xmax: 500 }))
+    })
+
+    test('returns the extent unchanged when the padding leaves no room', () => {
+      expect(padExtent(extent, { top: 0, right: 500, bottom: 0, left: 500 }, view)).toBe(extent)
     })
   })
 })

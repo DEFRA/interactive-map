@@ -3,8 +3,7 @@ import {
   getAreaDimensions,
   getCardinalMove,
   getExtentFromGeoJSON,
-  getPaddedExtent,
-  isGeometryObscured
+  getPaddedExtent
 } from './spatial.js'
 
 describe('formatDimension', () => {
@@ -89,29 +88,5 @@ describe('getPaddedExtent', () => {
       getCoordinateFromPixel: () => null
     }
     expect(getPaddedExtent(map)).toBeNull()
-  })
-})
-
-describe('isGeometryObscured', () => {
-  const point = { type: 'Feature', geometry: { type: 'Point', coordinates: [-1, 51] } }
-  const panel = { left: 0, top: 0, right: 100, bottom: 100 }
-
-  const containerRect = { left: 0, top: 0, width: 1000, height: 1000 }
-  const makeMap = (pixelFn, viewportRect = containerRect) => ({
-    getTargetElement: () => ({ getBoundingClientRect: () => containerRect }),
-    getViewport: () => ({ getBoundingClientRect: () => viewportRect }),
-    getPixelFromCoordinate: pixelFn
-  })
-
-  it('returns false when no corners project to screen pixels', () => {
-    expect(isGeometryObscured(point, panel, makeMap(() => null))).toBe(false)
-  })
-
-  it('returns true when geometry overlaps panel', () => {
-    expect(isGeometryObscured(point, panel, makeMap(() => [50, 50]))).toBe(true)
-  })
-
-  it('returns false when geometry is outside panel', () => {
-    expect(isGeometryObscured(point, panel, makeMap(() => [200, 200]))).toBe(false)
   })
 })

@@ -11,7 +11,7 @@ export const symbolDefaults = {
   foregroundColor: '#ffffff'
 }
 
-/** The symbol style keys a dataset or draw style can set (see docs/plugins/datasets.md) */
+/** The named symbol style keys a dataset or draw style can set (see docs/plugins/datasets.md) */
 export const SYMBOL_STYLE_KEYS = [
   'symbol', 'symbolSvgContent', 'symbolViewBox', 'symbolAnchor', 'symbolSize',
   'symbolBackgroundColor', 'symbolForegroundColor', 'symbolHaloWidth', 'symbolGraphic'

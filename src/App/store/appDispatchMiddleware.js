@@ -7,6 +7,16 @@ import { logger } from '../../services/logger.js'
 
 const BREAKPOINTS = ['mobile', 'tablet', 'desktop']
 
+const VISIBLE_GEOMETRY_KEYS = ['visibleGeometry', 'preferPan', 'paddingPercent']
+
+// The panel's visibleGeometry options that are set. Sent with the opened event for a panel that
+// opens as it's added, as the panel registry may not have its config yet
+const getVisibleGeometryOptions = (source) => Object.fromEntries(
+  VISIBLE_GEOMETRY_KEYS.filter(key => source[key] !== undefined).map(key => [key, source[key]])
+)
+
+const isOpen = (panelId, state) => Boolean(state.openPanels?.[panelId])
+
 /**
  * Determines which panels were implicitly closed when opening a new panel
  */
@@ -60,6 +70,7 @@ function emitOpenPanelEvents ({ panelId, props }, previousState, panelConfig, ev
     previousState.breakpoint,
     panelConfig
   )
+  const wasOpen = isOpen(panelId, previousState)
 
   queueMicrotask(() => {
     // Emit close events for implicitly closed panels
@@ -67,8 +78,10 @@ function emitOpenPanelEvents ({ panelId, props }, previousState, panelConfig, ev
       eventBus.emit(events.APP_PANEL_CLOSED, { panelId: closedPanelId })
     })
 
-    // Emit open event for the new panel
-    eventBus.emit(events.APP_PANEL_OPENED, { panelId, props })
+    // Emit open event for the new panel. Showing a panel that's already open doesn't open it
+    if (!wasOpen) {
+      eventBus.emit(events.APP_PANEL_OPENED, { panelId, props })
+    }
   })
 }
 
@@ -129,15 +142,10 @@ export function handleActionSideEffects (action, previousState, panelConfig, eve
       }
     })
     const bpConfig = mergedConfig[previousState.breakpoint]
-    if (bpConfig?.open) {
+    // Adding a panel again while it's open doesn't open it
+    if (bpConfig?.open && !isOpen(id, previousState)) {
       queueMicrotask(() => {
-        const slot = bpConfig.slot
-        const { visibleGeometry } = mergedConfig
-        const eventPayload = { panelId: id, slot }
-        if (visibleGeometry) {
-          eventPayload.visibleGeometry = visibleGeometry
-        }
-        eventBus.emit(events.APP_PANEL_OPENED, eventPayload)
+        eventBus.emit(events.APP_PANEL_OPENED, { panelId: id, slot: bpConfig.slot, ...getVisibleGeometryOptions(mergedConfig) })
       })
     }
   }
