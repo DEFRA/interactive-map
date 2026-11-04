@@ -91,49 +91,10 @@ const getPaddedExtent = (map) => {
   return [sw[0], sw[1], ne[0], ne[1]]
 }
 
-/**
- * Returns true if the geometry's screen bounding box overlaps the given panel rectangle.
- * getPixelFromCoordinate returns layout-space pixels (unscaled canvas), so we convert them
- * to screen space using the ratio between the viewport's visual size and the canvas size.
- * This accounts for the CSS scale transform applied on medium/large mapSize.
- */
-const isGeometryObscured = (geojson, panelRect, map) => {
-  const containerRect = map.getTargetElement().getBoundingClientRect()
-  if (!containerRect.width || !containerRect.height) {
-    return false
-  }
-  const viewportRect = map.getViewport().getBoundingClientRect()
-  const scaleX = viewportRect.width / containerRect.width
-  const scaleY = viewportRect.height / containerRect.height
-
-  const [xmin, ymin, xmax, ymax] = getExtentFromGeoJSON(geojson)
-
-  const corners = [[xmin, ymin], [xmin, ymax], [xmax, ymin], [xmax, ymax]].map(coord => {
-    return map.getPixelFromCoordinate(coord)
-  }).filter(Boolean)
-
-  if (!corners.length) {
-    return false
-  }
-
-  const screenMinX = containerRect.left + Math.min(...corners.map(c => c[0])) * scaleX
-  const screenMaxX = containerRect.left + Math.max(...corners.map(c => c[0])) * scaleX
-  const screenMinY = containerRect.top + Math.min(...corners.map(c => c[1])) * scaleY
-  const screenMaxY = containerRect.top + Math.max(...corners.map(c => c[1])) * scaleY
-
-  return (
-    screenMinX < panelRect.right &&
-    screenMaxX > panelRect.left &&
-    screenMinY < panelRect.bottom &&
-    screenMaxY > panelRect.top
-  )
-}
-
 export {
   getAreaDimensions,
   getCardinalMove,
   getExtentFromGeoJSON,
   getPaddedExtent,
-  isGeometryObscured,
   formatDimension
 }

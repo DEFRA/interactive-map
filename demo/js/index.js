@@ -249,6 +249,7 @@ const datasetsPlugin = createDatasetsPlugin({
         // A custom shield, to show symbolSvgContent with all its variants (see customSymbols.js)
         symbolSvgContent: shieldSymbolSvg,
         symbolBackgroundColor: '#1565C0',
+        symbolAccentColor: { outdoor: '#ffdd00', dark: '#f47738' },
       }
     },{
       id: 'industrial',

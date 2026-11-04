@@ -3,11 +3,9 @@ import { render, act } from '@testing-library/react'
 import { Hints } from './Hints.jsx'
 import { useConfig } from '../../store/configContext.js'
 import { useService } from '../../store/serviceContext.js'
-import { useApp } from '../../store/appContext.js'
 
 jest.mock('../../store/configContext.js', () => ({ useConfig: jest.fn() }))
 jest.mock('../../store/serviceContext.js', () => ({ useService: jest.fn() }))
-jest.mock('../../store/appContext.js', () => ({ useApp: jest.fn() }))
 
 const CONTAINER_ID = '#test-map-hints'
 const HINT_CLASS = '.im-c-hints__hint'
@@ -15,7 +13,7 @@ const HINT_CLASS = '.im-c-hints__hint'
 let capturedSubscriber
 let mockHints
 
-const setup = ({ mainEl = document.createElement('div') } = {}) => {
+const setup = () => {
   capturedSubscriber = null
   mockHints = {
     subscribe: jest.fn((fn) => {
@@ -25,67 +23,63 @@ const setup = ({ mainEl = document.createElement('div') } = {}) => {
   }
   useConfig.mockReturnValue({ id: 'test-map', keyboardHintText: '<kbd>Shift</kbd> + <kbd>?</kbd>' })
   useService.mockReturnValue({ hints: mockHints })
-  useApp.mockReturnValue({ layoutRefs: { mainRef: { current: mainEl } } })
-  if (mainEl) document.body.appendChild(mainEl)
-  return mainEl
 }
 
 afterEach(() => {
-  document.body.innerHTML = ''
   jest.clearAllMocks()
 })
 
 // ─── rendering ───────────────────────────────────────────────────────────────
 
 describe('Hints — rendering', () => {
-  it('renders the container into mainRef after mount', () => {
-    const mainEl = setup()
-    render(<Hints />)
-    expect(mainEl.querySelector(CONTAINER_ID)).toBeTruthy()
+  it('renders the container in place', () => {
+    setup()
+    const { container } = render(<Hints />)
+    expect(container.querySelector(CONTAINER_ID)).toBeTruthy()
   })
 
   it('renders a persistent keyboard-desc span with the hint text', () => {
-    const mainEl = setup()
-    render(<Hints />)
-    const desc = mainEl.querySelector('#test-map-keyboard-desc')
+    setup()
+    const { container } = render(<Hints />)
+    const desc = container.querySelector('#test-map-keyboard-desc')
     expect(desc).toBeTruthy()
     expect(desc.innerHTML).toBe('Shift + ?')
   })
 
   it('appends the map-controls hint text when enableMapControls is true', () => {
-    const mainEl = setup()
+    setup()
     useConfig.mockReturnValue({
       id: 'test-map',
       keyboardHintText: '<kbd>Shift</kbd> + <kbd>?</kbd>',
       enableMapControls: true,
       mapControlsHintText: '<kbd>Arrow keys</kbd> to move'
     })
-    render(<Hints />)
-    const desc = mainEl.querySelector('#test-map-keyboard-desc')
+    const { container } = render(<Hints />)
+    const desc = container.querySelector('#test-map-keyboard-desc')
     expect(desc.innerHTML).toBe('Shift + ? Arrow keys to move')
   })
 
   it('renders no hint content when there is no active hint', () => {
-    const mainEl = setup()
-    render(<Hints />)
-    expect(mainEl.querySelector(HINT_CLASS)).toBeNull()
+    setup()
+    const { container } = render(<Hints />)
+    expect(container.querySelector(HINT_CLASS)).toBeNull()
   })
 
   it('renders hint content when subscriber fires with a hint', () => {
-    const mainEl = setup()
-    render(<Hints />)
+    setup()
+    const { container } = render(<Hints />)
     act(() => capturedSubscriber({ html: '<kbd>Enter</kbd> to select' }))
-    const hint = mainEl.querySelector(HINT_CLASS)
+    const hint = container.querySelector(HINT_CLASS)
     expect(hint).toBeTruthy()
     expect(hint.innerHTML).toBe('<kbd>Enter</kbd> to select')
   })
 
   it('removes hint content when subscriber fires with null', () => {
-    const mainEl = setup()
-    render(<Hints />)
+    setup()
+    const { container } = render(<Hints />)
     act(() => capturedSubscriber({ html: 'hello' }))
     act(() => capturedSubscriber(null))
-    expect(mainEl.querySelector(HINT_CLASS)).toBeNull()
+    expect(container.querySelector(HINT_CLASS)).toBeNull()
   })
 })
 
@@ -106,12 +100,5 @@ describe('Hints — lifecycle', () => {
     const { unmount } = render(<Hints />)
     unmount()
     expect(unsub).toHaveBeenCalled()
-  })
-
-  it('renders nothing when mainRef is null', () => {
-    setup({ mainEl: null })
-    useApp.mockReturnValue({ layoutRefs: { mainRef: { current: null } } })
-    const { container } = render(<Hints />)
-    expect(container.innerHTML).toBe('')
   })
 })

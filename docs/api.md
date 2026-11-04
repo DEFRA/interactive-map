@@ -777,6 +777,7 @@ Shows a panel that already exists but is hidden. Focus is moved to the panel by 
 |-----------|------|-------------|
 | `id` | `string` | Panel identifier to show |
 | `options.focus` | `boolean` | Whether to move focus to the panel. Default: `true` |
+| `options.triggeringElement` | `HTMLElement` | Element to return focus to when the panel closes. Default: the focused element |
 
 ```js
 interactiveMap.showPanel('info-panel')
@@ -939,14 +940,26 @@ interactiveMap.toggleButtonState('opt-a', 'pressed', true)
 
 ---
 
-### `fitToBounds(bounds)`
+### `fitToBounds(bounds, options?)`
 
 Fit the map view to a bounding box or GeoJSON geometry. Safe zone padding is automatically applied so the content remains fully visible.
+
+The safe zone is the part of the map not covered by buttons, the footer, the action bar or large open panels. A side's open panels count once together they cover more than half the map's height or width. If open panels would leave less than a quarter of the room across or down the map, the safe zone ignores panels in that direction, so the content isn't fitted into a sliver. It may then sit partly behind a panel.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `bounds` | `[number, number, number, number]` | Bounds as [west, south, east, north] or [minX, minY, maxX, maxY] depending on CRS |
 | `bounds` | `object` | A GeoJSON Feature, FeatureCollection, or geometry — bbox is computed automatically |
+| `options.preferPan` | `boolean` | Pan rather than zoom where possible. See below. Defaults to `false` |
+| `options.paddingPercent` | `number \| object` | Space kept clear inside the safe zone, as a percentage of its size. One value for every side, or `{ top, right, bottom, left }`. Limited to 0–25. Defaults to `0` |
+
+With `preferPan`:
+
+- If the bounds are already inside the safe zone and not under an open panel, the map doesn't move.
+- If they fit at the current zoom, the map pans to centre them in the safe zone.
+- If they don't fit, the map fits them, zooming out.
+
+`paddingPercent` is a percentage of the safe zone's size, not pixels, so it scales with the screen and with open panels. Left and right use the safe zone's width, top and bottom its height. With `preferPan`, the bounds must fit inside the safe zone less this space to be panned to. A fitted shape keeps this space around it.
 
 ```js
 // Flat bbox
@@ -964,6 +977,12 @@ interactiveMap.fitToBounds({
   type: 'FeatureCollection',
   features: [featureA, featureB]
 })
+
+// Pan if it fits, keeping 10% of the safe zone clear on every side
+interactiveMap.fitToBounds(feature, { preferPan: true, paddingPercent: 10 })
+
+// Set the space per side
+interactiveMap.fitToBounds(feature, { paddingPercent: { top: 5, right: 10, bottom: 5, left: 10 } })
 ```
 
 ---
@@ -1124,7 +1143,7 @@ interactiveMap.on('map:sizechange', ({ mapSize }) => {
 
 ### `app:panelopened`
 
-Emitted when a panel is opened.
+Emitted when a closed panel opens. Showing or adding a panel that's already open doesn't emit it again.
 
 **Payload:** `{ panelId: string }`
 
