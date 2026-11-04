@@ -1,14 +1,19 @@
 /**
- * Returns the appropriate color for the given mapStyleId.
+ * Returns the appropriate color or other value for the given mapStyleId.
  * Supports:
  *  - Simple string colors (#fff, rgba(...))
- *  - Object maps of mapStyleId → color
+ *  - Numbers
+ *  - Object maps of mapStyleId → color or number
  *
- * @param {string|object} colors - Color string or style-mapped color object
+ * @param {string|number|object} colors - Color string, number or style-mapped object of either
  * @param {string} mapStyleId - Current style/theme identifier
- * @returns {string|null}
+ * @returns {string|number|null}
  */
 export const getValueForStyle = (colors, mapStyleId) => {
+  if (typeof colors === 'number') {
+    return colors
+  }
+
   if (!colors) {
     return null
   }
@@ -21,7 +26,7 @@ export const getValueForStyle = (colors, mapStyleId) => {
   // --- Case 2: mapped color object
   if (typeof colors === 'object') {
     // Style-specific match
-    if (mapStyleId && colors[mapStyleId]) {
+    if (mapStyleId && colors[mapStyleId] != null) {
       return colors[mapStyleId]
     }
 
