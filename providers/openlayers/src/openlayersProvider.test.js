@@ -5,7 +5,7 @@ import { SymbolImageCache } from './utils/symbolImages.js'
 import { PatternImageCache } from './utils/patternImages.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents, createMapStyleLayer } from './appEvents.js'
-import { getExtentFromGeoJSON, isGeometryObscured } from './utils/spatial.js'
+import { getExtentFromGeoJSON } from './utils/spatial.js'
 import View from 'ol/View.js'
 
 const mockAnimate = jest.fn()
@@ -70,8 +70,7 @@ jest.mock('./utils/spatial.js', () => ({
   getAreaDimensions: jest.fn(() => '1 mile by 2 miles'),
   getCardinalMove: jest.fn(() => 'north 100m'),
   getExtentFromGeoJSON: jest.fn(() => [10, 20, 30, 40]),
-  getPaddedExtent: jest.fn(() => [0, 0, 800, 600]),
-  isGeometryObscured: jest.fn(() => false)
+  getPaddedExtent: jest.fn(() => [0, 0, 800, 600])
 }))
 
 const events = {
@@ -330,6 +329,16 @@ describe('OpenLayersProvider', () => {
       expect(mockViewFit).toHaveBeenCalledWith([10, 20, 30, 40], expect.any(Object))
     })
 
+    it('fitToBounds passes extra padding to view.fit as an OL [top, right, bottom, left] array', () => {
+      provider.fitToBounds([1, 2, 3, 4], { padding: { top: 10, right: 20, bottom: 30, left: 40 } })
+      expect(mockViewFit).toHaveBeenCalledWith([1, 2, 3, 4], expect.objectContaining({ padding: [10, 20, 30, 40] }))
+    })
+
+    it('fitToBounds passes no padding to view.fit without the option', () => {
+      provider.fitToBounds([1, 2, 3, 4])
+      expect(mockViewFit.mock.calls.at(-1)[1]).not.toHaveProperty('padding')
+    })
+
     it('setPadding converts object to OL [top, right, bottom, left] array', () => {
       provider.setPadding({ top: 10, right: 20, bottom: 30, left: 40 })
       expect(mockViewInstance.padding).toEqual([10, 20, 30, 40])
@@ -417,13 +426,6 @@ describe('OpenLayersProvider', () => {
       mockMapGetCoord.mockReturnValue([400000, 300000])
       expect(provider.screenToMap({ x: 100, y: 200 })).toEqual([400000, 300000])
       expect(mockMapGetCoord).toHaveBeenCalledWith([100, 200])
-    })
-
-    it('isGeometryObscured delegates to spatial utils with map instance', () => {
-      const geojson = { type: 'Point', coordinates: [0, 51] }
-      const panelRect = { left: 0, top: 0, right: 100, bottom: 100 }
-      provider.isGeometryObscured(geojson, panelRect)
-      expect(isGeometryObscured).toHaveBeenCalledWith(geojson, panelRect, mockMapInstance)
     })
   })
 

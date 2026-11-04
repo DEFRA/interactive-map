@@ -116,7 +116,7 @@ export const EVENTS = {
   APP_FULLSCREEN_CHANGE: 'app:fullscreenchange',
 
   /**
-   * Emitted when a panel is opened.
+   * Emitted when a closed panel opens. Showing or adding a panel that's already open doesn't emit it again.
    * Payload: { panelId: string }
    *
    * @example

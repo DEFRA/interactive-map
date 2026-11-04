@@ -635,9 +635,9 @@ describe('InteractiveMap — Public API Methods', () => {
   it('fitToBounds and setView emit correct events', () => {
     const bbox = [-0.489, 51.28, 0.236, 51.686]
     const center = [-0.1276, 51.5074]
-    map.fitToBounds(bbox)
+    map.fitToBounds(bbox, { preferPan: true })
     map.setView({ center, zoom: 12 })
-    expect(map.eventBus.emitWhenReady).toHaveBeenCalledWith('map:fittobounds', bbox)
+    expect(map.eventBus.emitWhenReady).toHaveBeenCalledWith('map:fittobounds', bbox, { preferPan: true })
     expect(map.eventBus.emitWhenReady).toHaveBeenCalledWith('map:setview', { center, zoom: 12 })
   })
 

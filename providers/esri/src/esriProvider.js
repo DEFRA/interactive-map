@@ -10,9 +10,9 @@ import Point from '@arcgis/core/geometry/Point.js'
 import { defaults, supportedShortcuts } from './defaults.js'
 import { attachAppEvents } from './appEvents.js'
 import { attachMapEvents } from './mapEvents.js'
-import { getAreaDimensions, getCardinalMove, getPaddedExtent, isGeometryObscured } from './utils/spatial.js'
+import { getAreaDimensions, getCardinalMove, getPaddedExtent } from './utils/spatial.js'
 import { queryVectorTileFeatures } from './utils/query.js'
-import { getExtentFromFlatCoords, getPointFromFlatCoords, getBboxFromGeoJSON } from './utils/coords.js'
+import { getExtentFromFlatCoords, getPointFromFlatCoords, getBboxFromGeoJSON, padExtent } from './utils/coords.js'
 import { cleanDOM } from './utils/esriFixes.js'
 
 export default class EsriProvider extends MapProvider {
@@ -74,7 +74,7 @@ export default class EsriProvider extends MapProvider {
 
     // Uses bounds internally
     if (config.bounds) {
-      view.when(() => view.goTo(getExtentFromFlatCoords(config.bounds), { duration: 0 }))
+      view.when(() => view.goTo(getExtentFromFlatCoords(config.bounds), { duration: 0 })) // NOSONAR: goTo rejects when a newer move interrupts it
     }
 
     // Attach map events and store handles
@@ -140,29 +140,29 @@ export default class EsriProvider extends MapProvider {
     this.view.animation?.destroy()
     const point = center ? new Point({ x: center[0], y: center[1], spatialReference: { wkid: 27700 } }) : this.view.center
     const target = { center: point, zoom: zoom ?? this.view.zoom }
-    this.view.goTo({ ...target, duration: defaults.animationDuration })
+    this.view.goTo({ ...target, duration: defaults.animationDuration }) // NOSONAR: goTo rejects when a newer move interrupts it
   }
 
   zoomIn (zoomDelta) {
     this.view.animation?.destroy()
-    this.view.goTo({ zoom: this.view.zoom + zoomDelta, duration: defaults.animationDuration })
+    this.view.goTo({ zoom: this.view.zoom + zoomDelta, duration: defaults.animationDuration }) // NOSONAR: goTo rejects when a newer move interrupts it
   }
 
   zoomOut (zoomDelta) {
     this.view.animation?.destroy()
-    this.view.goTo({ zoom: this.view.zoom - zoomDelta, duration: defaults.animationDuration })
+    this.view.goTo({ zoom: this.view.zoom - zoomDelta, duration: defaults.animationDuration }) // NOSONAR: goTo rejects when a newer move interrupts it
   }
 
   panBy (offset) {
     const { x, y } = this.view.toScreen(this.view.center)
     const newPixel = { x: x + offset[0], y: y + offset[1] }
     const newCentre = this.view.toMap(newPixel)
-    this.view.goTo({ center: newCentre, duration: defaults.animationDuration })
+    this.view.goTo({ center: newCentre, duration: defaults.animationDuration }) // NOSONAR: goTo rejects when a newer move interrupts it
   }
 
-  fitToBounds (bounds) {
+  fitToBounds (bounds, { padding } = {}) {
     const extent = Array.isArray(bounds) ? getExtentFromFlatCoords(bounds) : getBboxFromGeoJSON(bounds)
-    this.view.goTo(extent, { duration: defaults.DELAY })
+    this.view.goTo(padding ? padExtent(extent, padding, this.view) : extent, { duration: defaults.DELAY }) // NOSONAR: goTo rejects when a newer move interrupts it
   }
 
   setPadding (padding) {
@@ -193,7 +193,7 @@ export default class EsriProvider extends MapProvider {
     return [xmin, ymin, xmax, ymax].map(n => Math.round(n * 100) / 100)
   }
 
-  getFeaturesAtPoint (point, options) {
+  getFeaturesAtPoint (point) {
     return queryVectorTileFeatures(this.view, point)
   }
 
@@ -226,16 +226,5 @@ export default class EsriProvider extends MapProvider {
   screenToMap (point) {
     const mapPoint = this.view.toMap(point)
     return [mapPoint.x, mapPoint.y]
-  }
-
-  /**
-   * Returns true if the geometry's screen bounding box overlaps the given panel rectangle.
-   *
-   * @param {object} geojson - GeoJSON Feature, FeatureCollection, or geometry.
-   * @param {DOMRect} panelRect - Bounding rect of the panel element (viewport coordinates).
-   * @returns {boolean}
-   */
-  isGeometryObscured (geojson, panelRect) {
-    return isGeometryObscured(geojson, panelRect, this.view)
   }
 }

@@ -164,6 +164,15 @@ describe('Dataset class', () => {
     })
   })
 
+  describe('style', () => {
+    it('passes custom symbol tokens to sublayers, which can override them', () => {
+      const parentStyle = { symbol: 'pin', symbolAccentColor: '#ffdd00', symbolBandColor: '#123456' }
+      const registry = { getDataset: () => new Dataset({ style: parentStyle }, datasetRegistry) }
+      const sublayer = new Dataset({ parentId: 'parent', style: { symbolAccentColor: '#f47738' } }, registry)
+      expect(sublayer.style).toMatchObject({ symbolAccentColor: '#f47738', symbolBandColor: '#123456' })
+    })
+  })
+
   describe('symbolDescription', () => {
     it("returns the dataset's own symbolDescription", () => {
       const dataset = new Dataset({ style: { symbolDescription: 'a circle' } }, datasetRegistry)
