@@ -61,7 +61,7 @@ export const Layout = () => {
             <div className='im-o-app__top-col' ref={layoutRefs.topLeftColRef}>
               <SlotRenderer slot={layoutSlots.TOP_LEFT} />
             </div>
-            <div className='im-o-app__top-col'>
+            <div className='im-o-app__top-col' ref={layoutRefs.topMiddleColRef}>
               <SlotRenderer slot={layoutSlots.TOP_MIDDLE} />
             </div>
             <div className='im-o-app__top-col' ref={layoutRefs.topRightColRef}>
