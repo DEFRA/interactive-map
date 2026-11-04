@@ -74,6 +74,47 @@ const rowPanels = (leftBoxes, rightBoxes, wThreshold, gap) =>
     ? [...leftBoxes, ...rightBoxes]
     : []
 
+// No edge's panel inset goes past (MAX_RATIO - 1)/MAX_RATIO of the map, less a gap each side
+const maxInset = (size, gap) => (size - 2 * gap) * (MAX_RATIO - 1) / MAX_RATIO
+
+// Width first, as panels sit in the side columns: a side whose panels are tall enough is cleared by
+// its own inset, then capped, and both fall back to the structural insets if too little is left.
+// A side only counts as cleared if its final inset still reaches past its panels.
+const resolveWidth = ({ main, leftColumn, rightColumn, base, availableW, availableH, gap }) => {
+  const leftPanelInset = isColumnTriggered(leftColumn, availableH / RATIO, gap)
+    ? main.offsetLeft + Math.max(...leftColumn.map(box => box.right)) + gap
+    : 0
+  const rightPanelInset = isColumnTriggered(rightColumn, availableH / RATIO, gap)
+    ? main.offsetWidth - Math.min(...rightColumn.map(box => box.left)) + gap
+    : 0
+  const cappedLeft = Math.max(base.left, Math.min(leftPanelInset, main.offsetLeft + maxInset(main.offsetWidth, gap)))
+  const cappedRight = Math.max(base.right, Math.min(rightPanelInset, maxInset(main.offsetWidth, gap)))
+  const isTooNarrow = main.offsetWidth - (cappedLeft - main.offsetLeft) - cappedRight < availableW / MIN_RATIO
+  const left = isTooNarrow ? base.left : cappedLeft
+  const right = isTooNarrow ? base.right : cappedRight
+  return {
+    left,
+    right,
+    isLeftCleared: leftPanelInset > 0 && left >= leftPanelInset,
+    isRightCleared: rightPanelInset > 0 && right >= rightPanelInset
+  }
+}
+
+// Then height: only panels on a side the final width doesn't clear still cover the rest of the map,
+// so only they push the top or bottom, then capped, and both fall back if too little is left.
+const resolveHeight = ({ main, panels, width, base, availableW, availableH, gap }) => {
+  const pushingPanels = (leftBoxes, rightBoxes) =>
+    rowPanels(width.isLeftCleared ? [] : leftBoxes, width.isRightCleared ? [] : rightBoxes, availableW / RATIO, gap)
+  const topPanels = pushingPanels(panels.topLeft, panels.topRight)
+  const bottomPanels = pushingPanels(panels.bottomLeft, panels.bottomRight)
+  const topPanelInset = topPanels.length ? Math.max(...topPanels.map(box => box.bottom)) + gap : 0
+  const bottomPanelInset = bottomPanels.length ? main.offsetHeight - Math.min(...bottomPanels.map(box => box.top)) + gap : 0
+  const cappedTop = Math.max(base.top, Math.min(topPanelInset, maxInset(main.offsetHeight, gap)))
+  const cappedBottom = Math.max(base.bottom, Math.min(bottomPanelInset, maxInset(main.offsetHeight, gap)))
+  const isTooShort = main.offsetHeight - cappedTop - cappedBottom < availableH / MIN_RATIO
+  return { top: isTooShort ? base.top : cappedTop, bottom: isTooShort ? base.bottom : cappedBottom }
+}
+
 export const getSafeZoneInset = ({
   mainRef, leftRef, rightRef, actionsRef, bottomRef, topRef,
   leftTopRef, leftBottomRef, rightTopRef, rightBottomRef
@@ -98,54 +139,23 @@ export const getSafeZoneInset = ({
 
   // Structural base insets — always present, never capped.
   const colWidth = Math.max(getButtonColWidth(leftRef), getButtonColWidth(rightRef))
-  const baseLeft = main.offsetLeft + leftButtons.offsetLeft + colWidth + gap
-  const baseRight = leftButtons.offsetLeft + colWidth + gap
-  const baseTop = leftButtons.offsetTop
   // The bottom row itself doesn't count. The bottom mirrors the top row and its margin, so the safe
   // zone is centred, but still clears the actions bar and anything below the row, such as the drawer
   const topRowHeight = Math.max(0, ...Array.from(topRef?.current?.children ?? [], topColHeight))
-  const mirroredTop = primaryGap + topRowHeight
-  const belowBottomRow = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
-  const baseBottom = Math.max(mirroredTop, main.offsetHeight - actions.offsetTop + gap, belowBottomRow)
-
-  const availableH = main.offsetHeight - baseTop - baseBottom
-  const availableW = main.offsetWidth - (baseLeft - main.offsetLeft) - baseRight
-
-  // No edge's panel inset goes past (MAX_RATIO - 1)/MAX_RATIO of the map, less a gap each side
-  const maxInset = (size) => (size - 2 * gap) * (MAX_RATIO - 1) / MAX_RATIO
-
-  // Width first, as panels sit in the side columns: a side whose panels are tall enough is cleared
-  // by its own inset, then capped, and both fall back to the structural insets if too little is left
-  const leftPanelInset = isColumnTriggered(leftColumn, availableH / RATIO, gap)
-    ? main.offsetLeft + Math.max(...leftColumn.map(box => box.right)) + gap
-    : 0
-  const rightPanelInset = isColumnTriggered(rightColumn, availableH / RATIO, gap)
-    ? main.offsetWidth - Math.min(...rightColumn.map(box => box.left)) + gap
-    : 0
-  const cappedLeft = Math.max(baseLeft, Math.min(leftPanelInset, main.offsetLeft + maxInset(main.offsetWidth)))
-  const cappedRight = Math.max(baseRight, Math.min(rightPanelInset, maxInset(main.offsetWidth)))
-  const isTooNarrow = main.offsetWidth - (cappedLeft - main.offsetLeft) - cappedRight < availableW / MIN_RATIO
-  const left = isTooNarrow ? baseLeft : cappedLeft
-  const right = isTooNarrow ? baseRight : cappedRight
-
-  // Then height: only panels on a side the final width doesn't clear still cover the rest of the
-  // map, so only they push the top or bottom
-  const isLeftCleared = leftPanelInset > 0 && left >= leftPanelInset
-  const isRightCleared = rightPanelInset > 0 && right >= rightPanelInset
-  const pushingPanels = (leftBoxes, rightBoxes) =>
-    rowPanels(isLeftCleared ? [] : leftBoxes, isRightCleared ? [] : rightBoxes, availableW / RATIO, gap)
-  const topPanels = pushingPanels(topLeft, topRight)
-  const bottomPanels = pushingPanels(bottomLeft, bottomRight)
-  const topPanelInset = topPanels.length ? Math.max(...topPanels.map(box => box.bottom)) + gap : 0
-  const bottomPanelInset = bottomPanels.length ? main.offsetHeight - Math.min(...bottomPanels.map(box => box.top)) + gap : 0
-  const cappedTop = Math.max(baseTop, Math.min(topPanelInset, maxInset(main.offsetHeight)))
-  const cappedBottom = Math.max(baseBottom, Math.min(bottomPanelInset, maxInset(main.offsetHeight)))
-  const isTooShort = main.offsetHeight - cappedTop - cappedBottom < availableH / MIN_RATIO
-
-  return {
-    left,
-    right,
-    top: isTooShort ? baseTop : cappedTop,
-    bottom: isTooShort ? baseBottom : cappedBottom
+  const base = {
+    left: main.offsetLeft + leftButtons.offsetLeft + colWidth + gap,
+    right: leftButtons.offsetLeft + colWidth + gap,
+    top: leftButtons.offsetTop,
+    bottom: Math.max(
+      primaryGap + topRowHeight,
+      main.offsetHeight - actions.offsetTop + gap,
+      main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
+    )
   }
+  const availableH = main.offsetHeight - base.top - base.bottom
+  const availableW = main.offsetWidth - (base.left - main.offsetLeft) - base.right
+
+  const width = resolveWidth({ main, leftColumn, rightColumn, base, availableW, availableH, gap })
+  const height = resolveHeight({ main, panels: { topLeft, topRight, bottomLeft, bottomRight }, width, base, availableW, availableH, gap })
+  return { left: width.left, right: width.right, top: height.top, bottom: height.bottom }
 }
