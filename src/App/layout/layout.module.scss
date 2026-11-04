@@ -218,8 +218,9 @@ $open-panel: '> * > .im-c-panel:not([hidden]):not([style*="display: none"])';
   gap: var(--divider-gap);
 }
 
-// A panel's set width gives way to its column's (a panel beside a button sits inside the button)
+// A panel's set and minimum widths give way to its column's (a panel beside a button sits inside the button)
 :is(.im-o-app__left-top, .im-o-app__left-bottom, .im-o-app__right-top, .im-o-app__right-bottom) > .im-c-panel {
+  min-width: min(var(--min-panel-width), 100%);
   max-width: 100%;
 }
 
