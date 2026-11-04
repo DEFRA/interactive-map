@@ -38,12 +38,14 @@ const refs = (o = {}) => ({
   leftRef: { current: el(o.left) },
   rightRef: { current: el(o.right) },
   bottomRef: { current: o.bottom === null ? null : el({ offsetTop: 400, ...o.bottom }) },
+  bottomLeftColRef: { current: el(o.bottomLeftCol) },
+  bottomRightColRef: { current: el(o.bottomRightCol) },
   bottomRightRef: { current: el({ offsetTop: 400, ...o.bottomRight }) },
   leftTopRef: { current: el({ offsetHeight: 0, ...o.leftTop }) },
   leftBottomRef: { current: el({ offsetHeight: 0, ...o.leftBottom }) },
   rightTopRef: { current: el({ offsetHeight: 0, ...o.rightTop }) },
   rightBottomRef: { current: el({ offsetHeight: 0, ...o.rightBottom }) },
-  attributionsRef: { current: el({ offsetHeight: 16, ...o.attributions }) },
+  attributionsRef: { current: el({ offsetHeight: 16, rect: { top: 400 }, ...o.attributions }) },
   drawerRef: { current: el(o.drawer) },
   actionsRef: { current: el({ offsetTop: 450, ...o.actions }) }
 })
@@ -124,7 +126,62 @@ describe('useLayoutMeasurements', () => {
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '65px')
   })
 
-  // Default left column: offset top 60, offset bottom 500 - 400 + 8 = 108, height 400 - 60 - 8 = 332
+  // By default the left column runs from 60 (50 + 10) to main's bottom padding (500 - 400 - 0 = 100),
+  // as nothing shows on its side of the bottom row. The right column runs from 50 (40 + 10) to a gap
+  // above the attributions at 400 (500 - 400 + 8 = 108)
+  test.each([
+    ['--left-offset-top', '60px'],
+    ['--left-offset-bottom', '100px'],
+    ['--right-offset-top', '50px'],
+    ['--right-offset-bottom', '108px']
+  ])('ends each side column above its own side of the bottom row: %s', (name, expected) => {
+    const { layoutRefs } = setup()
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith(name, expected)
+  })
+
+  test('ends the left column above the bottom-left column, and the right above the bottom-right buttons', () => {
+    const { layoutRefs } = setup({
+      refs: {
+        bottom: { offsetTop: 250, offsetHeight: 150 },
+        bottomLeftCol: { offsetHeight: 40, rect: { top: 360 } },
+        bottomRight: { offsetHeight: 120, rect: { top: 260 } },
+        attributions: { offsetHeight: 0 }
+      }
+    })
+    renderHook(() => useLayoutMeasurements())
+    const spy = layoutRefs.appContainerRef.current.style.setProperty
+    expect(spy).toHaveBeenCalledWith('--left-offset-bottom', '148px') // 500 - 360 + 8
+    expect(spy).toHaveBeenCalledWith('--right-offset-bottom', '248px') // 500 - 260 + 8
+  })
+
+  test('ends the right column above the bottom-right buttons themselves when the logo is taller', () => {
+    // The bottom-right slot is nested in a positioned column, so it's measured from the page
+    const { layoutRefs } = setup({
+      refs: {
+        bottomLeftCol: { offsetHeight: 60, rect: { top: 420 } },
+        bottomRight: { offsetHeight: 40, rect: { top: 440 } },
+        attributions: { offsetHeight: 0 }
+      }
+    })
+    renderHook(() => useLayoutMeasurements())
+    const spy = layoutRefs.appContainerRef.current.style.setProperty
+    expect(spy).toHaveBeenCalledWith('--left-offset-bottom', '88px') // 500 - 420 + 8
+    expect(spy).toHaveBeenCalledWith('--right-offset-bottom', '68px') // 500 - 440 + 8
+  })
+
+  // The bottom-right column the attributions dock beside, 115 in from the row's left
+  const bottomRightCol = { offsetWidth: 192, rect: { left: 115 } }
+
+  test('ends the left column above stacked attributions, which run the full width', () => {
+    const { layoutRefs } = setup({ refs: { bottomRightCol } })
+    appendChild(layoutRefs.attributionsRef.current, { scrollWidth: 250 }) // too wide to fit beside the logo
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-offset-bottom', '108px') // 500 - 400 + 8
+  })
+
+  // With a bottom-left column at the row's top (400), the left column runs from 60 to a gap above it:
+  // offset bottom 500 - 400 + 8 = 108
   const actionsBar = (layoutRefs, props) => {
     const bar = appendChild(layoutRefs.actionsRef.current, props)
     bar.className = 'im-c-actions'
@@ -137,25 +194,24 @@ describe('useLayoutMeasurements', () => {
   const bar = { offsetHeight: 60, rect: { top: 380, left: 300, right: 500 } }
 
   test.each([
-    ['bottom sub-slot in line with the bar raises the column', 'leftBottom', { left: 8, right: 320 }, bar, '128px', '312px', 'none'], // 500 - 380 + 8, 332 - 20
-    ['top sub-slot in line with the bar is capped, column stays put', 'leftTop', { left: 8, right: 320 }, bar, '108px', '332px', '312px'], // bar top 380 - 8 - offset top 60
-    ['sub-slot clear of the bar moves nothing', 'leftBottom', { left: 8, right: 250 }, bar, '108px', '332px', 'none'],
-    ['sub-slot within the divider gap of the bar raises the column', 'leftBottom', { left: 8, right: 293 }, bar, '128px', '312px', 'none'], // 293 + 8 > bar left 300
-    ['empty bar moves nothing', 'leftBottom', { left: 8, right: 320 }, { ...bar, offsetHeight: 0 }, '108px', '332px', 'none'],
-    ['bar below the bottom row keeps the row clearance', 'leftBottom', { left: 8, right: 320 }, { ...bar, rect: { ...bar.rect, top: 420 } }, '108px', '332px', 'none']
-  ])('%s', (_name, slot, itemRect, barProps, offsetBottom, maxHeight, topSlotMaxHeight) => {
-    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    ['bottom sub-slot in line with the bar raises the column', 'leftBottom', { left: 8, right: 320 }, bar, '128px', 'none'], // 500 - 380 + 8
+    ['top sub-slot in line with the bar is capped, column stays put', 'leftTop', { left: 8, right: 320 }, bar, '108px', '312px'], // bar top 380 - 8 - offset top 60
+    ['sub-slot clear of the bar moves nothing', 'leftBottom', { left: 8, right: 250 }, bar, '108px', 'none'],
+    ['sub-slot within the divider gap of the bar raises the column', 'leftBottom', { left: 8, right: 293 }, bar, '128px', 'none'], // 293 + 8 > bar left 300
+    ['empty bar moves nothing', 'leftBottom', { left: 8, right: 320 }, { ...bar, offsetHeight: 0 }, '108px', 'none'],
+    ['bar below the bottom row keeps the row clearance', 'leftBottom', { left: 8, right: 320 }, { ...bar, rect: { ...bar.rect, top: 420 } }, '108px', 'none']
+  ])('%s', (_name, slot, itemRect, barProps, offsetBottom, topSlotMaxHeight) => {
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } }, bottomLeftCol: { offsetHeight: 10, rect: { top: 400 } } } })
     actionsBar(layoutRefs, barProps)
     slotItem(layoutRefs[`${slot}Ref`], itemRect)
     renderHook(() => useLayoutMeasurements())
     const spy = layoutRefs.appContainerRef.current.style.setProperty
     expect(spy).toHaveBeenCalledWith('--left-offset-bottom', offsetBottom)
-    expect(spy).toHaveBeenCalledWith('--left-top-max-height', maxHeight)
     expect(spy).toHaveBeenCalledWith('--left-top-slot-max-height', topSlotMaxHeight)
   })
 
   test('leaves the column when a bottom sub-slot item in line with the bar ends above it', () => {
-    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } }, bottomLeftCol: { offsetHeight: 10, rect: { top: 400 } } } })
     actionsBar(layoutRefs, bar)
     slotItem(layoutRefs.leftBottomRef, { left: 8, right: 320, bottom: 300 }) // 300 < bar top 380 - 8
     renderHook(() => useLayoutMeasurements())
@@ -164,7 +220,7 @@ describe('useLayoutMeasurements', () => {
   })
 
   test('doesn\'t cap a top sub-slot whose wide item ends above the bar and whose long item is beside it', () => {
-    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } }, bottomLeftCol: { offsetHeight: 10, rect: { top: 400 } } } })
     actionsBar(layoutRefs, bar)
     slotItem(layoutRefs.leftTopRef, { left: 8, right: 320, bottom: 300 })
     slotItem(layoutRefs.leftTopRef, { left: 8, right: 250, bottom: 392 })
@@ -174,7 +230,7 @@ describe('useLayoutMeasurements', () => {
   })
 
   test('measures the side columns without the bar\'s lift or cap, then sets them', () => {
-    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } }, bottomLeftCol: { offsetHeight: 10, rect: { top: 400 } } } })
     actionsBar(layoutRefs, bar)
     slotItem(layoutRefs.leftTopRef, { left: 8, right: 320 })
     slotItem(layoutRefs.leftBottomRef, { left: 8, right: 320 })
@@ -185,7 +241,7 @@ describe('useLayoutMeasurements', () => {
   })
 
   test('looks through control wrappers for what a sub-slot renders', () => {
-    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } }, bottomLeftCol: { offsetHeight: 10, rect: { top: 400 } } } })
     actionsBar(layoutRefs, bar)
     const wrapper = appendChild(layoutRefs.rightBottomRef.current)
     wrapper.className = 'im-c-control-wrapper'
@@ -199,13 +255,13 @@ describe('useLayoutMeasurements', () => {
     // jsdom gives every element empty client rects, i.e. the same as display:none
     ['with display: none', {}]
   ])('ignores sub-slot items %s when checking the actions bar', (_name, props) => {
-    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } }, bottomLeftCol: { offsetHeight: 10, rect: { top: 400 } } } })
     actionsBar(layoutRefs, bar)
     appendChild(layoutRefs.rightTopRef.current, { rect: { left: 400, right: 760 }, ...props })
     appendChild(layoutRefs.rightBottomRef.current, { rect: { left: 400, right: 760 }, ...props })
     renderHook(() => useLayoutMeasurements())
     const spy = layoutRefs.appContainerRef.current.style.setProperty
-    expect(spy).toHaveBeenCalledWith('--right-offset-bottom', '116px') // 500 - 400 + attributions 16
+    expect(spy).toHaveBeenCalledWith('--right-offset-bottom', '108px') // a gap above the attributions at 400
     expect(spy).toHaveBeenCalledWith('--right-top-slot-max-height', 'none')
   })
 
@@ -223,8 +279,7 @@ describe('useLayoutMeasurements', () => {
   })
 
   test('copes with missing sub-slot and drawer elements', () => {
-    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
-    actionsBar(layoutRefs, bar)
+    const { layoutRefs } = setup()
     layoutRefs.leftTopRef.current = null
     layoutRefs.leftBottomRef.current = null
     layoutRefs.rightTopRef.current = null
@@ -234,15 +289,15 @@ describe('useLayoutMeasurements', () => {
     const spy = layoutRefs.appContainerRef.current.style.setProperty
     expect(spy).toHaveBeenCalledWith('--right-slot-gap', '0px')
     expect(spy).toHaveBeenCalledWith('--left-top-slot-max-height', 'none')
-    expect(spy).not.toHaveBeenCalledWith('--drawer-max-height', expect.anything())
+    expect(spy).toHaveBeenCalledWith('--drawer-max-height', 'none')
   })
 
-  // Default column heights: left 332, right 326, both empty
+  // Default column heights: left 340, right 342, both empty
   test.each([
-    ['grows into the spare room left in the tighter side column', {}, '426px'], // 100 + 326
-    ['stops short of the side column buttons', { rightBottom: { offsetHeight: 300 } }, '126px'], // 100 + (326 - 300)
-    ['shrinks when the side column buttons no longer fit', { rightBottom: { offsetHeight: 400 } }, '26px'], // 100 + (326 - 400)
-    ['shrinks by what runs past the bottom of main', { main: { rect: { bottom: 500 } }, actions: { offsetTop: 450, rect: { bottom: 540 } }, rightBottom: { offsetHeight: 300 } }, '86px'] // 126 - 40
+    ['grows into the spare room left in the tighter side column', {}, '440px'], // 100 + 340
+    ['stops short of the side column buttons', { rightBottom: { offsetHeight: 300 } }, '142px'], // 100 + (342 - 300)
+    ['shrinks when the side column buttons no longer fit', { rightBottom: { offsetHeight: 400 } }, '42px'], // 100 + (342 - 400)
+    ['shrinks by what runs past the bottom of main', { main: { rect: { bottom: 500 } }, actions: { offsetTop: 450, rect: { bottom: 540 } }, rightBottom: { offsetHeight: 300 } }, '102px'] // 142 - 40
   ])('drawer max height %s', (_name, refOverrides, expected) => {
     const { layoutRefs } = setup({ refs: { drawer: { offsetHeight: 100 }, ...refOverrides } })
     appendChild(layoutRefs.drawerRef.current, { getClientRects: () => [{}] })
@@ -256,44 +311,32 @@ describe('useLayoutMeasurements', () => {
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--drawer-max-height', 'none')
   })
 
-  test('calculates and sets all CSS custom properties', () => {
-    const { layoutRefs } = setup()
+  test('calculates the right column\'s top below the top row', () => {
+    const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 80 }, top: { offsetTop: 15 } } })
     renderHook(() => useLayoutMeasurements())
-    const spy = layoutRefs.appContainerRef.current.style.setProperty
-    ;['--right-offset-top', '--right-offset-bottom']
-      .forEach(prop => expect(spy).toHaveBeenCalledWith(prop, expect.any(String)))
-  })
-
-  test.each([
-    ['right-offset-top', { topRightCol: { offsetHeight: 80 }, top: { offsetTop: 15 } }, '95px'],
-    ['right-offset-bottom', { main: { offsetHeight: 600 }, bottom: { offsetTop: 500 } }, '116px'],
-    // leftColumnHeight = 400 - (50+10) - 8 = 332
-    // rightColumnHeight: rightEffectiveBottom = 400 - 0 (bottomRightHeight) - 16 (bottom-right-clearance,
-    // since default attributions offsetHeight 16 + dividerGap 8 - primaryGap 8 = 16) = 384; 384 - 50 - 8 = 326
-    ['left-top-max-height', {}, '332px'],
-    ['right-top-max-height', {}, '326px']
-  ])('calculates %s correctly', (name, refOverrides, expected) => {
-    const { layoutRefs } = setup({ refs: refOverrides })
-    renderHook(() => useLayoutMeasurements())
-    const varName = `--${name.replace(/ .+/, '')}`
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith(varName, expected)
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '95px')
   })
 
   test.each([
     [
-      'no actions (height 0) — clears the bottom row',
-      { main: { offsetHeight: 500 }, bottom: { offsetTop: 400 }, actions: { offsetTop: 450, offsetHeight: 0 } },
-      '108px' // clearsBottomRow = 500 - 400 + dividerGap (8) = 108
+      'no actions (height 0) — sits above the attributions, ignoring the bottom-right slot',
+      { main: { offsetHeight: 500 }, bottom: { offsetTop: 300, offsetHeight: 192 }, attributions: { offsetHeight: 16, rect: { top: 476 } }, actions: { offsetTop: 450, offsetHeight: 0 } },
+      '32px' // attributions top 476; 500 - 476 + dividerGap (8) = 32
+    ],
+    [
+      'a logo or bottom-left buttons — sits above the bottom-left column when it is higher than the attributions',
+      { main: { offsetHeight: 500 }, bottom: { offsetTop: 300, offsetHeight: 192 }, bottomLeftCol: { offsetHeight: 40, rect: { top: 452 } }, attributions: { offsetHeight: 16, rect: { top: 476 } }, actions: { offsetTop: 450, offsetHeight: 0 } },
+      '56px' // bottom-left column top 452; 500 - 452 + dividerGap (8) = 56
     ],
     [
       'actions floating above the row (tablet/desktop) — uses actionsOffset + dividerGap',
-      { main: { offsetHeight: 500 }, bottom: { offsetTop: 440, offsetHeight: 20 }, actions: { offsetTop: 408, offsetHeight: 60 } },
-      '100px' // actionsOffset = 500 - 408 = 92, 92 + 8 = 100 > clearsBottomRow (68)
+      { main: { offsetHeight: 500 }, bottom: { offsetTop: 440, offsetHeight: 52 }, attributions: { offsetHeight: 16, rect: { top: 476 } }, actions: { offsetTop: 408, offsetHeight: 60 } },
+      '100px' // actionsOffset = 500 - 408 = 92, 92 + 8 = 100 > attributions (24) + 8
     ],
     [
-      'row clearance already larger than actionsOffset (mobile in-flow) — row clearance wins',
-      { main: { offsetHeight: 500 }, bottom: { offsetTop: 350 }, actions: { offsetTop: 430, offsetHeight: 40 } },
-      '158px' // clearsBottomRow = 500 - 350 + 8 = 158 > actionsOffset (70) + dividerGap (8) = 78
+      'drawer and actions below the row (mobile in-flow) — clears what is below the row',
+      { main: { offsetHeight: 500 }, bottom: { offsetTop: 300, offsetHeight: 50 }, attributions: { offsetHeight: 0 }, actions: { offsetTop: 430, offsetHeight: 40 } },
+      '158px' // nothing shown in the row, so its bottom: 500 - 350 = 150, + dividerGap (8) = 158 > actionsOffset (70) + 8
     ]
   ])('calculates --hint-bottom for %s', (_, refOverrides, expected) => {
     const { layoutRefs } = setup({ refs: refOverrides })
@@ -305,7 +348,7 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup()
     layoutRefs.actionsRef.current = null
     renderHook(() => useLayoutMeasurements())
-    // actionsHeight = 0, falls back to clearsBottomRow = 500 - 400 + dividerGap (8) = 108
+    // No actions: attributions top 400; 500 - 400 + dividerGap (8) = 108
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--hint-bottom', '108px')
   })
 
@@ -367,10 +410,7 @@ describe('useLayoutMeasurements', () => {
   })
 
   test('keeps attributions docked beside the logo when the natural text width fits', () => {
-    const { layoutRefs } = setup({ refs: { bottom: { rect: { left: 0 } } } })
-    appendChild(layoutRefs.bottomRef.current, {}) // logo column
-    appendChild(layoutRefs.bottomRef.current, { offsetWidth: 192, rect: { left: 115 } }) // bottom-right column
-    layoutRefs.bottomRef.current.appendChild(layoutRefs.attributionsRef.current) // sibling of both columns
+    const { layoutRefs } = setup({ refs: { bottom: { rect: { left: 0 } }, bottomRightCol } })
     appendChild(layoutRefs.attributionsRef.current, { scrollWidth: 150 }) // attribution text, fits
     renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.attributionsRef.current.classList.contains('im-o-app__attributions--stacked')).toBe(false)
@@ -381,10 +421,7 @@ describe('useLayoutMeasurements', () => {
   })
 
   test('stacks attributions onto their own row when the text is wider than the space beside the logo', () => {
-    const { layoutRefs } = setup({ refs: { bottom: { rect: { left: 0 } } } })
-    appendChild(layoutRefs.bottomRef.current, {}) // logo column
-    appendChild(layoutRefs.bottomRef.current, { offsetWidth: 192, rect: { left: 115 } }) // bottom-right column
-    layoutRefs.bottomRef.current.appendChild(layoutRefs.attributionsRef.current) // sibling of both columns
+    const { layoutRefs } = setup({ refs: { bottom: { rect: { left: 0 } }, bottomRightCol } })
     appendChild(layoutRefs.attributionsRef.current, { scrollWidth: 250 }) // attribution text, too wide to fit
     renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.attributionsRef.current.classList.contains('im-o-app__attributions--stacked')).toBe(true)
@@ -392,77 +429,19 @@ describe('useLayoutMeasurements', () => {
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--bottom-right-clearance', '0px')
   })
 
+  test('stacks the attributions, and doesn\'t offset them, when there\'s no bottom-right column', () => {
+    const { layoutRefs } = setup()
+    layoutRefs.bottomRightColRef.current = null
+    appendChild(layoutRefs.attributionsRef.current, { scrollWidth: 150 })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.attributionsRef.current.classList.contains('im-o-app__attributions--stacked')).toBe(true)
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--attributions-left', '0px')
+  })
+
   test('never gives bottom-right negative clearance when attributions is shorter than the bleed', () => {
-    const { layoutRefs } = setup({ refs: { bottom: { rect: { left: 0 } }, attributions: { offsetHeight: 0 } } })
-    appendChild(layoutRefs.bottomRef.current, {}) // logo column
-    appendChild(layoutRefs.bottomRef.current, { offsetWidth: 192, rect: { left: 115 } }) // bottom-right column
-    layoutRefs.bottomRef.current.appendChild(layoutRefs.attributionsRef.current) // sibling of both columns
+    const { layoutRefs } = setup({ refs: { bottom: { rect: { left: 0 } }, bottomRightCol, attributions: { offsetHeight: 0 } } })
     renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--bottom-right-clearance', '0px')
-  })
-
-  test('uses 0 when bottomRightRef current is null', () => {
-    const { layoutRefs } = setup()
-    layoutRefs.bottomRightRef.current = null
-    renderHook(() => useLayoutMeasurements())
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-bottom', '116px')
-  })
-
-  test('uses bottomRight height when bottomRightHeight > 0', () => {
-    const { layoutRefs } = setup({
-      refs: {
-        bottomRight: { offsetHeight: 20 } // 👈 triggers TRUE branch
-      }
-    })
-    renderHook(() => useLayoutMeasurements())
-    // bottomContainerPad = 500 - 400 - 0 = 100
-    // attributions lift = 16 (default attributions offsetHeight 16 + dividerGap 8 - primaryGap 8)
-    // expected = 100 + (20 + 16 + 8) = 144
-    expect(layoutRefs.appContainerRef.current.style.setProperty)
-      .toHaveBeenCalledWith('--right-offset-bottom', '144px')
-  })
-
-  test('adds the attributions lift into right-offset-bottom so .im-o-app__right does not overlap a bottom-right box pushed up by tall docked attributions', () => {
-    const { layoutRefs } = setup({
-      refs: {
-        bottomRight: { offsetHeight: 20 },
-        attributions: { offsetHeight: 40 } // lift = 40 + 8 (dividerGap) - 8 (primaryGap) = 40
-      }
-    })
-    renderHook(() => useLayoutMeasurements())
-    // bottomContainerPad = 500 - 400 - 0 = 100; expected = 100 + (20 + 40 + 8) = 168
-    // Without the lift term this regressed to 128px, letting .im-o-app__right's
-    // bottom offset sit below the (margin-bottom-raised) bottom-right box's real top edge.
-    expect(layoutRefs.appContainerRef.current.style.setProperty)
-      .toHaveBeenCalledWith('--right-offset-bottom', '168px')
-  })
-
-  // Stacked attributions takes a flex line of its own BELOW the bottom-right row, lifting the
-  // row by the same amount the docked box's margin-bottom does — but as part of
-  // .im-o-app__bottom's own grown height, not as a margin, so --bottom-right-clearance is 0.
-  // Reading the clearance here (rather than the mode-independent lift) left the right column's
-  // bottom offset at the un-lifted position, so a right-bottom scale bar overlapped a
-  // bottom-right draw menu on mobile — the breakpoint where attributions always stacks.
-  test('adds the attributions lift into right-offset-bottom when attributions is stacked, not just docked', () => {
-    const { layoutRefs } = setup({
-      refs: {
-        bottom: { rect: { left: 0 } },
-        bottomRight: { offsetHeight: 20 },
-        attributions: { offsetHeight: 40 } // lift = 40 + 8 (dividerGap) - 8 (primaryGap) = 40
-      }
-    })
-    appendChild(layoutRefs.bottomRef.current, {}) // logo column
-    appendChild(layoutRefs.bottomRef.current, { offsetWidth: 192, rect: { left: 115 } }) // bottom-right column
-    layoutRefs.bottomRef.current.appendChild(layoutRefs.attributionsRef.current) // sibling of both columns
-    appendChild(layoutRefs.attributionsRef.current, { scrollWidth: 250 }) // too wide to fit beside the logo
-    renderHook(() => useLayoutMeasurements())
-    const spy = layoutRefs.appContainerRef.current.style.setProperty
-    expect(layoutRefs.attributionsRef.current.classList.contains('im-o-app__attributions--stacked')).toBe(true)
-    expect(spy).toHaveBeenCalledWith('--bottom-right-clearance', '0px')
-    // Same 168px as the docked case above, despite the 0px clearance.
-    expect(spy).toHaveBeenCalledWith('--right-offset-bottom', '168px')
-    // rightEffectiveBottom = 400 + 0 - 20 - 40 = 340; 340 - 50 (rightOffsetTop) - 8 = 282
-    expect(spy).toHaveBeenCalledWith('--right-top-max-height', '282px')
   })
 
   test('dispatches safe zone inset on desktop (post-batch RAF read only)', () => {
@@ -557,7 +536,7 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup()
     renderHook(() => useLayoutMeasurements())
     expect(useResizeObserver).toHaveBeenCalledWith(
-      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.headerRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.bottomRef, layoutRefs.bottomRightRef, layoutRefs.attributionsRef, layoutRefs.leftTopRef, layoutRefs.leftBottomRef, layoutRefs.rightTopRef, layoutRefs.rightBottomRef, layoutRefs.drawerRef, layoutRefs.leftRef, layoutRefs.rightRef],
+      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.headerRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.bottomRef, layoutRefs.bottomLeftColRef, layoutRefs.bottomRightRef, layoutRefs.attributionsRef, layoutRefs.leftTopRef, layoutRefs.leftBottomRef, layoutRefs.rightTopRef, layoutRefs.rightBottomRef, layoutRefs.drawerRef, layoutRefs.leftRef, layoutRefs.rightRef],
       expect.any(Function)
     )
     layoutRefs.appContainerRef.current.style.setProperty.mockClear()

@@ -74,6 +74,33 @@ describe('OPEN_PANEL — regular panel', () => {
   })
 })
 
+describe('OPEN_PANEL — panel already open', () => {
+  it('doesn\'t emit panel opened again', async () => {
+    run(
+      { type: 'OPEN_PANEL', payload: { panelId: 'openPanel', props: {} } },
+      { openPanels: { openPanel: {} }, breakpoint: 'md' },
+      { openPanel: { md: {} } }
+    )
+
+    await flushMicrotasks()
+
+    expect(eventBus.emit).not.toHaveBeenCalledWith(events.APP_PANEL_OPENED, expect.anything())
+  })
+
+  it('still emits panel closed for the panels it closes', async () => {
+    run(
+      { type: 'OPEN_PANEL', payload: { panelId: 'openPanel', props: {} } },
+      { openPanels: { openPanel: {}, exclusivePanel: {} }, breakpoint: 'md' },
+      { openPanel: { md: {} }, exclusivePanel: { md: { exclusive: true } } }
+    )
+
+    await flushMicrotasks()
+
+    expect(eventBus.emit).toHaveBeenCalledWith(events.APP_PANEL_CLOSED, { panelId: 'exclusivePanel' })
+    expect(eventBus.emit).not.toHaveBeenCalledWith(events.APP_PANEL_OPENED, expect.anything())
+  })
+})
+
 const CLOSED_PLUS_OPENED = 3
 
 describe('OPEN_PANEL — opening exclusive closes non-exclusive', () => {
@@ -241,10 +268,10 @@ describe('ADD_PANEL', () => {
     )
   })
 
-  it('emits APP_PANEL_OPENED with visibleGeometry when provided in config', async () => {
-    const visibleGeometry = { type: 'Feature', geometry: { type: 'Point', coordinates: [1, 2] }, properties: {} }
+  it('emits APP_PANEL_OPENED with preferPan and paddingPercent when provided in config', async () => {
+    const visibleGeometry = { type: 'Point', coordinates: [1, 2] }
     run(
-      { type: 'ADD_PANEL', payload: { id: 'geoPanel', config: { visibleGeometry } } },
+      { type: 'ADD_PANEL', payload: { id: 'geoPanel', config: { visibleGeometry, preferPan: false, paddingPercent: 10 } } },
       { breakpoint: 'desktop' }
     )
 
@@ -252,8 +279,19 @@ describe('ADD_PANEL', () => {
 
     expect(eventBus.emit).toHaveBeenCalledWith(
       events.APP_PANEL_OPENED,
-      { panelId: 'geoPanel', slot: 'left-top', visibleGeometry }
+      { panelId: 'geoPanel', slot: 'left-top', visibleGeometry, preferPan: false, paddingPercent: 10 }
     )
+  })
+
+  it('does not emit APP_PANEL_OPENED when the panel is added again while it\'s open', async () => {
+    run(
+      { type: 'ADD_PANEL', payload: { id: 'openPanel', config: {} } },
+      { breakpoint: 'desktop', openPanels: { openPanel: {} } }
+    )
+
+    await flushMicrotasks()
+
+    expect(eventBus.emit).not.toHaveBeenCalledWith(events.APP_PANEL_OPENED, expect.anything())
   })
 
   it('does not emit APP_PANEL_OPENED when breakpoint config sets open: false', async () => {

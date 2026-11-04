@@ -220,7 +220,7 @@ const datasetsPlugin = createDatasetsPlugin({
       filter: ['in', ['get', 'category'], ['literal', ['medieval']]],
       showInMenu: true,
       // A custom shield, to show symbolSvgContent with all its variants (see customSymbols.js)
-      style: { symbolSvgContent: shieldSymbolSvg, symbolBackgroundColor: '#1565C0' }
+      style: { symbolSvgContent: shieldSymbolSvg, symbolBackgroundColor: '#1565C0', symbolAccentColor: { outdoor: '#ffdd00', dark: '#f47738' } }
     }, {
       id: 'industrial',
       label: 'Industrial',

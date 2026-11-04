@@ -38,9 +38,8 @@ describe('useModalPanelBehaviour', () => {
 
     handleClose = jest.fn()
     jest.clearAllMocks()
-    document.documentElement.style.setProperty(MODAL_INSET, '')
-    document.documentElement.style.setProperty(MODAL_MAX_HEIGHT, '')
-    useApp.mockReturnValue({ layoutRefs: {} })
+    elements.appContainer = document.createElement('div')
+    useApp.mockReturnValue({ layoutRefs: { appContainerRef: { current: elements.appContainer } } })
   })
 
   afterEach(() => {
@@ -104,22 +103,11 @@ describe('useModalPanelBehaviour', () => {
       jest.restoreAllMocks()
     })
 
-    it('sets --modal-inset via SLOT_MODAL_VARS for top slot', () => {
+    it('leaves left and right slot modals to their own CSS', () => {
       refs.panel.current.dataset.slot = 'left-top'
       render(<TestComponent />)
-      expect(document.documentElement.style.getPropertyValue(MODAL_INSET))
-        .toBe('var(--left-offset-top) auto auto var(--primary-gap)')
-      expect(document.documentElement.style.getPropertyValue(MODAL_MAX_HEIGHT))
-        .toBe('var(--left-top-max-height)')
-    })
-
-    it('sets --modal-inset via SLOT_MODAL_VARS for bottom slot', () => {
-      refs.panel.current.dataset.slot = 'left-bottom'
-      render(<TestComponent />)
-      expect(document.documentElement.style.getPropertyValue(MODAL_INSET))
-        .toBe('auto auto var(--left-offset-bottom) var(--primary-gap)')
-      expect(document.documentElement.style.getPropertyValue(MODAL_MAX_HEIGHT))
-        .toBe('var(--left-top-max-height)')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_INSET)).toBe('')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_MAX_HEIGHT)).toBe('')
     })
 
     it('sets --modal-inset and --modal-max-height from slot container when no buttonContainerEl', () => {
@@ -129,17 +117,27 @@ describe('useModalPanelBehaviour', () => {
         configurable: true
       })
       Object.defineProperty(insetEl, 'offsetWidth', { value: 192, configurable: true })
-      useApp.mockReturnValue({ layoutRefs: { insetRef: { current: insetEl }, mainRef: refs.main } })
+      useApp.mockReturnValue({ layoutRefs: { appContainerRef: { current: elements.appContainer }, insetRef: { current: insetEl }, mainRef: refs.main } })
 
       render(<TestComponent />)
 
-      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toBe('60px auto auto 8px')
-      expect(document.documentElement.style.getPropertyValue(MODAL_MAX_HEIGHT)).toContain('px')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_INSET)).toBe('60px auto auto 8px')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_MAX_HEIGHT)).toContain('px')
+    })
+
+    it('leaves --modal-inset unset when there is no app container to set it on', () => {
+      refs.panel.current.dataset.slot = buttonSlot
+      elements.buttonContainer.dataset.buttonSlot = buttonSlot
+      document.body.appendChild(elements.buttonContainer)
+      useApp.mockReturnValue({ layoutRefs: {} })
+      render(<TestComponent />)
+      expect(elements.appContainer.style.getPropertyValue(MODAL_INSET)).toBe('')
+      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toBe('')
     })
 
     it('leaves --modal-inset unset when slot ref cannot be resolved', () => {
       render(<TestComponent />)
-      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toBe('')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_INSET)).toBe('')
     })
 
     it('updates --modal-inset and --modal-max-height via aria-controls when buttonContainerEl is stale', () => {
@@ -153,8 +151,22 @@ describe('useModalPanelBehaviour', () => {
       const staleEl = document.createElement('div') // detached
       render(<TestComponent buttonContainerEl={staleEl} />)
 
-      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toContain('10px')
-      expect(document.documentElement.style.getPropertyValue(MODAL_MAX_HEIGHT)).toContain('px')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_INSET)).toContain('10px')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_MAX_HEIGHT)).toContain('px')
+    })
+
+    it('stops a button panel a primary gap short of the far edge, with a divider gap beside its button', () => {
+      const gaps = { '--divider-gap': '8', '--primary-gap': '15' }
+      globalThis.getComputedStyle.mockReturnValue({ getPropertyValue: (name) => gaps[name] })
+      refs.panel.current.dataset.slot = buttonSlot
+      elements.buttonContainer.dataset.buttonSlot = buttonSlot
+      document.body.appendChild(elements.buttonContainer)
+
+      render(<TestComponent />)
+
+      // Button top 10 in a main 50 high: 50 - 10 - 15. Beside the button: 100 - 20 + 8
+      expect(elements.appContainer.style.getPropertyValue(MODAL_MAX_HEIGHT)).toBe('25px')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_INSET)).toBe('10px 88px auto auto')
     })
 
     it('uses data-button-slot fallback when no aria-controls button and no buttonContainerEl', () => {
@@ -164,8 +176,8 @@ describe('useModalPanelBehaviour', () => {
 
       render(<TestComponent buttonContainerEl={undefined} />)
 
-      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toContain('10px')
-      expect(document.documentElement.style.getPropertyValue(MODAL_MAX_HEIGHT)).toContain('px')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_INSET)).toContain('10px')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_MAX_HEIGHT)).toContain('px')
     })
 
     it('uses connected buttonContainerEl when panel has no ID', () => {
@@ -175,13 +187,13 @@ describe('useModalPanelBehaviour', () => {
 
       render(<TestComponent buttonContainerEl={elements.buttonContainer} />)
 
-      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toContain('10px')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_INSET)).toContain('10px')
     })
 
     it('skips update when effectiveContainer cannot be resolved', () => {
       refs.panel.current.dataset.slot = buttonSlot
       render(<TestComponent buttonContainerEl={null} />)
-      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toBe('')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_INSET)).toBe('')
     })
 
     it('anchors to bottom when button is in a bottom sub-slot', () => {
@@ -197,8 +209,8 @@ describe('useModalPanelBehaviour', () => {
       render(<TestComponent />)
 
       // Bottom slot: insetTop='auto', insetBottom = mainRect.bottom - buttonRect.bottom = 50 - 40 = 10px
-      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toMatch(/^auto/)
-      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toContain('10px')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_INSET)).toMatch(/^auto/)
+      expect(elements.appContainer.style.getPropertyValue(MODAL_INSET)).toContain('10px')
     })
 
     it('uses left inset when button is in a left sub-slot', () => {
@@ -214,7 +226,7 @@ describe('useModalPanelBehaviour', () => {
       render(<TestComponent />)
 
       // Left slot: insetTop = buttonRect.top - mainRect.top = 10, insetLeft = buttonRect.right - mainRect.left + dividerGap = 80 + 8 = 88
-      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toBe('10px auto auto 88px')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_INSET)).toBe('10px auto auto 88px')
     })
   })
 
@@ -266,14 +278,14 @@ describe('useModalPanelBehaviour', () => {
       // Mounted closed, as it would be permanently — mainRef's size gets recorded but the
       // calc no-ops on the isModal guard.
       const { rerender } = render(<TestComponent isModal={false} />)
-      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toBe('')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_INSET)).toBe('')
 
       // Open it. mainRef hasn't resized, so the resize observer's own delivery is deduped
       // away — only the open-triggered layout effect can position it here.
       rerender(<TestComponent isModal />)
 
-      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toContain('10px')
-      expect(document.documentElement.style.getPropertyValue(MODAL_MAX_HEIGHT)).toContain('px')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_INSET)).toContain('10px')
+      expect(elements.appContainer.style.getPropertyValue(MODAL_MAX_HEIGHT)).toContain('px')
     })
   })
 

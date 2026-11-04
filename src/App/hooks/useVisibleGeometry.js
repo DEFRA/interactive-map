@@ -1,63 +1,56 @@
 import { useEffect, useRef } from 'react'
 import { useConfig } from '../store/configContext.js'
 import { useApp } from '../store/appContext.js'
+import { useMap } from '../store/mapContext.js'
+import { useEvaluateProp } from './useEvaluateProp.js'
 import { EVENTS as events } from '../../config/events.js'
+import { getMapSizeScale } from '../../config/mapSizeScales.js'
+import { MAP_PANEL_SLOT_REFS } from '../../config/mapPanelSlots.js'
+import { getPanelElementId } from '../../utils/getPanelElementId.js'
+import { getScreenBox, getRelativeBox, isOverlapping } from '../../utils/screenBox.js'
 
-export const getGeometryType = (geojson) => {
-  if (!geojson) {
-    return null
-  }
-  if (geojson.type === 'Feature') {
-    return geojson.geometry?.type
-  }
-  return geojson.type
-}
+// Only panels over the map can hide the geometry
+const isOverMap = (panel, layoutRefs) => MAP_PANEL_SLOT_REFS.some(refName => layoutRefs[refName]?.current?.contains(panel))
 
-const isPointGeometry = (geojson) => {
-  const type = getGeometryType(geojson)
-  return type === 'Point' || type === 'MultiPoint'
-}
-
-export const getPointCoordinates = (geojson) => {
-  if (geojson.type === 'Feature') {
-    return getPointCoordinates(geojson.geometry)
+// Whether any of the geometry's bounding box is under the panel, both measured relative to the viewport
+const isUnderPanel = ({ visibleGeometry, panelRect, mapProvider, viewport, mapSize }) => {
+  if (!viewport) {
+    return false
   }
-  if (geojson.type === 'Point') {
-    return geojson.coordinates
-  }
-  if (geojson.type === 'MultiPoint') {
-    return geojson.coordinates[0]
-  }
-  return null
+  const box = getScreenBox(visibleGeometry, (coords) => mapProvider.mapToScreen(coords), getMapSizeScale(mapSize))
+  return isOverlapping(box, getRelativeBox(panelRect, viewport.getBoundingClientRect()))
 }
 
 export const useVisibleGeometry = () => {
   const { id, mapProvider, eventBus } = useConfig()
-  const { layoutRefs, panelConfig, panelRegistry, breakpoint } = useApp()
+  const { layoutRefs, panelConfig, panelRegistry } = useApp()
+  const { mapSize } = useMap()
+  const evaluateProp = useEvaluateProp()
 
-  const latestRef = useRef({ layoutRefs, panelConfig, panelRegistry, breakpoint })
-  latestRef.current = { layoutRefs, panelConfig, panelRegistry, breakpoint }
+  // Read in the event handler, so it uses the latest of each, not the first render's
+  const latestRef = useRef({ panelConfig, panelRegistry, mapSize, evaluateProp })
+  latestRef.current = { panelConfig, panelRegistry, mapSize, evaluateProp }
 
   useEffect(() => {
     if (!mapProvider || !eventBus) {
       return undefined
     }
 
-    const handlePanelOpened = ({ panelId, visibleGeometry: eventVisibleGeometry }) => {
-      const { panelConfig: config, panelRegistry: registry } = latestRef.current
+    const handlePanelOpened = ({ panelId, ...openedOptions }) => {
+      const { panelConfig: config, panelRegistry: registry, evaluateProp: evaluate } = latestRef.current
       const resolvedConfig = config?.[panelId] ? config : (registry?.getPanelConfig() ?? config)
-      const visibleGeometry = eventVisibleGeometry ?? resolvedConfig?.[panelId]?.visibleGeometry
-      const panel = layoutRefs.appContainerRef.current?.querySelector(`#${id}-panel-${panelId}`)
+      // A panel that opens as it's added sends its options with the event, as the registry may not
+      // have them yet. visibleGeometry can be a function of the context, like a panel's label
+      const { visibleGeometry: geometryOption, preferPan = true, paddingPercent, pluginId } = { ...resolvedConfig?.[panelId], ...openedOptions }
+      const visibleGeometry = evaluate(geometryOption, pluginId)
+      const panel = layoutRefs.appContainerRef.current?.querySelector(`#${getPanelElementId(id, panelId)}`)
 
       if (!visibleGeometry) {
         return
       }
-      if (typeof mapProvider.isGeometryObscured !== 'function') {
-        return
-      }
 
       const waitForPanel = () => {
-        if (!panel) { return }
+        if (!panel || !isOverMap(panel, layoutRefs)) { return }
         const panelRect = panel.getBoundingClientRect()
 
         if (!panelRect || panelRect.width === 0 || panelRect.height === 0) {
@@ -66,19 +59,16 @@ export const useVisibleGeometry = () => {
           return
         }
 
-        // Panel now exists and has size, safe to measure
-        if (!mapProvider.isGeometryObscured(visibleGeometry, panelRect)) {
+        // Only move the map when the panel opens over the geometry. Once the user has moved the
+        // map, a geometry elsewhere or off screen is theirs to come back to.
+        const viewport = layoutRefs.viewportRef?.current
+        if (!isUnderPanel({ visibleGeometry, panelRect, mapProvider, viewport, mapSize: latestRef.current.mapSize })) {
           return
         }
 
-        if (isPointGeometry(visibleGeometry)) {
-          const center = getPointCoordinates(visibleGeometry)
-          if (center) {
-            mapProvider.setView({ center })
-          }
-        } else {
-          mapProvider.fitToBounds(visibleGeometry)
-        }
+        // The panel has a size, so the safe zone now allows for it. With preferPan, the map pans
+        // to centre the geometry in the safe zone, only zooming out if it doesn't fit.
+        mapProvider.fitToBounds(visibleGeometry, { preferPan, paddingPercent })
       }
 
       // Start waiting for panel to exist with a measurable size

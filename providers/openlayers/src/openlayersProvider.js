@@ -12,7 +12,7 @@ import { supportedShortcuts, DEFAULTS } from './defaults.js'
 import { getViewResolutionConfig, ZOOM_ALIGNMENT } from './utils/zoom.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents, createMapStyleLayer } from './appEvents.js'
-import { getAreaDimensions, getCardinalMove, getExtentFromGeoJSON, getPaddedExtent, isGeometryObscured } from './utils/spatial.js'
+import { getAreaDimensions, getCardinalMove, getExtentFromGeoJSON, getPaddedExtent } from './utils/spatial.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { SymbolImageCache } from './utils/symbolImages.js'
 import { PatternImageCache } from './utils/patternImages.js'
@@ -228,10 +228,12 @@ export default class OpenLayersProvider extends MapProvider {
    * Fit map view to the specified bounds or GeoJSON geometry.
    *
    * @param {[number, number, number, number] | object} bounds - Bounds as [west, south, east, north] (BNG easting/northing), or a GeoJSON Feature, FeatureCollection, or geometry.
+   * @param {Object} [options]
+   * @param {{ top: number, right: number, bottom: number, left: number }} [options.padding] - Extra space in pixels kept around the bounds, inside the view's padding.
    */
-  fitToBounds (bounds) {
+  fitToBounds (bounds, { padding } = {}) {
     const extent = Array.isArray(bounds) ? bounds : getExtentFromGeoJSON(bounds)
-    this.view.fit(extent, { duration: DEFAULTS.animationDuration })
+    this.view.fit(extent, { duration: DEFAULTS.animationDuration, ...(padding && { padding: toPaddingArray(padding) }) })
   }
 
   /**
@@ -515,16 +517,5 @@ export default class OpenLayersProvider extends MapProvider {
    */
   screenToMap (point) {
     return this.map.getCoordinateFromPixel([point.x, point.y])
-  }
-
-  /**
-   * Returns true if the geometry's screen bounding box overlaps the given panel rectangle.
-   *
-   * @param {object} geojson - GeoJSON Feature, FeatureCollection, or geometry.
-   * @param {DOMRect} panelRect - Bounding rect of the panel element (viewport coordinates).
-   * @returns {boolean}
-   */
-  isGeometryObscured (geojson, panelRect) {
-    return isGeometryObscured(geojson, panelRect, this.map)
   }
 }
