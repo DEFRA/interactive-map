@@ -34,6 +34,7 @@ const refs = (o = {}) => ({
   bannerRef: { current: el(o.banner) },
   topRef: { current: o.top === null ? null : el({ offsetTop: 10, ...o.top }) },
   topLeftColRef: { current: el({ offsetHeight: 50, offsetWidth: 200, ...o.topLeftCol }) },
+  topMiddleColRef: { current: el(o.topMiddleCol) },
   topRightColRef: { current: el({ offsetHeight: 40, offsetWidth: 180, ...o.topRightCol }) },
   leftRef: { current: el(o.left) },
   rightRef: { current: el(o.right) },
@@ -77,6 +78,27 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup({ refs: { main: null, top: null, bottom: null } })
     renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.appContainerRef.current.style.setProperty).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    ['fits on one line', 900, 900, false],
+    ['is a pixel over from rounding', 901, 900, false],
+    ['no longer fits on one line', 960, 900, true]
+  ])('sets the top row wrapped class when the row %s', (_name, scrollWidth, clientWidth, isWrapped) => {
+    const { layoutRefs } = setup({ refs: { top: { scrollWidth, clientWidth } } })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.topRef.current.classList.contains('im-o-app__top--wrapped')).toBe(isWrapped)
+  })
+
+  test('measures the top row without the wrapped class, so it can go back to one line', () => {
+    const { layoutRefs } = setup()
+    const top = layoutRefs.topRef.current
+    top.classList.add('im-o-app__top--wrapped')
+    const isWrappedWhenMeasured = jest.fn(() => top.classList.contains('im-o-app__top--wrapped'))
+    Object.defineProperty(top, 'scrollWidth', { get: () => { isWrappedWhenMeasured(); return 0 } })
+    renderHook(() => useLayoutMeasurements())
+    expect(isWrappedWhenMeasured).toHaveReturnedWith(false)
+    expect(top.classList.contains('im-o-app__top--wrapped')).toBe(false)
   })
 
   test('treats a top column whose children are all hidden as empty, ignoring its trailing padding', () => {
@@ -536,7 +558,7 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup()
     renderHook(() => useLayoutMeasurements())
     expect(useResizeObserver).toHaveBeenCalledWith(
-      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.headerRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.bottomRef, layoutRefs.bottomLeftColRef, layoutRefs.bottomRightRef, layoutRefs.attributionsRef, layoutRefs.leftTopRef, layoutRefs.leftBottomRef, layoutRefs.rightTopRef, layoutRefs.rightBottomRef, layoutRefs.drawerRef, layoutRefs.leftRef, layoutRefs.rightRef],
+      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.headerRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topMiddleColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.bottomRef, layoutRefs.bottomLeftColRef, layoutRefs.bottomRightRef, layoutRefs.attributionsRef, layoutRefs.leftTopRef, layoutRefs.leftBottomRef, layoutRefs.rightTopRef, layoutRefs.rightBottomRef, layoutRefs.drawerRef, layoutRefs.leftRef, layoutRefs.rightRef],
       expect.any(Function)
     )
     layoutRefs.appContainerRef.current.style.setProperty.mockClear()
