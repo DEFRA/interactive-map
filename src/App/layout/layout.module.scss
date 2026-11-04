@@ -132,8 +132,15 @@
   gap: var(--divider-gap);
 }
 
-// With something in the middle, equal side columns keep it centred, and it wraps past a third of the row.
+// With something in the middle, equal side columns keep it centred while there's room. It then moves
+// off-centre as the gaps close, and nothing wraps until they have.
 .im-o-app__top:has(> .im-o-app__top-col:nth-child(2) > :not([hidden])) {
+  grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
+}
+
+// Once the columns no longer fit on one line (set in useLayoutMeasurements), they can narrow and
+// wrap, and the middle wraps past a third of the row.
+.im-o-app__top--wrapped:has(> .im-o-app__top-col:nth-child(2) > :not([hidden])) {
   grid-template-columns: minmax(min-content, 1fr) fit-content(34%) minmax(min-content, 1fr);
 }
 
