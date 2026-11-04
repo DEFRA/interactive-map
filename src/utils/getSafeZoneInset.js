@@ -115,6 +115,12 @@ const resolveHeight = ({ main, panels, width, base, availableW, availableH, gap 
   return { top: isTooShort ? base.top : cappedTop, bottom: isTooShort ? base.bottom : cappedBottom }
 }
 
+// The top row's height and where it ends, counting any column that shows, as a column can wrap
+const measureTopRow = (top) => {
+  const height = Math.max(0, ...Array.from(top?.children ?? [], topColHeight))
+  return { height, bottom: (top?.offsetTop ?? 0) + height }
+}
+
 export const getSafeZoneInset = ({
   mainRef, leftRef, rightRef, actionsRef, bottomRef, topRef,
   leftTopRef, leftBottomRef, rightTopRef, rightBottomRef
@@ -141,13 +147,13 @@ export const getSafeZoneInset = ({
   const colWidth = Math.max(getButtonColWidth(leftRef), getButtonColWidth(rightRef))
   // The bottom row itself doesn't count. The bottom mirrors the top row and its margin, so the safe
   // zone is centred, but still clears the actions bar and anything below the row, such as the drawer
-  const topRowHeight = Math.max(0, ...Array.from(topRef?.current?.children ?? [], topColHeight))
+  const topRow = measureTopRow(topRef?.current)
   const base = {
     left: main.offsetLeft + leftButtons.offsetLeft + colWidth + gap,
     right: leftButtons.offsetLeft + colWidth + gap,
-    top: leftButtons.offsetTop,
+    top: Math.max(leftButtons.offsetTop, rightRef.current.offsetTop, topRow.bottom),
     bottom: Math.max(
-      primaryGap + topRowHeight,
+      primaryGap + topRow.height,
       main.offsetHeight - actions.offsetTop + gap,
       main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
     )
