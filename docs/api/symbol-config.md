@@ -140,6 +140,18 @@ Any `{{token}}` placeholder in a symbol SVG beyond the built-in set is substitut
 markers.add('id', coords, { accentColor: '#ffdd00' })
 ```
 
+A token's value can be a string or a number. A dataset style sets a custom token with a `symbol` prefix, and can set it per map style:
+
+```js
+// Symbol SVG contains: fill="{{accentColor}}"
+style: {
+  symbolSvgContent: shieldSymbolSvg,
+  symbolAccentColor: { outdoor: '#ffdd00', dark: '#f47738' }
+}
+```
+
+The `symbol` prefixed properties `symbolSvgContent`, `symbolViewBox`, `symbolAnchor`, `symbolSize` and `symbolDescription` are never used as tokens. See [Datasets: symbol properties](../plugins/datasets.md).
+
 ## SVG structure
 
 Symbols are defined as inner SVG path content (no `<svg>` wrapper) using `{{token}}` placeholders. The standard three-layer structure is:

@@ -12,14 +12,8 @@ describe('createPlugin', () => {
     expect(plugin.id).toBe('datasets')
   })
 
-  it('applies default noKeyItemText', () => {
-    const plugin = createPlugin()
-    expect(plugin.noKeyItemText).toBe('No features displayed')
-  })
-
-  it('merges provided options (options override defaults, id stays fixed)', () => {
-    const plugin = createPlugin({ noKeyItemText: 'Custom text', extra: true })
-    expect(plugin.noKeyItemText).toBe('Custom text')
+  it('merges provided options (id stays fixed)', () => {
+    const plugin = createPlugin({ id: 'custom', extra: true })
     expect(plugin.extra).toBe(true)
     expect(plugin.id).toBe('datasets')
   })

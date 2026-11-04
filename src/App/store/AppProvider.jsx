@@ -40,6 +40,8 @@ export const AppProvider = ({ options, children }) => {
     rightBottomRef: useRef(null),
     drawerRef: useRef(null),
     bottomRef: useRef(null),
+    bottomLeftColRef: useRef(null),
+    bottomRightColRef: useRef(null),
     bottomRightRef: useRef(null),
     attributionsRef: useRef(null),
     actionsRef: useRef(null),

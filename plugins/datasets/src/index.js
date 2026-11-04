@@ -3,7 +3,6 @@ import './datasets.scss'
 
 export default function createPlugin (options = { }) {
   const plugin = {
-    noKeyItemText: 'No features displayed',
     ...options,
     id: 'datasets',
     load: async () => {
