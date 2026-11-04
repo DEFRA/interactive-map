@@ -75,7 +75,7 @@ beforeEach(() => {
     }
   }
   leftRef = colRef(LEFT_WIDTH, LEFT_LEFT, LEFT_TOP)
-  rightRef = colRef(RIGHT_WIDTH)
+  rightRef = colRef(RIGHT_WIDTH, 0, LEFT_TOP)
   actionsRef = { current: { offsetTop: ACTIONS_TOP } }
   bottomRef = { current: { offsetTop: BOTTOM_TOP, offsetHeight: 0 } }
 })
@@ -193,6 +193,14 @@ describe('getSafeZoneInset — bottom row', () => {
   it('ignores a top row column whose items are all hidden', () => {
     expect(getSafeZoneInset({ ...base(), actionsRef: noActions, bottomRef: tallRow, topRef: topRow(topCol(TOP_ROW_HEIGHT, [hiddenChild]), topCol(40)) }).bottom)
       .toBe(GAP + 40)
+  })
+  it('clears the lower of the two side columns, when the right-hand buttons wrap', () => {
+    const wrappedTop = LEFT_TOP + 50
+    expect(getSafeZoneInset({ ...base(), rightRef: colRef(RIGHT_WIDTH, 0, wrappedTop) }).top).toBe(wrappedTop)
+  })
+  it('clears a middle column that wraps taller than both side columns', () => {
+    const top = { current: { offsetTop: 10, children: [topCol(40), topCol(120), topCol(40)] } }
+    expect(getSafeZoneInset({ ...base(), topRef: top }).top).toBe(130)
   })
   it('collapses to the margin when there is no top row', () => {
     expect(getSafeZoneInset({ ...base(), actionsRef: noActions, bottomRef: tallRow, topRef: topRow() }).bottom)
