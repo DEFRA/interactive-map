@@ -8,6 +8,8 @@ import { renderedBoxes, topColHeight } from '../../utils/renderedBoxes.js'
 const BANNER_DOCKED_CLASS = 'im-o-app__banner--docked'
 const BANNER_PANEL_SELECTOR = '.im-c-panel--banner'
 const ATTRIBUTIONS_STACKED_CLASS = 'im-o-app__attributions--stacked'
+const TOP_WRAPPED_CLASS = 'im-o-app__top--wrapped'
+const SUBPIXEL_TOLERANCE = 1
 
 const buttonHeight = (ref) => ref?.current?.offsetHeight ?? 0
 const buttonWidth = (ref) => ref?.current?.offsetWidth ?? 0
@@ -126,6 +128,13 @@ const attributionsNaturalWidth = (attributionsEl) => {
   return width
 }
 
+// Lets the top row's columns wrap once they no longer fit on one line. Measured without the class,
+// so the row's natural width decides, rather than how it's currently wrapped.
+function applyTopRowLayout (top) {
+  top.classList.remove(TOP_WRAPPED_CLASS)
+  top.classList.toggle(TOP_WRAPPED_CLASS, top.scrollWidth > top.clientWidth + SUBPIXEL_TOLERANCE)
+}
+
 // Centres the banner between the side columns when there's room, otherwise puts it on its own
 // full-width row (always on mobile). Returns what the side column offsets below need.
 function applyBannerLayout ({ appContainer, root, top, bannerRef, leftRef, rightRef, isMobile, dividerGap, primaryGap }) {
@@ -219,6 +228,8 @@ export function calculateLayout (layoutRefs, breakpoint) {
   const dividerGap = Number.parseInt(rootStyle.getPropertyValue('--divider-gap'), 10)
   const primaryGap = Number.parseInt(rootStyle.getPropertyValue('--primary-gap'), 10)
 
+  applyTopRowLayout(top)
+
   // Banner: centred between the side columns when there's room, otherwise full width
   const isMobile = breakpoint === 'mobile'
   const { isBannerStacked, bannerTop, bannerHeight } = applyBannerLayout({
@@ -271,7 +282,7 @@ export function useLayoutMeasurements () {
   const { dispatch, breakpoint, layoutRefs, arePluginsEvaluated, appVisible, isFullscreen } = useApp()
   const { mapSize, isMapReady } = useMap()
 
-  const { bannerRef, mainRef, headerRef, topRef, topLeftColRef, topRightColRef, bottomRef, bottomLeftColRef, bottomRightRef, attributionsRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, actionsRef, leftRef, rightRef } = layoutRefs
+  const { bannerRef, mainRef, headerRef, topRef, topLeftColRef, topMiddleColRef, topRightColRef, bottomRef, bottomLeftColRef, bottomRightRef, attributionsRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, actionsRef, leftRef, rightRef } = layoutRefs
 
   // 1. When the layout changes, wait for plugins to be evaluated again before setting the safe zone.
   useLayoutEffect(() => {
@@ -297,7 +308,7 @@ export function useLayoutMeasurements () {
   const observedRefs = useMemo(
     // Includes the attributions, which change height when their text wraps, and the bottom-left
     // column, which changes size when the logo loads or its buttons change
-    () => [bannerRef, mainRef, headerRef, topRef, topLeftColRef, topRightColRef, actionsRef, bottomRef, bottomLeftColRef, bottomRightRef, attributionsRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, leftRef, rightRef],
+    () => [bannerRef, mainRef, headerRef, topRef, topLeftColRef, topMiddleColRef, topRightColRef, actionsRef, bottomRef, bottomLeftColRef, bottomRightRef, attributionsRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, leftRef, rightRef],
     []
   )
 
