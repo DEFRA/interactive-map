@@ -14,6 +14,7 @@
 // Bleeds past .im-o-app__header's inherited inset via negative margin, now that it's real header-slot content.
 .im-o-app--mobile .im-c-search-form {
   position: relative;
+  min-width: 0; // Full width on mobile, however narrow the map, rather than the panel minimum
   margin: calc(-1 * var(--primary-gap)) calc(-1 * var(--primary-gap)) 0;
   overflow: visible;
 }
