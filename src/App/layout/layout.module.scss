@@ -170,7 +170,8 @@
 // The top sub-slot, a spacer, then the bottom sub-slot, which sits at the bottom of the column.
 // Each sub-slot grows to its content until the two meet. Grid shares the room out equally, so a
 // sub-slot that needs less than half keeps its full height and the other gets the rest, or each
-// gets half. A panel squeezed this way scrolls its own content.
+// gets half. A panel squeezed this way scrolls its own content. The auto minimums keep buttons and
+// controls at their full height, at this level and in the sub-slots: only panels give way.
 .im-o-app__left,
 .im-o-app__right {
   position: absolute;
@@ -181,9 +182,9 @@
 
 // With panels open on both sides, each column is at most half the map, so they come no closer than
 // a divider gap. Closed panels have the hidden attribute, or display: none for HTML panels
-$open-panel: '> * > .im-c-panel:not([hidden]):not([style*="display: none"])';
+$open-panel: '.im-c-panel:not([hidden]):not([style*="display: none"])';
 
-.im-o-app__main:has(> .im-o-app__left #{$open-panel}):has(> .im-o-app__right #{$open-panel}) {
+.im-o-app__main:has(> .im-o-app__left > * > #{$open-panel}):has(> .im-o-app__right > * > #{$open-panel}) {
   > .im-o-app__left,
   > .im-o-app__right {
     max-width: calc(50% - var(--primary-gap) - (var(--divider-gap) / 2));
@@ -191,14 +192,14 @@ $open-panel: '> * > .im-c-panel:not([hidden]):not([style*="display: none"])';
 }
 
 .im-o-app__left {
-  grid-template-rows: minmax(0, max-content) minmax(var(--left-slot-gap, var(--divider-gap)), 1fr) minmax(0, max-content);
+  grid-template-rows: minmax(auto, max-content) minmax(var(--left-slot-gap, var(--divider-gap)), 1fr) minmax(auto, max-content);
   left: var(--primary-gap);
   top: var(--left-offset-top);
   bottom: var(--left-offset-bottom);
 }
 
 .im-o-app__right {
-  grid-template-rows: minmax(0, max-content) minmax(var(--right-slot-gap, var(--divider-gap)), 1fr) minmax(0, max-content);
+  grid-template-rows: minmax(auto, max-content) minmax(var(--right-slot-gap, var(--divider-gap)), 1fr) minmax(auto, max-content);
   right: var(--primary-gap);
   top: var(--right-offset-top);
   bottom: var(--right-offset-bottom);
@@ -214,8 +215,14 @@ $open-panel: '> * > .im-c-panel:not([hidden]):not([style*="display: none"])';
   display: grid;
   // A track no wider than the column, so a wide panel narrows to fit rather than widening the track
   grid-template-columns: minmax(0, 1fr);
-  grid-auto-rows: minmax(0, max-content);
+  grid-auto-rows: minmax(auto, max-content);
   gap: var(--divider-gap);
+}
+
+// Only a sub-slot with an open panel can shrink, so the buttons and controls in the other keep their
+// size and the mobile drawer cap can reserve room for them
+:is(.im-o-app__left-top, .im-o-app__left-bottom, .im-o-app__right-top, .im-o-app__right-bottom):has(> #{$open-panel}) {
+  min-height: 0;
 }
 
 // A panel's set and minimum widths give way to its column's (a panel beside a button sits inside the button)
