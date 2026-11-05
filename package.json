@@ -94,6 +94,7 @@
     "build:umd": "webpack --config webpack.umd.mjs --mode production",
     "build:esm": "rollup --config rollup.esm.mjs",
     "build:engines": "rollup --config rollup.engine.mjs && webpack --config webpack.engine.umd.mjs --mode production",
+    "check:engines": "node test/engine-packages/run.mjs",
     "build": "npm run clean && npm run build:umd && npm run build:esm",
     "type-check": "tsc --noEmit",
     "lint": "npm run lint:js && npm run lint:scss",

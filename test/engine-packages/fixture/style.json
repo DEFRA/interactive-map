@@ -1,0 +1,12 @@
+{
+  "version": 8,
+  "name": "Engine package check",
+  "sources": {},
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": { "background-color": "#f3f2f1" }
+    }
+  ]
+}
