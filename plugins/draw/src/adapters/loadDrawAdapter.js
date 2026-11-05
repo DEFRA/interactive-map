@@ -1,3 +1,6 @@
+// Picks the adapter for the map provider at runtime. Engine packages replace this module at
+// build time with their engine's version (for example ./openlayers/loadDrawAdapter.js),
+// so other engines are never referenced.
 export const loadDrawAdapter = async (mapProvider, options) => {
   switch (mapProvider.name) {
     case 'MapLibreProvider': {
