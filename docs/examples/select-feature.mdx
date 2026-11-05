@@ -17,7 +17,6 @@ The layer ID used here (`field-parcels`) comes from the datasets plugin — a da
     language: 'js',
     code: `
       import InteractiveMap from '@defra/interactive-map'
-      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
       import createDatasetsPlugin from '@defra/interactive-map/plugins/datasets'
       import createInteractPlugin from '@defra/interactive-map/plugins/interact'
 
@@ -89,7 +88,6 @@ The layer ID used here (`field-parcels`) comes from the datasets plugin — a da
 
       const map = new InteractiveMap('my-map', {
         behaviour: 'inline',
-        mapProvider: maplibreProvider(),
         mapStyle: {
           url: 'https://your-tile-url/style.json',
           logo: '/path/to/logo.svg',
@@ -138,7 +136,6 @@ The layer ID used here (`field-parcels`) comes from the datasets plugin — a da
     language: 'html',
     code: `
       <script defer src="/your-assets-path/interactive-map/index.js"></script>
-      <script defer src="/your-assets-path/maplibre-provider/index.js"></script>
       <script defer src="/your-assets-path/datasets-plugin/index.js"></script>
       <script defer src="/your-assets-path/interact-plugin/index.js"></script>
 
@@ -212,7 +209,6 @@ The layer ID used here (`field-parcels`) comes from the datasets plugin — a da
 
         const map = new defra.InteractiveMap('my-map', {
           behaviour: 'inline',
-          mapProvider: defra.maplibreProvider(),
           mapStyle: {
             url: 'https://your-tile-url/style.json',
             logo: '/path/to/logo.svg',

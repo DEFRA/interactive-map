@@ -134,9 +134,11 @@ const config = {
           sidebar: [
             { text: 'Installation', href: '/getting-started#installation' },
             { text: 'GOV.UK Prototype kit', href: '/getting-started#govuk-prototype-kit' },
-            { text: 'Manual setup', href: '/getting-started#manual-setup' },
-            { text: 'Basic usage', href: '/getting-started#basic-usage' },
-            { text: 'Using plugins', href: '/getting-started#using-plugins' }
+            { text: 'With a bundler', href: '/getting-started#setting-up-a-map-with-a-bundler' },
+            { text: 'Without a bundler', href: '/getting-started#setting-up-a-map-without-a-bundler' },
+            { text: 'Content Security Policy', href: '/getting-started#content-security-policy' },
+            { text: 'Using plugins', href: '/getting-started#using-plugins' },
+            { text: 'Upgrading to v1', href: '/upgrading-to-v1' }
           ],
         },
         {
