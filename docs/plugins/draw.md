@@ -74,6 +74,32 @@ createDrawPlugin({
 
 ---
 
+### `snapMinZoom`
+
+**Type:** `number`
+
+The lowest zoom snapping works at. Use it to only snap at the zooms where the snap layers are shown.
+
+Below it, the Snap button is disabled and the user's on/off choice is kept. When the user has snap on and zooms below it during a draw or edit, a hint tells them to zoom in. While the button is disabled, the same text is its tooltip and is read by screen readers with the button.
+
+```js
+createDrawPlugin({
+  snapLayers: ['OS/TopographicLine/Field Boundary'],
+  snapMinZoom: 16
+})
+```
+
+---
+
+### `snapZoomInHintText`
+
+**Type:** `string`
+**Default:** `'Zoom in to use snap'`
+
+Hint shown when the user zooms below [`snapMinZoom`](#snapminzoom), and read with the Snap button while it's disabled.
+
+---
+
 ### `onGeometryPreview`
 
 **Type:** `Function`
