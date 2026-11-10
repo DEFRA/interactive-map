@@ -144,6 +144,7 @@ function SlotButton ({ buttonId, config, isHidden = false, appState, appConfig, 
       menuItems={config.menuItems}
       idPrefix={appConfig.id}
       ariaControls={evaluateProp(config.ariaControls, config.pluginId)}
+      description={evaluateProp(config.description, config.pluginId)}
     />
   )
 }

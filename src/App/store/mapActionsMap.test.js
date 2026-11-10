@@ -27,6 +27,12 @@ describe('actionsMap', () => {
     })
   })
 
+  test('MAP_MOVE_START merges payload into state', () => {
+    const payload = { isUserMove: true }
+    const result = actionsMap.MAP_MOVE_START(state, payload)
+    expect(result).toEqual({ ...state, ...payload })
+  })
+
   test('MAP_MOVE merges payload into state', () => {
     const payload = { center: [10, 20] }
     const result = actionsMap.MAP_MOVE(state, payload)
