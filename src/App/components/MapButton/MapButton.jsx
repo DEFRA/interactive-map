@@ -115,6 +115,21 @@ const getControlledElement = ({ idPrefix, panelId, buttonId, hasMenu, panelRole 
 }
 
 /**
+ * The button's tooltip: its label when the label isn't shown, and its description when it has one.
+ * @param {Object} options - Configuration options
+ * @param {string} options.label - The button's label
+ * @param {string} [options.description] - The button's description
+ * @param {boolean} [options.showLabel] - Whether the label is shown
+ * @returns {{ label?: string, description?: string }|null} The tooltip, or null when it would be empty
+ */
+const getTooltip = ({ label, description, showLabel }) => {
+  if (showLabel && !description) {
+    return null
+  }
+  return { label: showLabel ? undefined : label, description }
+}
+
+/**
  * Builds the complete props object for a button or anchor element.
  * Handles ARIA attributes, event handlers, refs, and conditional styling.
  * @param {Object} options - Configuration options
@@ -211,6 +226,7 @@ const buildButtonProps = ({
  * @param {string} [props.href] - URL for anchor element; if provided, renders as <a> instead of <button>
  * @param {string} [props.ariaControls] - Explicit aria-controls target id for buttons that toggle
  *   inline UI which is neither a panel nor a popup (a panelId/menuItems always takes precedence).
+ * @param {string} [props.description] - Extra information shown as the tooltip and read by screen readers after the label
  * @returns {JSX.Element} The rendered button component
  */
 export const MapButton = ({
@@ -232,7 +248,8 @@ export const MapButton = ({
   menuItems,
   idPrefix,
   href,
-  ariaControls
+  ariaControls,
+  description
 }) => {
   const { id: appId } = useConfig()
   const { buttonRefs } = useApp()
@@ -254,6 +271,7 @@ export const MapButton = ({
   const showIcon = iconId || iconSvgContent || hasMenu
   const buttonSlot = getButtonSlot(panelId, buttonId)
   const controlledElement = getControlledElement({ idPrefix, panelId, buttonId, hasMenu, panelRole })
+  const tooltip = getTooltip({ label, description, showLabel })
 
   /**
    * Handles button click events.
@@ -314,7 +332,7 @@ export const MapButton = ({
       data-button-slot={buttonSlot}
       hidden={isHidden}
     >
-      {showLabel ? buttonEl : <Tooltip content={label}>{buttonEl}</Tooltip>}
+      {tooltip ? <Tooltip label={tooltip.label} description={tooltip.description}>{buttonEl}</Tooltip> : buttonEl}
       {buttonSlot && <SlotRenderer slot={buttonSlot} />}
       {/* Mounted permanently, not just while open, so its aria-controls id stays a stable node. */}
       {controlledElement?.type === 'popup' && (

@@ -3,6 +3,7 @@ import { useConfig } from '../../store/configContext'
 import { useApp } from '../../store/appContext'
 import { useMap } from '../../store/mapContext'
 import { useMapStateSync } from '../../hooks/useMapStateSync'
+import { useUserMoveTracking } from '../../hooks/useUserMoveTracking'
 import { useMapURLSync } from '../../hooks/useMapURLSync'
 import { useMapAnnouncements } from '../../hooks/useMapAnnouncements'
 import { useMapProviderOverrides } from '../../hooks/useMapProviderOverrides'
@@ -53,6 +54,7 @@ export const MapController = ({ mapContainerRef }) => {
 
   // Sync React state, handle URL persistence and announce to screen reader
   useMapStateSync()
+  useUserMoveTracking()
   useMapURLSync()
   useMapAnnouncements()
 

@@ -1,6 +1,6 @@
 /**
  * Generic reducer action that shallow-merges the payload into state.
- * Shared by MAP_MOVE, MAP_MOVE_END and MAP_FIRST_IDLE.
+ * Shared by MAP_MOVE_START, MAP_MOVE, MAP_MOVE_END and MAP_FIRST_IDLE.
  */
 const mergePayload = (state, payload) => ({
   ...state,
@@ -68,6 +68,7 @@ const removeMarker = (state, payload) => {
 
 export const actionsMap = {
   SET_MAP_READY: setMapReady,
+  MAP_MOVE_START: mergePayload,
   MAP_MOVE: mergePayload,
   MAP_MOVE_END: mergePayload,
   MAP_FIRST_IDLE: mergePayload,

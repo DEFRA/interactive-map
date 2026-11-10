@@ -102,6 +102,17 @@ ariaControls: (context) => `${context.appConfig.id}-search-form`
 
 ---
 
+### `description`
+**Type:** `string | function`
+
+Extra information shown in the button's tooltip, after the label when the label isn't shown, and read by screen readers after the label. Can be a string or a function that receives the [Context](./context.md) and returns the text. When the function returns nothing, the button has no description.
+
+```js
+description: (context) => context.pluginState.isOutOfRange ? 'Zoom in to use this' : undefined
+```
+
+---
+
 ### `keepFocus`
 **Type:** `boolean`
 **Default:** `false`
