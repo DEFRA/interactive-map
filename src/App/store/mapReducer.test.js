@@ -47,6 +47,7 @@ describe('mapReducer', () => {
         resolution: null,
         isAtMaxZoom: null,
         isAtMinZoom: null,
+        isUserMove: false,
         crossHair: {
           isVisible: false,
           isPinnedToMap: false,

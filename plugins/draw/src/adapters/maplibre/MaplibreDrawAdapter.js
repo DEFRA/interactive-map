@@ -68,6 +68,7 @@ export const displayedShape = (mode, coordinates) => {
  *   setGeometry(geometry)
  *   get(id) / add(feature) / setStyle(id, properties) / setProperties(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
+ *   setSnapAvailable(bool)
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
  *   remove()
@@ -82,6 +83,7 @@ export class MaplibreDrawAdapter {
     // Assigned once per feature, on creation only (see styles.js's SORT_KEY_PROP) — drives
     // paint order so a later-drawn feature reliably layers above an earlier one.
     this._sortKeyCounter = 0
+    this._snapAvailable = true
 
     const { draw, remove } = createMapboxDraw({
       mapStyle: options.mapStyle,
@@ -370,9 +372,23 @@ export class MaplibreDrawAdapter {
 
   setSnapEnabled (bool) {
     this._mapProvider.snapEnabled = bool
+    this._applySnapStatus()
+  }
+
+  // Snaps only while the user has snap on and it's available
+  setSnapAvailable (bool) {
+    if (bool === this._snapAvailable) {
+      return
+    }
+    this._snapAvailable = bool
+    this._applySnapStatus()
+  }
+
+  _applySnapStatus () {
+    const isActive = this.isSnapEnabled()
     const snap = getSnapInstance(this._map)
-    if (snap?.setSnapStatus) { snap.setSnapStatus(bool) }
-    if (!bool && snap) {
+    if (snap?.setSnapStatus) { snap.setSnapStatus(isActive) }
+    if (!isActive && snap) {
       clearSnapState(snap)
       if (this._map.getLayer('snap-helper-circle')) {
         this._map.setLayoutProperty('snap-helper-circle', 'visibility', 'none')
@@ -392,7 +408,7 @@ export class MaplibreDrawAdapter {
   }
 
   isSnapEnabled () {
-    return this._mapProvider.snapEnabled === true
+    return this._mapProvider.snapEnabled === true && this._snapAvailable
   }
 
   setFeatureProperty (id, property, value) {

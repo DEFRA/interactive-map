@@ -31,6 +31,8 @@ export const initialState = (config) => {
     resolution: null,
     isAtMaxZoom: null,
     isAtMinZoom: null,
+    // Whether the user started the latest move, rather than code (useUserMoveTracking)
+    isUserMove: false,
 
     // Full target marker state
     crossHair: {

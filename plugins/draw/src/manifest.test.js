@@ -195,8 +195,21 @@ describe('top row buttons', () => {
 
     test('is disabled while Done waits on a check', () => {
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_line', hasSnapLayers: true, holding: true } })).toBe(false)
-      expect(item().enableWhen({ pluginState: { holding: true } })).toBe(false)
-      expect(item().enableWhen({ pluginState: { holding: false } })).toBe(true)
+      expect(item().enableWhen({ pluginState: { holding: true }, mapState: {} })).toBe(false)
+      expect(item().enableWhen({ pluginState: { holding: false }, mapState: {} })).toBe(true)
+    })
+
+    test('is disabled below snapMinZoom', () => {
+      const enabled = (zoom) => item().enableWhen({ pluginConfig: { snapMinZoom: 16 }, pluginState: { holding: false }, mapState: { zoom } })
+      expect(enabled(15)).toBe(false)
+      expect(enabled(16)).toBe(true)
+    })
+
+    test('is described with the hint below snapMinZoom', () => {
+      const description = (pluginConfig, zoom) => item().description({ pluginConfig: { snapMinZoom: 16, ...pluginConfig }, mapState: { zoom } })
+      expect(description({}, 15)).toBe('Zoom in to use snap')
+      expect(description({ snapZoomInHintText: 'Zoom in further' }, 15)).toBe('Zoom in further')
+      expect(description({}, 16)).toBeUndefined()
     })
 
     test('is visible during draw_point, which supports snapping but has no undo/delete', () => {

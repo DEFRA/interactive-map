@@ -6,9 +6,19 @@ let tooltipIdCounter = 0
 const showDelay = 500
 const hideDelay = 0
 
+// The label names the trigger (aria-labelledby) and the description describes it (aria-describedby).
+// With both, they're shown together, each in its own element so neither is read twice.
+const TooltipText = ({ tooltipId, label, description }) => (
+  <>
+    {label && <span id={`${tooltipId}-label`}>{label}</span>}
+    {label && description && ': '}
+    {description && <span id={`${tooltipId}-description`}>{description}</span>}
+  </>
+)
+
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
-export const Tooltip = ({ children, content }) => {
+export const Tooltip = ({ children, label, description }) => {
   const { interfaceType } = useApp()
   const triggerRef = useRef(null)
   const tooltipRef = useRef(null)
@@ -76,23 +86,31 @@ export const Tooltip = ({ children, content }) => {
     }
   }
 
+  // Runs the trigger's own handler after the tooltip's, so the trigger keeps its own behaviour
+  // (such as a menu button's keyboard handling)
+  const withChildHandler = (name, handler) => (event) => {
+    handler()
+    children.props?.[name]?.(event)
+  }
+
   const childWithProps = cloneElement(children, {
     ref: mergeRefs,
-    onMouseEnter: show,
-    onMouseLeave: hide,
-    onMouseDown: cancel,
-    onKeyDown: cancel,
-    onFocus: () => {
+    onMouseEnter: withChildHandler('onMouseEnter', show),
+    onMouseLeave: withChildHandler('onMouseLeave', hide),
+    onMouseDown: withChildHandler('onMouseDown', cancel),
+    onKeyDown: withChildHandler('onKeyDown', cancel),
+    onFocus: withChildHandler('onFocus', () => {
       if (interfaceType === 'keyboard') {
         show()
       }
       setFocused(true)
-    },
-    onBlur: () => {
+    }),
+    onBlur: withChildHandler('onBlur', () => {
       hide()
       setFocused(false)
-    },
-    'aria-labelledby': tooltipId
+    }),
+    'aria-labelledby': label ? `${tooltipId}-label` : undefined,
+    'aria-describedby': description ? `${tooltipId}-description` : undefined
   })
 
   return (
@@ -105,7 +123,7 @@ export const Tooltip = ({ children, content }) => {
         role='tooltip'
         aria-hidden={!visible}
       >
-        {content}
+        <TooltipText tooltipId={tooltipId} label={label} description={description} />
       </div>
     </div>
   )
