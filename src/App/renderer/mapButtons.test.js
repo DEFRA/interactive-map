@@ -174,6 +174,14 @@ describe('mapButtons module', () => {
       expect(render(baseBtn).props.isBusy).toBeUndefined()
     })
 
+    it('evaluates description, a string or a function of the context', () => {
+      const evaluate = jest.fn((prop) => (typeof prop === 'function' ? prop() : prop))
+      const fromFunction = SlotButton({ buttonId: 'id', config: { ...baseBtn, description: () => 'Zoom in' }, appState, appConfig, evaluateProp: evaluate })
+      expect(fromFunction.props.description).toBe('Zoom in')
+      const fromString = SlotButton({ buttonId: 'id', config: { ...baseBtn, description: 'Fixed' }, appState, appConfig, evaluateProp: evaluate })
+      expect(fromString.props.description).toBe('Fixed')
+    })
+
     it.each([
       [{ slot: 'right-top', open: false }, 'dialog'],
       [{ slot: 'right-top', open: false, dismissible: false }, 'region'],

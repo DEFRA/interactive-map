@@ -184,7 +184,7 @@
     transform: rotate(180deg);
 }
 
-.im-c-map-button[aria-disabled="true"]:not(.im-c-map-button--primary):not(.im-c-map-button--tertiary) {
+.im-c-map-button[aria-disabled="true"]:not(.im-c-map-button--primary):not(.im-c-map-button--tertiary):not([aria-pressed="true"]) {
     svg, span {
         opacity: var(--disabled-button-opacity);
     }
@@ -195,6 +195,20 @@
     color: var(--pressed-button-foreground-color);
     border-color: var(--pressed-button-border-color);
     background-color: var(--pressed-button-background-color);
+}
+
+// Pressed and disabled fades the fill rather than the icon and label, which would leave dim
+// content on a full-strength pressed fill. Doubled class to outrank the slot-specific pressed
+// rules and hover.
+.im-c-map-button.im-c-map-button[aria-pressed="true"][aria-disabled="true"] {
+    color: var(--disabled-pressed-button-foreground-color);
+    border-color: var(--disabled-pressed-button-background-color);
+    background-color: var(--disabled-pressed-button-background-color);
+
+    @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+        color: GrayText;
+        border-color: GrayText;
+    }
 }
 
 // 5. Responsive tweaks
