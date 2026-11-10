@@ -5,11 +5,13 @@ import { DrawInit } from './DrawInit.jsx'
 import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
 import { useSpatialList } from './hooks/useSpatialList.js'
+import { useSnapMinZoom } from './hooks/useSnapMinZoom.js'
 
 jest.mock('./adapters/loadDrawAdapter.js', () => ({ loadDrawAdapter: jest.fn() }))
 jest.mock('../../../src/services/logger.js', () => ({ logger: { error: jest.fn() } }))
 jest.mock('./events.js', () => ({ attachEvents: jest.fn(() => jest.fn()) }))
 jest.mock('./hooks/useSpatialList.js', () => ({ useSpatialList: jest.fn() }))
+jest.mock('./hooks/useSnapMinZoom.js', () => ({ useSnapMinZoom: jest.fn() }))
 
 const makeProps = (overrides = {}) => {
   const adapter = { remove: jest.fn(), setInterfaceType: jest.fn() }
@@ -249,6 +251,20 @@ describe('useSpatialList wiring', () => {
       mapProvider: props.mapProvider,
       spatialListRegistry: props.appState.spatialListRegistry,
       viewportRef: props.appState.layoutRefs.viewportRef
+    })
+  })
+})
+
+describe('useSnapMinZoom wiring', () => {
+  test('is called with the map and plugin state, the map provider and the hints service', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'draw_line' } })
+    await renderInit(props)
+    expect(useSnapMinZoom).toHaveBeenCalledWith({
+      mapState: props.mapState,
+      pluginConfig: props.pluginConfig,
+      pluginState: props.pluginState,
+      mapProvider: props.mapProvider,
+      hints: props.services.hints
     })
   })
 })

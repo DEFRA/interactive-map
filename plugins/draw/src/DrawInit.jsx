@@ -3,6 +3,7 @@ import { EVENTS } from '../../../src/config/events.js'
 import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
 import { useSpatialList } from './hooks/useSpatialList.js'
+import { useSnapMinZoom } from './hooks/useSnapMinZoom.js'
 import { APPLICATION_MODE_ID } from './defaults.js'
 import { needsDrawTarget } from './utils/needsDrawTarget.js'
 import { isDrawingMode, isSessionMode } from './utils/drawModes.js'
@@ -77,6 +78,8 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     (isDrawingMode(pluginState.mode) && appState.interfaceType === 'keyboard'))
 
   useLoadDrawAdapter({ mapState, pluginConfig, pluginState, mapProvider, eventBus, symbolRegistry })
+
+  useSnapMinZoom({ mapState, pluginConfig, pluginState, mapProvider, hints })
 
   // Enters the 'draw' application mode (declared in the manifest) in any draw/edit mode, and leaves it
   // when the draw/edit mode ends. useLayoutEffect so the class lands in the same paint as the change.
