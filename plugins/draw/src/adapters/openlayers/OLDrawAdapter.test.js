@@ -289,3 +289,17 @@ test('remove runs the olDraw cleanup', () => {
   adapter.remove()
   expect(createOLDraw.mock.results.at(-1).value.remove).toHaveBeenCalled()
 })
+
+test('snaps only while snap is on and available', () => {
+  const { manager, adapter } = setup()
+  adapter.setSnapEnabled(true)
+  adapter.setSnapAvailable(false)
+  expect(manager.snap.setActive).toHaveBeenLastCalledWith(false)
+  expect(adapter.isSnapEnabled()).toBe(false)
+  adapter.setSnapAvailable(true)
+  expect(manager.snap.setActive).toHaveBeenLastCalledWith(true)
+  expect(adapter.isSnapEnabled()).toBe(true)
+
+  manager.snap = null
+  expect(() => adapter.setSnapAvailable(false)).not.toThrow()
+})

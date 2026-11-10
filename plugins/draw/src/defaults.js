@@ -39,6 +39,10 @@ export const TOLERANCES = {
   snapRadius: 12
 }
 
+// Shown when the user zooms below snapMinZoom, and read with the Snap button while it's
+// disabled there. Overridden by snapZoomInHintText.
+export const SNAP_ZOOM_IN_HINT_TEXT = 'Zoom in to use snap'
+
 export const KEYBOARD = {
   nudgeAmount: 1,
   stepAmount: 5
