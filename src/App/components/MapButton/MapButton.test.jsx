@@ -7,8 +7,8 @@ jest.mock('../../../utils/stringToKebab', () => ({
 }))
 
 jest.mock('../Tooltip/Tooltip', () => ({
-  Tooltip: ({ content, children }) => (
-    <div data-testid='tooltip' data-content={content}>{children}</div>
+  Tooltip: ({ label, description, children }) => (
+    <div data-testid='tooltip' data-label={label} data-description={description}>{children}</div>
   )
 }))
 
@@ -68,7 +68,13 @@ describe('MapButton', () => {
 
   it('wraps in Tooltip when showLabel is false', () => {
     renderButton({ showLabel: false })
-    expect(screen.getByTestId('tooltip')).toHaveAttribute('data-content', 'Label')
+    expect(screen.getByTestId('tooltip')).toHaveAttribute('data-label', 'Label')
+    expect(screen.getByTestId('tooltip')).not.toHaveAttribute('data-description')
+  })
+
+  it('has no Tooltip when the label is shown and there\'s no description', () => {
+    renderButton({ showLabel: true })
+    expect(screen.queryByTestId('tooltip')).toBeNull()
   })
 
   it('hides wrapper when isHidden', () => {
@@ -308,5 +314,17 @@ describe('MapButton', () => {
     render(<MapButton buttonId='Test' label='Label' />)
     expect(screen.queryByRole('img', { hidden: true })).toBeNull()
     expect(screen.queryByTestId('icon')).toBeNull()
+  })
+
+  it('shows the label and description as the tooltip when the label isn\'t shown', () => {
+    renderButton({ showLabel: false, description: 'Zoom in to use snap' })
+    expect(screen.getByTestId('tooltip')).toHaveAttribute('data-label', 'Label')
+    expect(screen.getByTestId('tooltip')).toHaveAttribute('data-description', 'Zoom in to use snap')
+  })
+
+  it('shows only the description as the tooltip when the label is shown', () => {
+    renderButton({ showLabel: true, description: 'Zoom in to use snap' })
+    expect(screen.getByTestId('tooltip')).not.toHaveAttribute('data-label')
+    expect(screen.getByTestId('tooltip')).toHaveAttribute('data-description', 'Zoom in to use snap')
   })
 })

@@ -194,6 +194,10 @@
  * opens or expands a custom control rendered elsewhere by the plugin. Text or a function
  * returning the id.
  *
+ * @property {string | ((context: PluginContext) => string | undefined)} [description]
+ * Extra information read by screen readers after the label, set with aria-describedby. Text or a
+ * function returning the text; no description when it returns nothing.
+ *
  * @property {ButtonBreakpointConfig} [desktop]
  * Desktop breakpoint configuration.
  *
