@@ -16,6 +16,7 @@ import { isMac } from '../../../src/utils/isMac.js'
 import { APPLICATION_MODE_ID } from './defaults.js'
 import { needsDrawTarget } from './utils/needsDrawTarget.js'
 import { isShapeDrawMode, isCheckedMode } from './utils/drawModes.js'
+import { isBelowSnapMinZoom, getSnapHintText } from './utils/snapMinZoom.js'
 
 // edit_point behaves like edit_vertex for Done/Undo, but stays out of drawDeletePoint and mergeShapes (neither applies to a single coordinate).
 
@@ -115,8 +116,10 @@ export const manifest = {
       label: 'Snap',
       iconId: 'magnet',
       hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers,
-      enableWhen: ({ pluginState }) => !pluginState.holding,
+      // Also disabled below snapMinZoom, keeping the user's on/off choice
+      enableWhen: ({ pluginConfig, pluginState, mapState }) => !pluginState.holding && !isBelowSnapMinZoom(pluginConfig, mapState.zoom),
       pressedWhen: ({ pluginState }) => !!pluginState.snap,
+      description: ({ pluginConfig, mapState }) => isBelowSnapMinZoom(pluginConfig, mapState.zoom) ? getSnapHintText(pluginConfig) : undefined,
       ...createButtonSlots(true, TOOLBAR_SLOT)
     },
     {

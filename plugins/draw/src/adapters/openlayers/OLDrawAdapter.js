@@ -31,12 +31,14 @@ const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
  *   setGeometry(geometry)
  *   get(id) / add(feature) / setStyle(id, properties) / setProperties(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
+ *   setSnapAvailable(bool)
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
  *   remove()
  */
 export class OLDrawAdapter {
   _snapEnabled = false
+  _snapAvailable = true
 
   constructor (mapProvider, options) {
     const { manager, remove } = createOLDraw({
@@ -135,7 +137,13 @@ export class OLDrawAdapter {
 
   setSnapEnabled (bool) {
     this._snapEnabled = bool
-    this._manager.snap?.setActive(bool)
+    this._manager.snap?.setActive(this.isSnapEnabled())
+  }
+
+  // Snaps only while the user has snap on and it's available
+  setSnapAvailable (bool) {
+    this._snapAvailable = bool
+    this._manager.snap?.setActive(this.isSnapEnabled())
   }
 
   setSnapLayers (layers) {
@@ -143,7 +151,7 @@ export class OLDrawAdapter {
     this._manager.snap?.setSnapLayers(translated)
   }
 
-  isSnapEnabled () { return this._snapEnabled }
+  isSnapEnabled () { return this._snapEnabled && this._snapAvailable }
 
   setFeatureProperty () { /* not implemented for OL */ }
   setDrawingPreviewProperty (property, value) { this._manager.setDrawingPreviewProperty(property, value) }

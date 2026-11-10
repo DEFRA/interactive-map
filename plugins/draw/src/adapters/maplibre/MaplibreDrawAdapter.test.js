@@ -1164,3 +1164,30 @@ describe('remove', () => {
     expect(removeDraw).toHaveBeenCalled()
   })
 })
+
+describe('snap availability', () => {
+  test('snaps only while snap is on and available, keeping the user\'s choice', () => {
+    const { adapter, mapProvider } = setup()
+    const snap = { setSnapStatus: jest.fn() }
+    getSnapInstance.mockReturnValue(snap)
+    adapter.setSnapEnabled(true)
+
+    adapter.setSnapAvailable(false)
+    expect(snap.setSnapStatus).toHaveBeenLastCalledWith(false)
+    expect(clearSnapState).toHaveBeenCalledWith(snap)
+    expect(adapter.isSnapEnabled()).toBe(false)
+    expect(mapProvider.snapEnabled).toBe(true)
+
+    adapter.setSnapAvailable(true)
+    expect(snap.setSnapStatus).toHaveBeenLastCalledWith(true)
+    expect(adapter.isSnapEnabled()).toBe(true)
+  })
+
+  test('does nothing when availability hasn\'t changed', () => {
+    const { adapter } = setup()
+    const snap = { setSnapStatus: jest.fn() }
+    getSnapInstance.mockReturnValue(snap)
+    adapter.setSnapAvailable(true)
+    expect(snap.setSnapStatus).not.toHaveBeenCalled()
+  })
+})
