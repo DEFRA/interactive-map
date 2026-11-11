@@ -105,6 +105,18 @@ describe('ADD_DATASET', () => {
     })
   })
 
+  it('adds a dataset that is not in the menu and leaves the menu unchanged', () => {
+    const menu = [{ id: 'roads', type: 'checkbox', visibleWhen: true, items: [{ id: 'roads', label: 'Roads' }] }]
+    const state = makeState({ menu })
+    const dataset = { id: 'highlights', label: 'Highlights' }
+
+    const result = actions.ADD_DATASET(state, { dataset, mapStyle: {} })
+
+    expect(result.mappedDatasets).toHaveProperty('highlights')
+    expect(result.orderedDatasets).toContain('highlights')
+    expect(result.menu).toBe(menu)
+  })
+
   it('logs error and returns unchanged state when dataset already exists', () => {
     const state = makeStateWithDataset('roads')
     const result = actions.ADD_DATASET(state, { dataset: { id: 'roads', label: 'Roads' }, mapStyle: {} })
