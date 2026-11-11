@@ -72,16 +72,19 @@ export const datasetsToMenu = (state) => {
 }
 
 export const addDatasetToMenu = (state, dataset) => {
-  const menu = [...state.menu]
-  const datasetMenuEntry = datasetsToMenu({ datasets: [dataset] })
-  // For each entry in the new dataset menu, either add it to an existing group or add it as a new entry
-  const existingGroup = menu.find(entry => entry.groupLabel === datasetMenuEntry[0].groupLabel)
-  if (existingGroup) {
-    existingGroup.items.push(...datasetMenuEntry[0].items)
-  } else {
-    menu.push(...datasetMenuEntry)
+  const [datasetMenuEntry] = datasetsToMenu({ datasets: [dataset] })
+  if (!datasetMenuEntry) {
+    return state.menu
   }
-  return menu
+  // Add the dataset to an existing entry with the same groupLabel, or as a new entry
+  const existingEntry = state.menu.find(entry => entry.groupLabel === datasetMenuEntry.groupLabel)
+  if (!existingEntry) {
+    return [...state.menu, datasetMenuEntry]
+  }
+  return state.menu.map(entry => entry === existingEntry
+    ? { ...entry, items: [...entry.items, ...datasetMenuEntry.items] }
+    : entry
+  )
 }
 
 export const removeDatasetsFromMenu = (menu, datasetsToRemove) => {
