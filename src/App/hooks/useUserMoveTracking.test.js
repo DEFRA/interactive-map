@@ -14,7 +14,8 @@ describe('useUserMoveTracking', () => {
   let container, dispatch, eventBus, handlers
 
   const moveStart = () => handlers['map:movestart']()
-  const lastIsUserMove = () => dispatch.mock.calls.at(-1)[0].payload.isUserMove
+  // mapState.isUserMove: false until the first change is sent
+  const lastIsUserMove = () => dispatch.mock.calls.at(-1)?.[0].payload.isUserMove ?? false
 
   beforeEach(() => {
     jest.useFakeTimers()
@@ -37,10 +38,27 @@ describe('useUserMoveTracking', () => {
     jest.useRealTimers()
   })
 
-  it('marks a move as code-made when there was no user input', () => {
+  it('marks a move as code-made when there was no user input, without sending the unchanged value', () => {
     renderHook(() => useUserMoveTracking())
     moveStart()
-    expect(dispatch).toHaveBeenCalledWith({ type: 'MAP_MOVE_START', payload: { isUserMove: false } })
+    expect(lastIsUserMove()).toBe(false)
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('only sends isUserMove when it changes', () => {
+    renderHook(() => useUserMoveTracking())
+    container.dispatchEvent(new Event('wheel'))
+    moveStart()
+    moveStart()
+    moveStart()
+    expect(dispatch).toHaveBeenCalledTimes(1)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'MAP_MOVE_START', payload: { isUserMove: true } })
+
+    jest.advanceTimersByTime(USER_INPUT_WINDOW_MS + 1)
+    moveStart()
+    moveStart()
+    expect(dispatch).toHaveBeenCalledTimes(2)
+    expect(lastIsUserMove()).toBe(false)
   })
 
   it.each(['wheel', 'keydown', 'keyup'])('marks a move straight after a %s as the user\'s', (type) => {
