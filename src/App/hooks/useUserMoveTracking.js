@@ -42,8 +42,15 @@ export function useUserMoveTracking () {
     const handlePointerUp = () => {
       isPointerDown = false
     }
+    // Starts false, as in mapState. Only sent when it changes: a resize starts several moves inside
+    // MapLibre's ResizeObserver, and rendering for each one causes a ResizeObserver loop error.
+    let lastIsUserMove = false
     const handleMoveStart = () => {
       const isUserMove = isPointerDown || Date.now() - lastInputAt <= USER_INPUT_WINDOW_MS
+      if (isUserMove === lastIsUserMove) {
+        return
+      }
+      lastIsUserMove = isUserMove
       dispatch({ type: 'MAP_MOVE_START', payload: { isUserMove } })
     }
 
