@@ -65,7 +65,9 @@ jobs:
   # Packs each engine package, builds a consumer app with webpack, Vite, Rollup, esbuild and the
   # UMD scripts, and checks the map loads under a strict Content Security Policy
   engine-packages:
-    runs-on: ubuntu-latest
+    # Playwright 1.58 can't install Chromium's dependencies on Ubuntu 26.04, which ubuntu-latest now
+    # gives. Move back to ubuntu-latest once Playwright supports it.
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
