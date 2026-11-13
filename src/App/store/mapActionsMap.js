@@ -29,6 +29,18 @@ const setMapSize = (state, payload) => {
   }
 }
 
+const setResetViewTarget = (state, payload) => ({
+  ...state,
+  resetViewTarget: payload,
+  isResetViewTargetKnown: true
+})
+
+const clearResetViewTarget = (state) => ({
+  ...state,
+  resetViewTarget: null,
+  isResetViewTargetKnown: false
+})
+
 const updateCrossHair = (state, payload) => {
   return {
     ...state,
@@ -75,6 +87,8 @@ export const actionsMap = {
   SET_MAP_STYLE: setMapStyle,
   SET_MAP_STYLES: setMapStyles,
   SET_MAP_SIZE: setMapSize,
+  SET_RESET_VIEW_TARGET: setResetViewTarget,
+  CLEAR_RESET_VIEW_TARGET: clearResetViewTarget,
   UPDATE_CROSS_HAIR: updateCrossHair,
   UPSERT_LOCATION_MARKER: upsertMarker,
   REMOVE_LOCATION_MARKER: removeMarker

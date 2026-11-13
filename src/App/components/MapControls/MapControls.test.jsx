@@ -180,7 +180,7 @@ describe('MapControls', () => {
       render(<MapControls />)
 
       fireEvent.click(screen.getByRole('button', { name: 'Move right' }))
-      expect(appState.layoutRefs.viewportRef.current.focus).toHaveBeenCalled()
+      expect(appState.layoutRefs.viewportRef.current.focus).toHaveBeenCalledWith({ preventScroll: true })
     })
 
     it('keeps focus on the button when driven by keyboard, so repeated Enter/Space presses do not require re-tabbing', () => {

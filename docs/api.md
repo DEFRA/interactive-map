@@ -252,6 +252,16 @@ zoom control buttons (`enableZoomControls`) are hidden to avoid duplication.
 
 ---
 
+### `enableResetView`
+**Type:** `boolean`
+**Default:** `false`
+
+Whether a reset view button is displayed. It moves the map to the configured `bounds` or `extent`, or to `center` and `zoom` if no bounds are set, not to a view read from the URL. The safe zone padding is applied.
+
+The button is disabled until the map is moved away from that view, and isn't displayed when none of `bounds`, `extent` or `center` are configured.
+
+---
+
 ### `enableZoomControls`
 **Type:** `boolean`
 **Default:** `true`
@@ -1002,6 +1012,16 @@ Set the map center and zoom. Safe zone padding is automatically applied.
 
 ```js
 interactiveMap.setView({ center: [-0.1276, 51.5074], zoom: 12 })
+```
+
+---
+
+### `resetView()`
+
+Move the map to the configured `bounds` or `extent`, or to `center` and `zoom` if no bounds are set. Ignores any view read from the URL when the map loaded. Safe zone padding is automatically applied.
+
+```js
+interactiveMap.resetView()
 ```
 
 ---
