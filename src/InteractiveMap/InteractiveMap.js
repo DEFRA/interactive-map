@@ -555,6 +555,14 @@ export default class InteractiveMap {
   }
 
   /**
+   * Move the map to its configured `bounds` or `extent`, or to `center` and `zoom` if no bounds are set,
+   * respecting the safe zone padding. Ignores any view read from the URL when the map loaded.
+   */
+  resetView () {
+    this.eventBus.emitWhenReady(events.MAP_RESET_VIEW)
+  }
+
+  /**
    * Programmatically open the map.
    *
    * Equivalent to the user clicking the open button. If the map has been hidden (e.g. in hybrid mode),
