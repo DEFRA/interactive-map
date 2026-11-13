@@ -17,7 +17,6 @@ The live demo uses OS Open Zoomstack tiles from OS Labs, which do not require an
     language: 'js',
     code: `
       import InteractiveMap from '@defra/interactive-map'
-      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
       import createMapStylesPlugin from '@defra/interactive-map/plugins/map-styles'
 
       const mapStyles = [
@@ -58,7 +57,6 @@ The live demo uses OS Open Zoomstack tiles from OS Labs, which do not require an
 
       new InteractiveMap('my-map', {
         behaviour: 'inline',
-        mapProvider: maplibreProvider(),
         mapStyle: mapStyles[0],
         center: [-0.1276, 51.5074],
         zoom: 12,
@@ -72,7 +70,6 @@ The live demo uses OS Open Zoomstack tiles from OS Labs, which do not require an
     language: 'html',
     code: `
       <script defer src="/your-assets-path/interactive-map/index.js"></script>
-      <script defer src="/your-assets-path/maplibre-provider/index.js"></script>
       <script defer src="/your-assets-path/map-styles-plugin/index.js"></script>
 
       <script>
@@ -115,7 +112,6 @@ The live demo uses OS Open Zoomstack tiles from OS Labs, which do not require an
 
         new defra.InteractiveMap('my-map', {
           behaviour: 'inline',
-          mapProvider: defra.maplibreProvider(),
           mapStyle: mapStyles[0],
           center: [-0.1276, 51.5074],
           zoom: 12,

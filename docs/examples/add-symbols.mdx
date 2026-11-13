@@ -13,7 +13,6 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
     language: 'js',
     code: `
       import InteractiveMap from '@defra/interactive-map'
-      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
       import createDatasetsPlugin from '@defra/interactive-map/plugins/datasets'
       import createMapKeyPlugin from '@defra/interactive-map/plugins/map-key'
 
@@ -81,7 +80,6 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
 
       new InteractiveMap('my-map', {
         behaviour: 'inline',
-        mapProvider: maplibreProvider(),
         mapStyle: {
           url: 'https://your-tile-url/style.json',
           logo: '/path/to/logo.svg',
@@ -100,7 +98,6 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
     language: 'html',
     code: `
       <script defer src="/your-assets-path/interactive-map/index.js"></script>
-      <script defer src="/your-assets-path/maplibre-provider/index.js"></script>
       <script defer src="/your-assets-path/datasets-plugin/index.js"></script>
       <script defer src="/your-assets-path/map-key-plugin/index.js"></script>
 
@@ -170,7 +167,6 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
 
         new defra.InteractiveMap('my-map', {
           behaviour: 'inline',
-          mapProvider: defra.maplibreProvider(),
           mapStyle: {
             url: 'https://your-tile-url/style.json',
             logo: '/path/to/logo.svg',
