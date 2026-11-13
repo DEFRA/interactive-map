@@ -877,8 +877,8 @@
  *
  * @property {boolean} [enableResetView=false]
  * Whether a reset view button is displayed. It moves the map to the configured bounds
- * or extent, or to center and zoom if no bounds are set. Disabled while the map is
- * still at that view, and not displayed when none of these are configured.
+ * or extent, or to center and zoom if no bounds are set. Disabled until the map is
+ * moved away from that view, and not displayed when none of these are configured.
  *
  * @property {boolean} [enableZoomControls=true]
  * Whether zoom control buttons are displayed. Not displayed when the interface

@@ -258,7 +258,7 @@ zoom control buttons (`enableZoomControls`) are hidden to avoid duplication.
 
 Whether a reset view button is displayed. It moves the map to the configured `bounds` or `extent`, or to `center` and `zoom` if no bounds are set, not to a view read from the URL. The safe zone padding is applied.
 
-The button is disabled while the map is still at that view, and isn't displayed when none of `bounds`, `extent` or `center` are configured.
+The button is disabled until the map is moved away from that view, and isn't displayed when none of `bounds`, `extent` or `center` are configured.
 
 ---
 
