@@ -313,6 +313,7 @@ const interactiveMap = new InteractiveMap('map', {
   readMapText: true,
   // urlPosition: 'none',
   enableFullscreen: true,
+  enableResetView: true,
   // hasExitButton: true,
   // markers: [{
   //   id: 'location',

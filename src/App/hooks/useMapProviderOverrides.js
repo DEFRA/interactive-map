@@ -10,6 +10,7 @@ import { getMapSizeScale } from '../../config/mapSizeScales.js'
 import { SIDE_PANEL_SLOT_REFS } from '../../config/mapPanelSlots.js'
 import { getFitMove } from '../../utils/getFitMove.js'
 import { getScreenBox, getBoxCenter } from '../../utils/screenBox.js'
+import { resetView } from '../../utils/resetView.js'
 
 const FIT_WITHOUT_MARGIN = { type: 'fit' }
 
@@ -61,9 +62,9 @@ const getMove = ({ bounds, safeZoneInset, mapProvider, layoutRefs, mapSize, pref
 }
 
 // Forward public API events to the (overridden) mapProvider methods so that
-// interactiveMap.fitToBounds() and interactiveMap.setView() respect safe zone padding.
+// interactiveMap.fitToBounds(), setView() and resetView() respect safe zone padding.
 // fitToBounds' options are passed through.
-const useForwardMapEvents = (mapProvider, eventBus) => {
+const useForwardMapEvents = (mapProvider, eventBus, appConfig) => {
   useEffect(() => {
     if (!mapProvider || !eventBus) {
       return undefined
@@ -71,19 +72,23 @@ const useForwardMapEvents = (mapProvider, eventBus) => {
 
     const handleFitToBounds = (bounds, options) => mapProvider.fitToBounds(bounds, options)
     const handleSetView = (opts) => mapProvider.setView(opts)
+    const handleResetView = () => resetView(mapProvider, appConfig)
 
     eventBus.on(events.MAP_FIT_TO_BOUNDS, handleFitToBounds)
     eventBus.on(events.MAP_SET_VIEW, handleSetView)
+    eventBus.on(events.MAP_RESET_VIEW, handleResetView)
 
     return () => {
       eventBus.off(events.MAP_FIT_TO_BOUNDS, handleFitToBounds)
       eventBus.off(events.MAP_SET_VIEW, handleSetView)
+      eventBus.off(events.MAP_RESET_VIEW, handleResetView)
     }
-  }, [mapProvider, eventBus])
+  }, [mapProvider, eventBus, appConfig])
 }
 
 export const useMapProviderOverrides = () => {
-  const { mapProvider, eventBus } = useConfig()
+  const appConfig = useConfig()
+  const { mapProvider, eventBus } = appConfig
   const { dispatch: appDispatch, layoutRefs, breakpoint } = useApp()
   const { mapSize } = useMap()
 
@@ -181,5 +186,5 @@ export const useMapProviderOverrides = () => {
     }
   }, [mapProvider, appDispatch, layoutRefs, mapSize])
 
-  useForwardMapEvents(mapProvider, eventBus)
+  useForwardMapEvents(mapProvider, eventBus, appConfig)
 }

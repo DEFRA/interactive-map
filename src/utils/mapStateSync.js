@@ -92,6 +92,7 @@ const getInitialMapState = ({ id, center, zoom, bounds, urlPosition = 'sync' }, 
 }
 
 export {
+  getMapStateFromURL,
   setMapStateInURL,
   getInitialMapState
 }
