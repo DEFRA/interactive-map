@@ -159,6 +159,8 @@ export const EVENTS = {
   MAP_FIT_TO_BOUNDS: 'map:fittobounds',
   /** @internal Set the map center and zoom. Payload: { center: [number, number], zoom?: number } */
   MAP_SET_VIEW: 'map:setview',
+  /** @internal Move the map to its configured bounds, or center and zoom. Payload: none */
+  MAP_RESET_VIEW: 'map:resetview',
 
   // ============================================
   // Map responses (advanced / subscribe)

@@ -641,6 +641,11 @@ describe('InteractiveMap — Public API Methods', () => {
     expect(map.eventBus.emitWhenReady).toHaveBeenCalledWith('map:setview', { center, zoom: 12 })
   })
 
+  it('resetView emits the reset view event', () => {
+    map.resetView()
+    expect(map.eventBus.emitWhenReady).toHaveBeenCalledWith('map:resetview')
+  })
+
   it('showHint and dismissHint emit correct events', () => {
     map.showHint('Press <kbd>Enter</kbd> to select', { duration: 2000 })
     map.dismissHint()

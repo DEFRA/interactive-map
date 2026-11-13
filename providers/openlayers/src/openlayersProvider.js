@@ -110,7 +110,8 @@ export default class OpenLayersProvider extends MapProvider {
 
     if (bounds) {
       map.once('rendercomplete', () => {
-        view.fit(bounds, { size: map.getSize(), duration: 0 })
+        // Fits inside the view's padding, as fitToBounds does
+        view.fit(bounds, { duration: 0 })
       })
     }
 
