@@ -1,4 +1,5 @@
 // services/mapFocus.js
+import { getFocusOptions } from '../utils/getFocusOptions.js'
 
 /**
  * Moves focus to the map viewport, optionally with a message that stands in
@@ -13,7 +14,7 @@
  */
 const ARIA_LABEL = 'aria-label'
 
-export function createMapFocus ({ viewportRef }) {
+export function createMapFocus ({ viewportRef, getInterfaceType = () => undefined }) {
   let originalLabel = null
   let hasMessage = false
   let isHoldingAnnouncements = false
@@ -31,7 +32,7 @@ export function createMapFocus ({ viewportRef }) {
       hasMessage = true
       isHoldingAnnouncements = true
     }
-    viewport.focus()
+    viewport.focus(getFocusOptions(getInterfaceType()))
   }
 
   const clear = () => {
