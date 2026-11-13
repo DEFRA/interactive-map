@@ -33,6 +33,10 @@ export const initialState = (config) => {
     isAtMinZoom: null,
     // Whether the user started the latest move, rather than code (useUserMoveTracking)
     isUserMove: false,
+    // The center and zoom the map settled at when last showing its configured view, or null when
+    // there isn't one (useResetViewTarget). Not known yet on load and during a reset.
+    resetViewTarget: null,
+    isResetViewTargetKnown: false,
 
     // Full target marker state
     crossHair: {

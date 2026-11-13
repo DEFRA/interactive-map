@@ -360,6 +360,16 @@ describe('useMapProviderOverrides', () => {
     expect(originalSetView).toHaveBeenCalledWith({ center: [1, 2], zoom: 10 })
   })
 
+  test('MAP_RESET_VIEW event moves the map to the configured view', () => {
+    const { mapProvider, capturedHandlers } = setup({ config: { center: [1, 2], zoom: 10 } })
+    const originalSetView = mapProvider.setView
+    renderHook(() => useMapProviderOverrides())
+
+    capturedHandlers['map:resetview']()
+
+    expect(originalSetView).toHaveBeenCalledWith({ center: [1, 2], zoom: 10 })
+  })
+
   test('unsubscribes from MAP_FIT_TO_BOUNDS and MAP_SET_VIEW on unmount', () => {
     const { eventBus } = setup()
     const { unmount } = renderHook(() => useMapProviderOverrides())
@@ -368,6 +378,7 @@ describe('useMapProviderOverrides', () => {
 
     expect(eventBus.off).toHaveBeenCalledWith('map:fittobounds', expect.any(Function))
     expect(eventBus.off).toHaveBeenCalledWith('map:setview', expect.any(Function))
+    expect(eventBus.off).toHaveBeenCalledWith('map:resetview', expect.any(Function))
   })
 
   test('skips event subscriptions when eventBus is null', () => {

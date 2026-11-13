@@ -875,6 +875,11 @@
  * trigger a button click but not a drag. When enabled, enableZoomControls' buttons
  * are hidden to avoid duplication.
  *
+ * @property {boolean} [enableResetView=false]
+ * Whether a reset view button is displayed. It moves the map to the configured bounds
+ * or extent, or to center and zoom if no bounds are set. Disabled until the map is
+ * moved away from that view, and not displayed when none of these are configured.
+ *
  * @property {boolean} [enableZoomControls=true]
  * Whether zoom control buttons are displayed. Not displayed when the interface
  * type is 'touch', or when enableMapControls is enabled.

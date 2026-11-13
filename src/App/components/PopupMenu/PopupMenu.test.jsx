@@ -251,6 +251,28 @@ describe('PopupMenu', () => {
     expect(focusSpy).toHaveBeenCalled()
   })
 
+  it.each([
+    ['pointer', true],
+    ['keyboard', false]
+  ])('click on item focuses viewport with preventScroll for %s users', (interfaceType, preventScroll) => {
+    mockUseApp.interfaceType = interfaceType
+    renderMenu()
+    fireEvent.click(screen.getByText('Item 1'))
+    expect(mockUseApp.layoutRefs.viewportRef.current.focus).toHaveBeenCalledWith({ preventScroll })
+    delete mockUseApp.interfaceType
+  })
+
+  it('click on item with keepFocus passes preventScroll to the instigator for pointer users', () => {
+    const focusSpy = jest.fn()
+    mockUseApp.buttonRefs.current.instigator.focus = focusSpy
+    mockUseApp.buttonConfig = { item1: { keepFocus: true } }
+    mockUseApp.interfaceType = 'pointer'
+    renderMenu()
+    fireEvent.click(screen.getByText('Item 1'))
+    expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true })
+    delete mockUseApp.interfaceType
+  })
+
   it('calls buttonConfig.onClick with evaluateProp if defined', () => {
     const mockOnClick = jest.fn()
     mockUseApp.buttonConfig = { item2: { onClick: mockOnClick } }

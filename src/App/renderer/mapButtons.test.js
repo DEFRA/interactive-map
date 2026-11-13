@@ -227,6 +227,18 @@ describe('mapButtons module', () => {
       viewportFocusSpy.mockRestore()
     })
 
+    it.each([
+      ['pointer', true],
+      ['keyboard', false]
+    ])('focuses viewport after onClick with preventScroll for %s users', (interfaceType, preventScroll) => {
+      const rafSpy = jest.spyOn(global, 'requestAnimationFrame').mockImplementation(cb => { cb(); return 1 })
+      appState.interfaceType = interfaceType
+      const onClick = jest.fn()
+      render({ ...baseBtn, onClick }).props.onClick({})
+      expect(appState.layoutRefs.viewportRef.current.focus).toHaveBeenCalledWith({ preventScroll })
+      rafSpy.mockRestore()
+    })
+
     it('does not call requestAnimationFrame when keepFocus is true', () => {
       const rafSpy = jest.spyOn(global, 'requestAnimationFrame')
       const onClick = jest.fn()
