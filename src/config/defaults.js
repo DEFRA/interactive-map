@@ -17,6 +17,7 @@ const defaults = {
   deviceNotSupportedText: 'Your device is not supported. A map is available with a more up-to-date browser or device.',
   enableFullscreen: false,
   enableMapControls: true,
+  enableResetView: false,
   enableZoomControls: true,
   genericErrorText: 'There was a problem loading the map. Please try again later.',
   hasExitButton: false,

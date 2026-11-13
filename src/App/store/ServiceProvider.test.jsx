@@ -71,6 +71,19 @@ describe('ServiceProvider', () => {
     expect(result.current.mapFocus.isHoldingAnnouncements()).toBe(true)
   })
 
+  test('focusMap reads the current interface type each time it focuses', () => {
+    const { useApp } = jest.requireMock('../store/appContext.js')
+    useApp.mockReturnValue({ layoutRefs: { viewportRef: mockViewportRef }, interfaceType: 'pointer' })
+    const { result, rerender } = renderHook(() => React.useContext(ServiceContext), { wrapper })
+    result.current.focusMap()
+    expect(mockViewportRef.current.focus).toHaveBeenLastCalledWith({ preventScroll: true })
+
+    useApp.mockReturnValue({ layoutRefs: { viewportRef: mockViewportRef }, interfaceType: 'keyboard' })
+    rerender()
+    result.current.focusMap()
+    expect(mockViewportRef.current.focus).toHaveBeenLastCalledWith({ preventScroll: false })
+  })
+
   test('gives each map its own symbol registry, kept across renders, with that map\'s symbolDefaults', () => {
     const { useConfig } = jest.requireMock('../store/configContext.js')
     useConfig.mockReturnValue({ id: 'map-a', symbolDefaults: { backgroundColor: '#111111' } })

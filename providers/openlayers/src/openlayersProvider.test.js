@@ -164,7 +164,7 @@ describe('OpenLayersProvider', () => {
       await provider.initMap({ ...defaultInitConfig, bounds })
       expect(mockMapOnce).toHaveBeenCalledWith('rendercomplete', expect.any(Function))
       renderCallback()
-      expect(mockViewFit).toHaveBeenCalledWith(bounds, { size: [800, 600], duration: 0 })
+      expect(mockViewFit).toHaveBeenCalledWith(bounds, { duration: 0 })
     })
 
     it('does not call map.once when no bounds', async () => {

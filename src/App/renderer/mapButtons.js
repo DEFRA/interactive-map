@@ -7,6 +7,7 @@ import { classifyPanel, getPanelRole } from '../../utils/getPanelRole.js'
 import { logger } from '../../services/logger.js'
 import { hidesNothing } from './applicationModes.js'
 import { groupBySlot } from './slotHelpers.js'
+import { getFocusOptions } from '../../utils/getFocusOptions.js'
 
 // With no slot, matches buttons for every slot
 function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
@@ -57,7 +58,7 @@ function createButtonClickHandler (config, appState, evaluateProp) {
     if (typeof config.onClick === 'function') {
       config.onClick(e, evaluateProp(ctx => ctx, config.pluginId))
       if (!isToggle && !config.keepFocus) {
-        requestAnimationFrame(() => appState.layoutRefs.viewportRef.current?.focus())
+        requestAnimationFrame(() => appState.layoutRefs.viewportRef.current?.focus(getFocusOptions(appState.interfaceType)))
       }
       return
     }

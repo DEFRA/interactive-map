@@ -6,6 +6,7 @@ import { useApp } from '../../store/appContext'
 import { useMap } from '../../store/mapContext'
 import { useMapStateSync } from '../../hooks/useMapStateSync'
 import { useUserMoveTracking } from '../../hooks/useUserMoveTracking'
+import { useResetViewTarget } from '../../hooks/useResetViewTarget'
 import { useMapURLSync } from '../../hooks/useMapURLSync'
 import { useMapAnnouncements } from '../../hooks/useMapAnnouncements'
 import { useMapProviderOverrides } from '../../hooks/useMapProviderOverrides'
@@ -17,6 +18,7 @@ jest.mock('../../store/appContext', () => ({ useApp: jest.fn() }))
 jest.mock('../../store/mapContext', () => ({ useMap: jest.fn() }))
 jest.mock('../../hooks/useMapStateSync', () => ({ useMapStateSync: jest.fn() }))
 jest.mock('../../hooks/useUserMoveTracking', () => ({ useUserMoveTracking: jest.fn() }))
+jest.mock('../../hooks/useResetViewTarget', () => ({ useResetViewTarget: jest.fn() }))
 jest.mock('../../hooks/useMapURLSync', () => ({ useMapURLSync: jest.fn() }))
 jest.mock('../../hooks/useMapAnnouncements', () => ({ useMapAnnouncements: jest.fn() }))
 jest.mock('../../hooks/useMapProviderOverrides', () => ({ useMapProviderOverrides: jest.fn() }))
@@ -94,6 +96,7 @@ describe('MapController', () => {
     render(<MapController mapContainerRef={containerRef} />)
     expect(useMapStateSync).toHaveBeenCalled()
     expect(useUserMoveTracking).toHaveBeenCalled()
+    expect(useResetViewTarget).toHaveBeenCalled()
     expect(useMapURLSync).toHaveBeenCalled()
     expect(useMapAnnouncements).toHaveBeenCalled()
     expect(useMapProviderOverrides).toHaveBeenCalled()

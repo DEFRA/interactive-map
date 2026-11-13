@@ -48,6 +48,8 @@ describe('mapReducer', () => {
         isAtMaxZoom: null,
         isAtMinZoom: null,
         isUserMove: false,
+        resetViewTarget: null,
+        isResetViewTargetKnown: false,
         crossHair: {
           isVisible: false,
           isPinnedToMap: false,

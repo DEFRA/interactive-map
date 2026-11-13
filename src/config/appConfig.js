@@ -1,5 +1,7 @@
 import { KeyboardHelp } from '../App/components/KeyboardHelp/KeyboardHelp.jsx'
 import { MapControls } from '../App/components/MapControls/MapControls.jsx'
+import { EVENTS as events } from './events.js'
+import { getConfiguredView, isAtResetViewTarget } from '../utils/resetView.js'
 
 const keyboardBasePanelSlots = {
   slot: 'middle',
@@ -116,6 +118,18 @@ export const defaultAppConfig = {
     mobile: buttonSlots,
     tablet: buttonSlots,
     desktop: buttonSlots
+  }, {
+    id: 'resetView',
+    label: 'Reset view',
+    iconId: 'reset',
+    keepFocus: true,
+    onClick: (_e, { services }) => services.eventBus.emit(events.MAP_RESET_VIEW),
+    excludeWhen: ({ appConfig }) => !appConfig.enableResetView || !getConfiguredView(appConfig),
+    // Disabled until the target is known, so it doesn't flash enabled on load or during a reset
+    enableWhen: ({ mapState, mapProvider }) => mapState.isResetViewTargetKnown && !isAtResetViewTarget(mapState, mapProvider),
+    mobile: buttonSlots,
+    tablet: buttonSlots,
+    desktop: buttonSlots
   }],
 
   panels: [{
@@ -157,6 +171,9 @@ export const defaultAppConfig = {
   }, {
     id: 'minus',
     svgContent: '<path d="M5 12h14"/>'
+  }, {
+    id: 'reset',
+    svgContent: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>'
   }, {
     id: 'chevron',
     svgContent: '<path d="m6 9 6 6 6-6"/>'
