@@ -1,0 +1,55 @@
+// ===================================================
+// Plugin: MapLoading
+// ===================================================
+
+// The overlay sits outside the app root (it must exist before the React app
+// mounts), so the app's own custom properties don't reach it - every value is
+// exposed as an --im-map-loading-* variable for hosts to theme instead.
+
+.im-c-map-loading-wrap {
+    position: relative;
+}
+
+.im-c-map-loading {
+    position: absolute;
+    inset: 0;
+    z-index: var(--im-map-loading-z-index, 1000); // above the fullscreen app's 999
+    display: flex;
+    flex-direction: column;
+    gap: var(--im-map-loading-gap, 16px);
+    align-items: center;
+    justify-content: center;
+    background: var(--im-map-loading-background, rgb(255 255 255 / 85%));
+    color: var(--im-map-loading-color, var(--foreground-color, #0b0c0c));
+}
+
+.im-c-map-loading--fullscreen {
+    position: fixed;
+}
+
+.im-c-map-loading__text {
+    font-size: var(--im-map-loading-font-size, 1.5rem);
+    font-weight: 700;
+}
+
+.im-c-map-loading__spinner {
+    display: block;
+    width: var(--im-map-loading-spinner-size, 96px);
+    height: var(--im-map-loading-spinner-size, 96px);
+    border: var(--im-map-loading-spinner-width, 12px) solid var(--im-map-loading-spinner-track-color, #f3f2f1);
+    border-top-color: var(--im-map-loading-spinner-color, var(--primary-button-color, #00703c));
+    border-radius: 50%;
+    animation: im-map-loading-spin 1s linear infinite;
+}
+
+@keyframes im-map-loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .im-c-map-loading__spinner {
+        animation: none;
+    }
+}

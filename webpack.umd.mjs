@@ -179,7 +179,8 @@ const ALL_BUILDS = [
   { entryPath: './plugins/menu/src/index.js', libraryPath: 'menuPlugin', outDir: 'plugins/menu/dist/umd', cssOutDir: 'plugins/menu/dist' },
   { entryPath: './plugins/map-styles/src/index.js', libraryPath: 'mapStylesPlugin', outDir: 'plugins/map-styles/dist/umd' },
   { entryPath: './plugins/draw/src/index.js', libraryPath: 'drawPlugin', outDir: 'plugins/draw/dist/umd' },
-  { entryPath: './plugins/frame/src/index.js', libraryPath: 'framePlugin', outDir: 'plugins/frame/dist/umd' }
+  { entryPath: './plugins/frame/src/index.js', libraryPath: 'framePlugin', outDir: 'plugins/frame/dist/umd' },
+  { entryPath: './plugins/map-loading/src/index.js', libraryPath: 'mapLoadingPlugin', outDir: 'plugins/map-loading/dist/umd' }
 ]
 
 // === Filter via environment variable ===

@@ -12,6 +12,10 @@ The following plugins are available for use with InteractiveMap.
 
 Select map features, select markers, or place a location marker on the map.
 
+### [Map Loading](./plugins/map-loading.md)
+
+Loading overlay plugin that shows an accessible spinner and message over the map while the app downloads, mounts and loads its first tiles.
+
 ### [Map Styles](./plugins/map-styles.md)
 
 Map style switching plugin that adds a UI control for changing the basemap appearance and the map size (provider depending).

@@ -68,6 +68,10 @@
       "import": "./plugins/frame/dist/esm/index.js",
       "require": "./plugins/frame/dist/umd/index.js"
     },
+    "./plugins/map-loading": {
+      "import": "./plugins/map-loading/dist/esm/index.js",
+      "require": "./plugins/map-loading/dist/umd/index.js"
+    },
     "./css": "./dist/css/index.css",
     "./plugins/draw/css": "./plugins/draw/dist/css/index.css",
     "./plugins/scale-bar/css": "./plugins/scale-bar/dist/css/index.css",
@@ -77,6 +81,7 @@
     "./plugins/frame/css": "./plugins/frame/dist/css/index.css",
     "./plugins/map-styles/css": "./plugins/map-styles/dist/css/index.css",
     "./plugins/search/css": "./plugins/search/dist/css/index.css",
+    "./plugins/map-loading/css": "./plugins/map-loading/dist/css/index.css",
     "./providers/esri/css": "./providers/esri/dist/css/index.css"
   },
   "type": "module",
