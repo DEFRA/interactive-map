@@ -18,7 +18,7 @@ For a different map engine, install one of the alternatives instead. They work t
 
 ## GOV.UK Prototype Kit
 
-The quickest way to get started is with the GOV.UK Prototype Kit. Install the package as a plugin, and the map is ready to use, with its scripts, styles and a map page template.
+The quickest way to get started is with the GOV.UK Prototype Kit. Install `@defra/interactive-map` as a plugin, and the map is ready to use, with its scripts, styles and map page templates. `@defra/interactive-map-openlayers` also works as a plugin, without the templates.
 
 See [GOV.UK Prototype Kit - Install and use plugins](https://prototype-kit.service.gov.uk/docs/install-and-use-plugins).
 

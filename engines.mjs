@@ -21,6 +21,7 @@ const DRAW_ADAPTER = 'plugins/draw/src/adapters/loadDrawAdapter.js'
  *   bundled with its plugin and no other engine is referenced.
  * - providerChunk: the name of the provider's lazy file in the core build
  * - umd: whether the package has UMD scripts
+ * - copy: folders copied into the package as they are, such as the GOV.UK Prototype Kit templates
  */
 export const ENGINES = {
   maplibre: {
@@ -32,7 +33,8 @@ export const ENGINES = {
       [DRAW_ADAPTER]: 'plugins/draw/src/adapters/maplibre/loadDrawAdapter.js'
     },
     providerChunk: { maplibreProvider: 'im-maplibre-provider' },
-    umd: true
+    umd: true,
+    copy: ['assets']
   },
   openlayers: {
     exclude: [...ENGINE_PROVIDERS, 'plugins/draw-es'],
@@ -43,7 +45,8 @@ export const ENGINES = {
       [DRAW_ADAPTER]: 'plugins/draw/src/adapters/openlayers/loadDrawAdapter.js'
     },
     providerChunk: { openlayersProvider: 'im-openlayers-provider' },
-    umd: true
+    umd: true,
+    copy: []
   },
   // Esri's draw is its own, more basic plugin, published at the same path as the others'
   esri: {
@@ -54,7 +57,8 @@ export const ENGINES = {
       [DATASETS_ADAPTER]: 'plugins/datasets/src/adapters/esri/importLayerAdapter.js'
     },
     providerChunk: { esriProvider: 'im-esri-provider' },
-    umd: false
+    umd: false,
+    copy: []
   }
 }
 
