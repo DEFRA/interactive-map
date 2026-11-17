@@ -46,9 +46,15 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
   async init () {
     const topLevelDatasets = this._datasetRegistry.topLevelDatasets()
+    const visibleDatasets = topLevelDatasets.filter(dataset => dataset.visibility === 'visible')
+    const hiddenDatasets = topLevelDatasets.filter(dataset => dataset.visibility !== 'visible')
+
     // ensure the datasets are added in order
-    const _add = async (registryDataset) => {
+    const _add = async (registryDataset, setVisibility = false) => {
       return this._addLayers(registryDataset).then(() => {
+        if (!setVisibility) {
+          return
+        }
         const mapLayer = this._mapVisibilityLayers[registryDataset.id]
         registryDataset.sublayers?.forEach(sublayer => {
           if (sublayer.visibility === 'visible') {
@@ -60,18 +66,16 @@ export default class EsriLayerAdapter extends LayerAdapter {
     }
 
     // Add the visible datasets first - to speed up rendering
-    for (const registryDataset of topLevelDatasets) {
-      if (registryDataset.visibility === 'visible') {
-        await _add(registryDataset) // NOSONAR: Await inside a for loop is fine, parent function is async
-      }
+    for (const registryDataset of visibleDatasets) {
+      await _add(registryDataset, true) // NOSONAR: Await inside a for loop is fine, parent function is async
     }
+
     // Reorder layers after adding the initially visible datasets
     this._reorderLayers()
     // Add the non-visible datasets next
-    for (const registryDataset of topLevelDatasets) {
-      if (registryDataset.visibility !== 'visible') {
-        await _add(registryDataset) // NOSONAR: Await inside a for loop is fine, parent function is async
-      }
+
+    for (const registryDataset of hiddenDatasets) {
+      await _add(registryDataset) // NOSONAR: Await inside a for loop is fine, parent function is async
     }
 
     // onMapStyleChange: handles showing and hiding sublayers based on the current mapStyle
@@ -242,6 +246,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
   }
 
   async applyGlobalVisibility () {
+    await this.ready
     this._datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetVisibility(registryDataset))
   }
 
