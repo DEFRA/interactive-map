@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
 import { bundlers } from './bundlers.mjs'
-import { ENGINE_CHECKS } from './engines.mjs'
+import { ENGINE_CHECKS, PROVIDER_NAMES } from './engines.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url)) // NOSONAR - Standard Node.js convention in scripts
 const ROOT = path.resolve(__dirname, '../..')
@@ -52,6 +52,17 @@ const installPackage = (engine) => {
   run('npm', ['install', '--no-audit', '--no-fund', '--no-package-lock', tarball], projectDir)
   copyDir(FIXTURE, path.join(projectDir, 'src'))
   return projectDir
+}
+
+// Lists the package's scripts that contain another engine's provider name
+const findOtherEngines = (engine, packageDir) => {
+  const otherNames = Object.entries(PROVIDER_NAMES).filter(([name]) => name !== engine.name).map(([, providerName]) => providerName)
+  return fs.readdirSync(packageDir, { recursive: true })
+    .filter(file => /\.m?js$/.test(file) && !file.split(path.sep).includes('node_modules'))
+    .flatMap(file => {
+      const content = fs.readFileSync(path.join(packageDir, file), 'utf8')
+      return otherNames.filter(providerName => content.includes(providerName)).map(providerName => `${file} contains ${providerName}`)
+    })
 }
 
 // === Pages ===
@@ -163,20 +174,20 @@ const TILE = path.join(FIXTURE, 'tile.png')
 const serve = (outDir, policy) => new Promise(resolve => {
   const server = http.createServer((req, res) => {
     const urlPath = decodeURIComponent(new URL(req.url, 'http://localhost').pathname)
-    const file = urlPath.startsWith('/tiles/') ? TILE : path.join(outDir, urlPath === '/' ? 'index.html' : urlPath)
+    const file = urlPath.startsWith('/tiles/') ? TILE : path.join(outDir, urlPath === '/' ? 'index.html' : urlPath) // NOSONAR - short path choice, clearer inline
     if (!(file === TILE || file.startsWith(outDir)) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
-      res.writeHead(404)
+      res.writeHead(404) // NOSONAR - HTTP status code
       res.end()
       return
     }
     const type = CONTENT_TYPES[path.extname(file)] || 'application/octet-stream'
     if (type === 'text/html') {
       const nonce = crypto.randomBytes(16).toString('base64')
-      res.writeHead(200, { 'Content-Type': type, 'Content-Security-Policy': csp(nonce, policy) })
+      res.writeHead(200, { 'Content-Type': type, 'Content-Security-Policy': csp(nonce, policy) }) // NOSONAR - HTTP status code
       res.end(fs.readFileSync(file, 'utf8').replaceAll('__NONCE__', nonce))
       return
     }
-    res.writeHead(200, { 'Content-Type': type })
+    res.writeHead(200, { 'Content-Type': type }) // NOSONAR - HTTP status code
     res.end(fs.readFileSync(file))
   })
   server.listen(0, '127.0.0.1', () => resolve(server))
@@ -196,14 +207,14 @@ const launchBrowser = async () => {
 const checkPage = async (browser, url) => {
   const page = await browser.newPage({ viewport: { width: 1024, height: 768 } })
   const problems = { consoleErrors: [], pageErrors: [], failedRequests: [] }
-  page.on('console', message => { if (message.type() === 'error') problems.consoleErrors.push(message.text()) })
+  page.on('console', message => { if (message.type() === 'error') problems.consoleErrors.push(message.text()) }) // NOSONAR - one-line event handler
   page.on('pageerror', error => problems.pageErrors.push(args.verbose ? error.stack : error.message))
   page.on('requestfailed', request => problems.failedRequests.push(`${request.url()} (${request.failure()?.errorText})`))
-  page.on('response', response => { if (response.status() >= 400) problems.failedRequests.push(`${response.url()} (${response.status()})`) })
+  page.on('response', response => { if (response.status() >= 400) problems.failedRequests.push(`${response.url()} (${response.status()})`) }) // NOSONAR - one-line event handler, 400 and above are HTTP errors
   await page.addInitScript(() => {
     window.engineChecks = { violations: [], mapReady: false, firstIdle: false }
     document.addEventListener('securitypolicyviolation', e => {
-      window.engineChecks.violations.push(`${e.effectiveDirective} blocked ${e.blockedURI || 'inline'}${e.sourceFile ? ` from ${e.sourceFile.split('/').pop()}:${e.lineNumber}` : ''}`)
+      window.engineChecks.violations.push(`${e.effectiveDirective} blocked ${e.blockedURI || 'inline'}${e.sourceFile ? ` from ${e.sourceFile.split('/').pop()}:${e.lineNumber}` : ''}`) // NOSONAR - builds one log message
     })
   })
 
@@ -242,7 +253,7 @@ const evaluate = (check, result) => {
 
 // === Main ===
 
-const main = async () => {
+const main = async () => { // NOSONAR - runs the checks in order, splitting it would hide the flow
   const engines = Object.values(ENGINE_CHECKS).filter(engine => !args.engine || engine.name === args.engine)
   if (!args['skip-build']) {
     console.log('Building the engine packages…')
@@ -257,6 +268,11 @@ const main = async () => {
       const projectDir = installPackage(engine)
       const packageDir = path.join(projectDir, 'node_modules', engine.packageName)
 
+      const otherEngines = findOtherEngines(engine, packageDir)
+      const packageFailures = otherEngines.length ? [`code for other engines:\n      ${otherEngines.join('\n      ')}`] : []
+      results.push({ name: `${engine.name} package`, failures: packageFailures })
+      console.log(`  ${packageFailures.length ? 'FAIL' : 'pass'}  ${engine.name} package has no other engines${packageFailures.map(failure => `\n    - ${failure}`).join('')}`) // NOSONAR - builds one log line
+
       const checks = engine.checks.filter(check => !args.bundler || check.bundler === args.bundler)
       for (const check of checks) {
         const name = `${engine.name} ${check.name}`
@@ -265,7 +281,7 @@ const main = async () => {
         fs.mkdirSync(outDir, { recursive: true })
 
         let failures
-        try {
+        try { // NOSONAR - each check reports its own build or run failure
           if (check.bundler === 'umd') {
             await buildUMD({ engine, packageDir, outDir })
           } else {
@@ -276,13 +292,13 @@ const main = async () => {
           server.close()
           failures = evaluate(check, result)
           if (args.verbose) {
-            console.log(`    ${JSON.stringify({ ...result, consoleErrors: result.consoleErrors.map(text => text.slice(0, 120)) })}`)
+            console.log(`    ${JSON.stringify({ ...result, consoleErrors: result.consoleErrors.map(text => text.slice(0, 120)) })}`) // NOSONAR - trims long console errors in the verbose log
           }
         } catch (error) {
           failures = [`build or check failed: ${error.message.split('\n')[0]}`]
         }
         results.push({ name, failures })
-        console.log(`  ${failures.length ? 'FAIL' : 'pass'}  ${name}${failures.map(f => `\n    - ${f}`).join('')}`)
+        console.log(`  ${failures.length ? 'FAIL' : 'pass'}  ${name}${failures.map(f => `\n    - ${f}`).join('')}`) // NOSONAR - builds one log line
       }
     }
   } finally {
@@ -294,4 +310,4 @@ const main = async () => {
   process.exitCode = failed.length ? 1 : 0
 }
 
-main()
+main() // NOSONAR - a rejection still exits the script with an error

@@ -29,8 +29,16 @@ const maplibreChecks = [
   { name: 'umd', bundler: 'umd' }
 ]
 
+// The name each engine's provider gives itself, which the code that picks an adapter at runtime
+// checks for. A package that contains another engine's provider name includes that engine's code.
+export const PROVIDER_NAMES = {
+  maplibre: 'MapLibreProvider',
+  openlayers: 'OpenLayersProvider',
+  esri: 'EsriProvider'
+}
+
 // British National Grid coordinates of the same place as the MapLibre centre
-const BNG_CENTRE = [433000, 335000]
+const BNG_CENTRE = [433000, 335000] // NOSONAR - fixed test coordinates
 
 // Served by the check's own server (see run.mjs), so no request leaves the machine
 const VECTOR_STYLE = { id: 'test', url: 'style.json' }
@@ -41,7 +49,7 @@ export const ENGINE_CHECKS = {
     name: 'maplibre',
     packageName: '@defra/interactive-map',
     mapStyle: VECTOR_STYLE,
-    center: [-1.5, 53],
+    center: [-1.5, 53], // NOSONAR - fixed test coordinates
     zoom: 12,
     checks: maplibreChecks
   },
