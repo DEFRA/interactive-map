@@ -285,6 +285,15 @@ describe('esriLayerAdapter', () => {
     })
   })
 
+  describe('init failure', () => {
+    it('still resolves ready when a layer fails to load', async () => {
+      const failingAdapter = new EsriLayerAdapter(mapProvider, null, null, datasetRegistry)
+      jest.spyOn(failingAdapter, '_addLayers').mockRejectedValue(new Error('404'))
+      await expect(failingAdapter.init()).rejects.toThrow('404')
+      await expect(failingAdapter.ready).resolves.toBeUndefined()
+    })
+  })
+
   // ─── onMapSizeChange ─────────────────────────────────────────────────────────
 
   describe('onMapSizeChange', () => {

@@ -45,6 +45,15 @@ export default class EsriLayerAdapter extends LayerAdapter {
   }
 
   async init () {
+    try {
+      await this._init()
+    } finally {
+      // Always settle `ready` so a failed layer doesn't block later toggles
+      this.resolveReady()
+    }
+  }
+
+  async _init () {
     const topLevelDatasets = this._datasetRegistry.topLevelDatasets()
     const visibleDatasets = topLevelDatasets.filter(dataset => dataset.visibility === 'visible')
     const hiddenDatasets = topLevelDatasets.filter(dataset => dataset.visibility !== 'visible')
@@ -88,7 +97,6 @@ export default class EsriLayerAdapter extends LayerAdapter {
     // Finally show all layers that are visible based on the dataset/mapStyle visibility
     await Promise.all(topLevelDatasets.map(registryDataset => this.applyDatasetVisibility(registryDataset.id)))
     this._reorderLayers()
-    this.resolveReady()
   }
 
   _reorderLayers () {
