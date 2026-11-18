@@ -45,10 +45,25 @@ export default class EsriLayerAdapter extends LayerAdapter {
   }
 
   async init () {
+    try {
+      await this._init()
+    } finally {
+      // Always settle `ready` so a failed layer doesn't block later toggles
+      this.resolveReady()
+    }
+  }
+
+  async _init () {
     const topLevelDatasets = this._datasetRegistry.topLevelDatasets()
+    const visibleDatasets = topLevelDatasets.filter(dataset => dataset.visibility === 'visible')
+    const hiddenDatasets = topLevelDatasets.filter(dataset => dataset.visibility !== 'visible')
+
     // ensure the datasets are added in order
-    const _add = async (registryDataset) => {
+    const _add = async (registryDataset, setVisibility = false) => {
       return this._addLayers(registryDataset).then(() => {
+        if (!setVisibility) {
+          return
+        }
         const mapLayer = this._mapVisibilityLayers[registryDataset.id]
         registryDataset.sublayers?.forEach(sublayer => {
           if (sublayer.visibility === 'visible') {
@@ -56,22 +71,24 @@ export default class EsriLayerAdapter extends LayerAdapter {
           }
         })
         this.applyDatasetVisibility(registryDataset.id) // NOSONAR: Not changing for now as used in production
+      }).catch(async (error) => {
+        // A failed layer must not stop the remaining datasets loading; drop it so later steps skip it
+        logger.error(`Error adding layer for dataset ${registryDataset.id}:`, error)
+        await this.removeDataset(registryDataset.id)
       })
     }
 
     // Add the visible datasets first - to speed up rendering
-    for (const registryDataset of topLevelDatasets) {
-      if (registryDataset.visibility === 'visible') {
-        await _add(registryDataset) // NOSONAR: Await inside a for loop is fine, parent function is async
-      }
+    for (const registryDataset of visibleDatasets) {
+      await _add(registryDataset, true) // NOSONAR: Await inside a for loop is fine, parent function is async
     }
+
     // Reorder layers after adding the initially visible datasets
     this._reorderLayers()
     // Add the non-visible datasets next
-    for (const registryDataset of topLevelDatasets) {
-      if (registryDataset.visibility !== 'visible') {
-        await _add(registryDataset) // NOSONAR: Await inside a for loop is fine, parent function is async
-      }
+
+    for (const registryDataset of hiddenDatasets) {
+      await _add(registryDataset) // NOSONAR: Await inside a for loop is fine, parent function is async
     }
 
     // onMapStyleChange: handles showing and hiding sublayers based on the current mapStyle
@@ -84,7 +101,6 @@ export default class EsriLayerAdapter extends LayerAdapter {
     // Finally show all layers that are visible based on the dataset/mapStyle visibility
     await Promise.all(topLevelDatasets.map(registryDataset => this.applyDatasetVisibility(registryDataset.id)))
     this._reorderLayers()
-    this.resolveReady()
   }
 
   _reorderLayers () {
@@ -242,6 +258,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
   }
 
   async applyGlobalVisibility () {
+    await this.ready
     this._datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetVisibility(registryDataset))
   }
 
