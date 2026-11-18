@@ -71,6 +71,10 @@ export default class EsriLayerAdapter extends LayerAdapter {
           }
         })
         this.applyDatasetVisibility(registryDataset.id) // NOSONAR: Not changing for now as used in production
+      }).catch(async (error) => {
+        // A failed layer must not stop the remaining datasets loading; drop it so later steps skip it
+        logger.error(`Error adding layer for dataset ${registryDataset.id}:`, error)
+        await this.removeDataset(registryDataset.id)
       })
     }
 
