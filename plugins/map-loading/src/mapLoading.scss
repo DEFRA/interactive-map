@@ -39,17 +39,17 @@
     border: var(--im-map-loading-spinner-width, 12px) solid var(--im-map-loading-spinner-track-color, #f3f2f1);
     border-top-color: var(--im-map-loading-spinner-color, var(--primary-button-color, #00703c));
     border-radius: 50%;
-    animation: im-map-loading-spin 1s linear infinite;
+
+    // Spin only when motion is fine — under prefers-reduced-motion the ring
+    // stays static so the loading state is still visible without continuous
+    // rotation (a vestibular motion trigger).
+    @media (prefers-reduced-motion: no-preference) {
+        animation: im-map-loading-spin 1s linear infinite;
+    }
 }
 
 @keyframes im-map-loading-spin {
     to {
         transform: rotate(360deg);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .im-c-map-loading__spinner {
-        animation: none;
     }
 }

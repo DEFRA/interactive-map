@@ -25,10 +25,12 @@ Because the overlay is created when the factory runs — before `InteractiveMap`
 
 ## Behaviour notes
 
-- **Dismissal** happens automatically on `map:firstidle`, when the component renders its `.im-c-error` failure markup, on `map:destroy`, or after the safety [`timeout`](#timeout). You can also call `dismiss()` yourself (for example when your own error handling replaces the map).
+- **Show delay**: the overlay waits [`delay`](#delay) milliseconds (default `200`) before mounting, so a map that reaches first idle quickly never flashes a spinner.
+- **Dismissal** happens automatically on `map:firstidle`, when the component renders its `.im-c-error` failure markup, on `map:destroy`, or after the safety [`timeout`](#timeout). You can also call `dismiss()` yourself (for example when your own error handling replaces the map). A dismiss during the show delay cancels the pending mount.
 - **Reloads are covered**: if the app is removed and loaded again (`removeApp`/`loadApp`), the overlay reappears on the next `map:ready` and dismisses on the next `map:firstidle`. An app reopened with preserved state dismisses immediately.
 - **`buttonFirst` and `hybrid` launchers**: use [`deferred`](#deferred) so the overlay only appears once the user opens the map, and usually [`fullscreen`](#fullscreen) too, since those behaviours open fullscreen.
 - **Styling**: the overlay lives outside the app root, so it can't read the app's CSS variables. Theme it with the `--im-map-loading-*` custom properties listed under [Styling](#styling), or supply your own [`content`](#content) and [`className`](#classname).
+- **Reduced motion**: the spinner only spins when `prefers-reduced-motion: no-preference`. Under `reduce` it stays as a static ring so the loading state remains visible without continuous rotation.
 
 ## Options
 
@@ -134,6 +136,14 @@ Leave it `false` (the default) for `inline` maps, which start loading as soon as
 
 ---
 
+### `delay`
+**Type:** `number`
+**Default:** `200`
+
+Milliseconds to wait after a show request before mounting the overlay. Fast loads that reach first idle inside this window never show a spinner. `0` mounts immediately. The safety [`timeout`](#timeout) starts only once the overlay has actually mounted.
+
+---
+
 ### `timeout`
 **Type:** `number`
 **Default:** `60000`
@@ -168,7 +178,7 @@ Called each time the overlay mounts.
 ### `onDismiss`
 **Type:** `(reason: string) => void`
 
-Called each time the overlay is removed. The reason is one of `'firstidle'`, `'error'`, `'timeout'`, `'destroy'`, `'appopened'` or `'manual'`.
+Called each time the overlay is removed. The reason is one of `'firstidle'`, `'error'`, `'timeout'`, `'destroy'`, `'appopened'` or `'manual'`. Not called if the overlay never mounted (for example `dismiss()` / `destroy()` during the show [`delay`](#delay), or while still waiting in [`deferred`](#deferred) mode).
 
 ## Methods
 
@@ -214,4 +224,4 @@ The overlay renders outside the app root, so app-level CSS variables don't apply
 | `--im-map-loading-spinner-color` | `--primary-button-color` | Spinner highlight colour |
 | `--im-map-loading-spinner-track-color` | `#f3f2f1` | Spinner ring colour |
 
-The spinner animation respects `prefers-reduced-motion`.
+The spinner animation is gated behind `prefers-reduced-motion: no-preference`. When the user prefers reduced motion, the spinner remains a static ring (no continuous rotation).

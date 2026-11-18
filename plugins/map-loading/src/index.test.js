@@ -15,19 +15,19 @@ afterEach(() => {
 describe('createPlugin', () => {
   describe('plugin descriptor', () => {
     it('returns a plugin with the mapLoading id', () => {
-      const plugin = createPlugin({ container: setup() })
+      const plugin = createPlugin({ container: setup(), delay: 0 })
       expect(plugin.id).toBe('mapLoading')
       plugin.destroy()
     })
 
     it('returns plugin with load function', () => {
-      const plugin = createPlugin({ container: setup() })
+      const plugin = createPlugin({ container: setup(), delay: 0 })
       expect(typeof plugin.load).toBe('function')
       plugin.destroy()
     })
 
     it('exposes overlay helpers on the descriptor', () => {
-      const plugin = createPlugin({ container: setup() })
+      const plugin = createPlugin({ container: setup(), delay: 0 })
       expect(plugin.isShown()).toBe(true)
       plugin.dismiss()
       expect(plugin.isShown()).toBe(false)
@@ -48,7 +48,7 @@ describe('createPlugin', () => {
     })
 
     it('passes options through to the descriptor (pluginConfig)', () => {
-      const plugin = createPlugin({ container: setup(), text: 'Loading projects', timeout: 1000 })
+      const plugin = createPlugin({ container: setup(), text: 'Loading projects', timeout: 1000, delay: 0 })
       expect(plugin.text).toBe('Loading projects')
       expect(plugin.timeout).toBe(1000)
       expect(plugin.controller).toBeDefined()
@@ -57,7 +57,7 @@ describe('createPlugin', () => {
 
     it('passes through manifest option', () => {
       const customManifest = { custom: true }
-      const plugin = createPlugin({ container: setup(), manifest: customManifest })
+      const plugin = createPlugin({ container: setup(), manifest: customManifest, delay: 0 })
       expect(plugin.manifest).toBe(customManifest)
       plugin.destroy()
     })
@@ -71,7 +71,7 @@ describe('createPlugin', () => {
 
   describe('load function', () => {
     it('returns the manifest when called', async () => {
-      const plugin = createPlugin({ container: setup() })
+      const plugin = createPlugin({ container: setup(), delay: 0 })
       const manifest = await plugin.load()
 
       expect(manifest).toBeDefined()

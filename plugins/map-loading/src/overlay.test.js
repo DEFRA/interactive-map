@@ -8,6 +8,9 @@ const setup = (html = '<div id="map"></div>') => {
   return document.getElementById('map')
 }
 
+/** Most tests assert immediate mount behaviour — skip the production show delay. */
+const create = (options = {}) => createLoadingOverlay({ delay: 0, ...options })
+
 afterEach(() => {
   document.body.innerHTML = ''
 })
@@ -15,7 +18,7 @@ afterEach(() => {
 describe('mounting', () => {
   it('wraps the container and covers it with an overlay sibling', () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container })
+    const controller = create({ container })
 
     const wrapper = container.parentElement
     expect(wrapper.className).toBe('im-c-map-loading-wrap')
@@ -31,7 +34,7 @@ describe('mounting', () => {
 
   it('accepts a container id string', () => {
     setup()
-    const controller = createLoadingOverlay({ container: 'map' })
+    const controller = create({ container: 'map' })
     expect(document.querySelector('.im-c-map-loading')).toBeTruthy()
     controller.destroy()
   })
@@ -40,7 +43,7 @@ describe('mounting', () => {
     const container = setup('<div class="im-c-map-loading-wrap"><div id="map"></div></div>')
     const wrapper = container.parentElement
 
-    const controller = createLoadingOverlay({ container })
+    const controller = create({ container })
 
     expect(document.querySelectorAll('.im-c-map-loading-wrap')).toHaveLength(1)
     expect(container.parentElement).toBe(wrapper)
@@ -50,7 +53,7 @@ describe('mounting', () => {
 
   it('mounts inside a detached container', () => {
     const container = document.createElement('div')
-    const controller = createLoadingOverlay({ container })
+    const controller = create({ container })
     expect(container.querySelector('.im-c-map-loading')).toBeTruthy()
     controller.destroy()
   })
@@ -61,7 +64,7 @@ describe('mounting', () => {
     )
     const serverOverlay = container.querySelector('.im-c-map-loading')
 
-    const controller = createLoadingOverlay({ container })
+    const controller = create({ container })
 
     expect(document.querySelectorAll('.im-c-map-loading')).toHaveLength(1)
     // adopted markup moved out of the container it would otherwise be wiped from
@@ -74,7 +77,7 @@ describe('mounting', () => {
     const container = setup('<div id="map"><div class="my-overlay">Hold on</div></div>')
     const serverOverlay = container.querySelector('.my-overlay')
 
-    const controller = createLoadingOverlay({ container, adopt: '.my-overlay' })
+    const controller = create({ container, adopt: '.my-overlay' })
 
     expect(serverOverlay.parentElement).toBe(container.parentElement)
     expect(serverOverlay.classList.contains('im-c-map-loading')).toBe(true)
@@ -84,7 +87,7 @@ describe('mounting', () => {
 
   it('builds its own overlay when adoption is disabled', () => {
     const container = setup('<div id="map"><div class="im-c-map-loading">server</div></div>')
-    const controller = createLoadingOverlay({ container, adopt: false })
+    const controller = create({ container, adopt: false })
 
     // the server markup is untouched inside the container; the built overlay sits beside it
     const overlays = document.querySelectorAll('.im-c-map-loading')
@@ -100,14 +103,14 @@ describe('mounting', () => {
 describe('options', () => {
   it('replaces the default message with custom text', () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container, text: 'Loading projects' })
+    const controller = create({ container, text: 'Loading projects' })
     expect(document.querySelector('.im-c-map-loading__text').textContent).toBe('Loading projects')
     controller.destroy()
   })
 
   it('omits the spinner when spinner is false', () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container, spinner: false })
+    const controller = create({ container, spinner: false })
     const overlay = document.querySelector('.im-c-map-loading')
     expect(overlay.querySelector('.im-c-map-loading__spinner')).toBeNull()
     expect(overlay.querySelector('.im-c-map-loading__text').textContent).toBe('Loading map')
@@ -119,7 +122,7 @@ describe('options', () => {
     const content = document.createElement('p')
     content.textContent = 'Bespoke'
 
-    const controller = createLoadingOverlay({ container, content })
+    const controller = create({ container, content })
     const overlay = document.querySelector('.im-c-map-loading')
 
     expect(overlay.textContent).toBe('Bespoke')
@@ -129,7 +132,7 @@ describe('options', () => {
 
   it('renders string content as the label, keeping the spinner', () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container, content: 'Fetching tiles' })
+    const controller = create({ container, content: 'Fetching tiles' })
     const overlay = document.querySelector('.im-c-map-loading')
 
     expect(overlay.querySelector('.im-c-map-loading__spinner')).toBeTruthy()
@@ -145,7 +148,7 @@ describe('options', () => {
       return el
     })
 
-    const controller = createLoadingOverlay({ container, content })
+    const controller = create({ container, content })
 
     expect(content).toHaveBeenCalledWith(document.querySelector('.im-c-map-loading'))
     expect(document.querySelector('.im-c-map-loading strong').textContent).toBe('From fn')
@@ -154,7 +157,7 @@ describe('options', () => {
 
   it('adds custom class names to the overlay', () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container, className: 'extra  classes' })
+    const controller = create({ container, className: 'extra  classes' })
     const overlay = document.querySelector('.im-c-map-loading')
     expect(overlay.classList.contains('extra')).toBe(true)
     expect(overlay.classList.contains('classes')).toBe(true)
@@ -163,15 +166,89 @@ describe('options', () => {
 
   it('applies the fullscreen modifier', () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container, fullscreen: true })
+    const controller = create({ container, fullscreen: true })
     expect(document.querySelector('.im-c-map-loading').classList.contains('im-c-map-loading--fullscreen')).toBe(true)
     controller.destroy()
   })
 
   it('applies a custom role', () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container, role: 'progressbar' })
+    const controller = create({ container, role: 'progressbar' })
     expect(document.querySelector('.im-c-map-loading').getAttribute('role')).toBe('progressbar')
+    controller.destroy()
+  })
+})
+
+describe('show delay', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('waits the default 200ms before mounting', () => {
+    const container = setup()
+    const onShow = jest.fn()
+    const controller = createLoadingOverlay({ container, onShow })
+
+    expect(document.querySelector('.im-c-map-loading')).toBeNull()
+    expect(controller.isShown()).toBe(false)
+    expect(onShow).not.toHaveBeenCalled()
+
+    jest.advanceTimersByTime(199)
+    expect(document.querySelector('.im-c-map-loading')).toBeNull()
+
+    jest.advanceTimersByTime(1)
+    expect(document.querySelector('.im-c-map-loading')).toBeTruthy()
+    expect(controller.isShown()).toBe(true)
+    expect(onShow).toHaveBeenCalledTimes(1)
+    controller.destroy()
+  })
+
+  it('cancels a pending show when dismissed before the delay elapses', () => {
+    const container = setup()
+    const onShow = jest.fn()
+    const onDismiss = jest.fn()
+    const controller = createLoadingOverlay({ container, onShow, onDismiss })
+
+    controller.dismiss('firstidle')
+    jest.advanceTimersByTime(200)
+
+    expect(document.querySelector('.im-c-map-loading')).toBeNull()
+    expect(controller.isShown()).toBe(false)
+    expect(onShow).not.toHaveBeenCalled()
+    // never mounted, so nothing to dismiss
+    expect(onDismiss).not.toHaveBeenCalled()
+    controller.destroy()
+  })
+
+  it('honours a custom delay', () => {
+    const container = setup()
+    const controller = createLoadingOverlay({ container, delay: 50 })
+
+    jest.advanceTimersByTime(49)
+    expect(controller.isShown()).toBe(false)
+
+    jest.advanceTimersByTime(1)
+    expect(controller.isShown()).toBe(true)
+    controller.destroy()
+  })
+
+  it('starts the safety timeout only after the delayed mount', () => {
+    const container = setup()
+    const onDismiss = jest.fn()
+    const controller = createLoadingOverlay({ container, delay: 200, timeout: 100, onDismiss })
+
+    jest.advanceTimersByTime(200)
+    expect(controller.isShown()).toBe(true)
+
+    jest.advanceTimersByTime(99)
+    expect(onDismiss).not.toHaveBeenCalled()
+
+    jest.advanceTimersByTime(1)
+    expect(onDismiss).toHaveBeenCalledWith('timeout')
     controller.destroy()
   })
 })
@@ -179,7 +256,7 @@ describe('options', () => {
 describe('dismissal', () => {
   it('dismiss removes the overlay and is safe to call twice', () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container })
+    const controller = create({ container })
 
     controller.dismiss()
     expect(document.querySelector('.im-c-map-loading')).toBeNull()
@@ -189,7 +266,7 @@ describe('dismissal', () => {
 
   it('dismisses when the component renders its error markup', async () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container })
+    const controller = create({ container })
 
     container.innerHTML = '<div class="im-c-error">There was a problem loading the map.</div>'
     await nextTask()
@@ -199,7 +276,7 @@ describe('dismissal', () => {
 
   it('does not mount over a container already showing an error', () => {
     const container = setup('<div id="map"><div class="im-c-error">err</div></div>')
-    const controller = createLoadingOverlay({ container })
+    const controller = create({ container })
     expect(document.querySelector('.im-c-map-loading')).toBeNull()
     expect(controller.isShown()).toBe(false)
     controller.destroy()
@@ -207,7 +284,7 @@ describe('dismissal', () => {
 
   it('dismisses when a custom errorSelector matches', async () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container, errorSelector: '.my-error' })
+    const controller = create({ container, errorSelector: '.my-error' })
 
     container.innerHTML = '<div class="my-error">failed</div>'
     await nextTask()
@@ -217,7 +294,7 @@ describe('dismissal', () => {
 
   it('ignores the error markup when errorSelector is falsy', async () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container, errorSelector: false })
+    const controller = create({ container, errorSelector: false })
 
     container.innerHTML = '<div class="im-c-error">failed</div>'
     await nextTask()
@@ -227,7 +304,7 @@ describe('dismissal', () => {
 
   it('leaves the overlay alone for mutations without an error marker', async () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container })
+    const controller = create({ container })
 
     container.innerHTML = '<div>still loading</div>'
     await nextTask()
@@ -237,7 +314,7 @@ describe('dismissal', () => {
 
   it('dismisses on the safety timeout', async () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container, timeout: 5 })
+    const controller = create({ container, timeout: 5 })
     expect(document.querySelector('.im-c-map-loading')).toBeTruthy()
     await nextTask(30)
     expect(document.querySelector('.im-c-map-loading')).toBeNull()
@@ -246,7 +323,7 @@ describe('dismissal', () => {
 
   it('leaves dismissal to the event and error paths when timeout is 0', async () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container, timeout: 0 })
+    const controller = create({ container, timeout: 0 })
     await nextTask(30)
     expect(document.querySelector('.im-c-map-loading')).toBeTruthy()
     controller.destroy()
@@ -255,7 +332,7 @@ describe('dismissal', () => {
   it('reports the dismissal reason to onDismiss', async () => {
     const container = setup()
     const onDismiss = jest.fn()
-    const controller = createLoadingOverlay({ container, timeout: 5, onDismiss })
+    const controller = create({ container, timeout: 5, onDismiss })
 
     controller.dismiss()
     expect(onDismiss).toHaveBeenLastCalledWith('manual')
@@ -269,7 +346,7 @@ describe('dismissal', () => {
   it('calls onShow when the overlay mounts', () => {
     const container = setup()
     const onShow = jest.fn()
-    const controller = createLoadingOverlay({ container, onShow })
+    const controller = create({ container, onShow })
     expect(onShow).toHaveBeenCalledTimes(1)
 
     controller.dismiss()
@@ -285,7 +362,7 @@ describe('deferred mode', () => {
     const container = document.getElementById('map')
     const launcher = document.getElementById('launcher')
 
-    const controller = createLoadingOverlay({ container, deferred: true })
+    const controller = create({ container, deferred: true })
 
     // the launcher is added after plugin creation (by the map) and starts visible
     await nextTask()
@@ -302,7 +379,7 @@ describe('deferred mode', () => {
     const container = document.getElementById('map')
     const host = document.getElementById('host')
 
-    const controller = createLoadingOverlay({ container, deferred: true })
+    const controller = create({ container, deferred: true })
 
     // the map inserts its open button before the container after construction
     const launcher = document.createElement('a')
@@ -321,7 +398,7 @@ describe('deferred mode', () => {
     const container = document.getElementById('map')
     const launcher = document.getElementById('launcher')
 
-    const controller = createLoadingOverlay({ container, deferred: true })
+    const controller = create({ container, deferred: true })
     await nextTask()
 
     launcher.remove()
@@ -334,7 +411,7 @@ describe('deferred mode', () => {
     document.body.innerHTML = '<div id="host"><a id="launcher"></a><div id="map"></div></div>'
     const container = document.getElementById('map')
 
-    const controller = createLoadingOverlay({ container, deferred: true })
+    const controller = create({ container, deferred: true })
     await nextTask(30)
     expect(document.querySelector('.im-c-map-loading')).toBeNull()
     expect(controller.isShown()).toBe(false)
@@ -343,7 +420,7 @@ describe('deferred mode', () => {
 
   it('cannot watch a detached container - it waits for an explicit show()', async () => {
     const container = document.createElement('div')
-    const controller = createLoadingOverlay({ container, deferred: true })
+    const controller = create({ container, deferred: true })
     await nextTask(30)
     expect(controller.isShown()).toBe(false)
 
@@ -357,7 +434,7 @@ describe('deferred mode', () => {
     const container = document.getElementById('map')
     const launcher = document.getElementById('launcher')
 
-    const controller = createLoadingOverlay({ container, deferred: true })
+    const controller = create({ container, deferred: true })
     await nextTask()
 
     // open: launcher hidden -> overlay shows; idle -> dismissed
@@ -375,12 +452,42 @@ describe('deferred mode', () => {
     expect(document.querySelector('.im-c-map-loading')).toBeTruthy()
     controller.destroy()
   })
+
+  it('respects the show delay after deferred activation and on re-arm', async () => {
+    jest.useFakeTimers()
+    document.body.innerHTML = '<div id="host"><a id="launcher"></a><div id="map"></div></div>'
+    const container = document.getElementById('map')
+    const launcher = document.getElementById('launcher')
+
+    // production defaults for buttonFirst/hybrid: deferred + 200ms delay
+    const controller = createLoadingOverlay({ container, deferred: true, delay: 200 })
+
+    launcher.style.display = 'none'
+    await jest.advanceTimersByTimeAsync(0)
+    expect(controller.isShown()).toBe(false)
+
+    await jest.advanceTimersByTimeAsync(200)
+    expect(controller.isShown()).toBe(true)
+
+    controller.dismiss('firstidle')
+    launcher.style.display = ''
+    await jest.advanceTimersByTimeAsync(0)
+    launcher.style.display = 'none'
+    await jest.advanceTimersByTimeAsync(0)
+    expect(controller.isShown()).toBe(false)
+
+    await jest.advanceTimersByTimeAsync(200)
+    expect(controller.isShown()).toBe(true)
+
+    controller.destroy()
+    jest.useRealTimers()
+  })
 })
 
 describe('lifecycle', () => {
   it('show() re-mounts a dismissed overlay', () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container })
+    const controller = create({ container })
     controller.dismiss()
     expect(document.querySelector('.im-c-map-loading')).toBeNull()
 
@@ -391,7 +498,7 @@ describe('lifecycle', () => {
 
   it('show() does not re-mount over an error marker', () => {
     const container = setup()
-    const controller = createLoadingOverlay({ container })
+    const controller = create({ container })
     controller.dismiss()
 
     container.innerHTML = '<div class="im-c-error">failed</div>'
@@ -404,7 +511,7 @@ describe('lifecycle', () => {
     document.body.innerHTML = '<div id="host"><a id="launcher"></a><div id="map"></div></div>'
     const container = document.getElementById('map')
     const launcher = document.getElementById('launcher')
-    const controller = createLoadingOverlay({ container, deferred: true })
+    const controller = create({ container, deferred: true })
 
     controller.destroy()
     launcher.style.display = 'none'

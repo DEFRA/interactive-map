@@ -32,6 +32,9 @@ const SPINNER_CLASS = 'im-c-map-loading__spinner'
 const TEXT_CLASS = 'im-c-map-loading__text'
 
 const DEFAULT_TEXT = 'Loading map'
+// skip the overlay on fast loads so a spinner doesn't flash over a map that
+// was already about to paint
+const DEFAULT_DELAY = 200
 // generous - a healthy map reaches firstidle well inside this on slow networks;
 // it exists for the case where the style/tile fetch fails silently
 const DEFAULT_TIMEOUT = 60000
@@ -95,6 +98,8 @@ function buildOverlay ({ text, spinner, content, role }) {
  * @param {boolean} [options.deferred] - stay hidden until the app starts loading (the open
  *   button is hidden), for `buttonFirst`/`hybrid` launchers; the overlay re-arms each time
  *   the app closes back to the launcher
+ * @param {number} [options.delay] - wait this long before mounting so fast loads never flash
+ *   a spinner; 0 mounts immediately
  * @param {number} [options.timeout] - dismiss anyway after this long; 0 disables the safety net
  * @param {string|boolean} [options.errorSelector] - dismiss when this marker appears inside the
  *   container; falsy disables the error watch
@@ -113,6 +118,7 @@ export function createLoadingOverlay ({
   adopt = DEFAULT_ADOPT_SELECTOR,
   fullscreen = false,
   deferred = false,
+  delay = DEFAULT_DELAY,
   timeout = DEFAULT_TIMEOUT,
   errorSelector = DEFAULT_ERROR_SELECTOR,
   onShow,
@@ -134,6 +140,7 @@ export function createLoadingOverlay ({
   let shown = false
   let destroyed = false
   let timer
+  let delayTimer
   let errorObserver
   let launcherObserver
   // deferred activation fires on the launcher transition visible -> hidden, so it
@@ -172,8 +179,13 @@ export function createLoadingOverlay ({
     el.parentElement.appendChild(overlay)
   }
 
-  function show () {
-    if (shown || destroyed || hasError()) {
+  function clearDelay () {
+    clearTimeout(delayTimer)
+    delayTimer = undefined
+  }
+
+  function mountAndShow () {
+    if (destroyed || hasError()) {
       return
     }
     shown = true
@@ -184,7 +196,22 @@ export function createLoadingOverlay ({
     onShow?.()
   }
 
+  function show () {
+    if (shown || destroyed || hasError() || delayTimer) {
+      return
+    }
+    if (delay > 0) {
+      delayTimer = setTimeout(() => {
+        delayTimer = undefined
+        mountAndShow()
+      }, delay)
+      return
+    }
+    mountAndShow()
+  }
+
   function dismiss (reason = 'manual') {
+    clearDelay()
     if (!shown) {
       return
     }
