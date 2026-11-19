@@ -72,6 +72,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "assets",
     "dist",
     "plugins",
     "providers",
