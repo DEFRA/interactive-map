@@ -63,13 +63,32 @@ describe('createDatasetSource', () => {
       expect(source.getUrls()).toEqual(['https://example.com/{z}/{x}/{y}'])
     })
 
-    it('uses the fixed BNG tile grid, not the default Web Mercator one', () => {
+    it('uses the OS tile grid when the dataset sets no tileMatrixSet', () => {
       const registryDataset = { id: 'ds-tiles', idStrategy: null, source: { type: 'vector', tiles: ['https://example.com/{z}/{x}/{y}'] } }
+      const source = createDatasetSource(registryDataset)
+      const tileGrid = source.getTileGrid()
+      expect(tileGrid.getExtent()).toEqual([-238375, -458752, 1596633, 1376256])
+      expect(tileGrid.getOrigin(0)).toEqual([-238375, 1376256])
+      expect(tileGrid.getTileSize(0)).toBe(256)
+      // Zoom 3 matches OS level 0
+      expect(tileGrid.getResolution(3)).toBe(896)
+    })
+
+    it('uses the dataset tileMatrixSet when set', () => {
+      const registryDataset = {
+        id: 'ds-tiles',
+        idStrategy: null,
+        source: {
+          type: 'vector',
+          tiles: ['https://example.com/{z}/{x}/{y}'],
+          tileMatrixSet: { origin: [0, 1300000], extentAtZoom0: 1300000 }
+        }
+      }
       const source = createDatasetSource(registryDataset)
       const tileGrid = source.getTileGrid()
       expect(tileGrid.getExtent()).toEqual([0, 0, 1300000, 1300000])
       expect(tileGrid.getOrigin(0)).toEqual([0, 1300000])
-      expect(tileGrid.getTileSize(0)).toBe(256)
+      expect(tileGrid.getResolution(0)).toBe(1300000 / 256)
     })
   })
 

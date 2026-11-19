@@ -190,6 +190,25 @@ The layer name within the vector tile source to render. Required when using `til
 
 ---
 
+### `tileMatrixSet`
+
+**Type:** `{ origin: [number, number], extentAtZoom0: number }`
+
+The tile grid the `tiles` are cut on: a square grid where zoom 0 is a single tile and each zoom level splits every tile into four. `origin` is the top-left corner of tile `0/0/0` and `extentAtZoom0` is its width, both in EPSG:27700 metres.
+
+Defaults to the OS National Grid tile grid, `{ origin: [-238375, 1376256], extentAtZoom0: 1835008 }`, where tile `z/x/y` is OS tile `(z-3)/x/y`. For tiles cut by a PostGIS function with `ST_TileEnvelope`, these are the bounds `ST_MakeEnvelope(-238375, -458752, 1596633, 1376256, 27700)`.
+
+```js
+tileMatrixSet: {
+  origin: [0, 1300000],
+  extentAtZoom0: 1300000
+}
+```
+
+> OpenLayers only. MapLibre uses the Web Mercator tile grid.
+
+---
+
 ### `idProperty`
 
 **Type:** `string`
