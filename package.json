@@ -1,5 +1,6 @@
 {
-  "name": "@defra/interactive-map",
+  "name": "interactive-map",
+  "private": true,
   "version": "0.0.0-development",
   "description": "An accessible map component",
   "repository": {
