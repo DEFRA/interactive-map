@@ -141,7 +141,7 @@ const babelPlugin = () => babel({
   ]
 })
 
-const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null, chunkNames = {}) => {
+export const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null, chunkNames = {}) => {
   const esmDir = path.resolve(__dirname, outDir)
   // Use the parent dir as output.dir so CSS can be emitted to css/index.css
   // (a sibling subdir) without Rollup 4's ban on ".." in emitted file names.
@@ -150,7 +150,7 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
 
   // Core build also cleans the shared dist/css before rebuilding
   const dirsToClean = isCore
-    ? [path.resolve(__dirname, 'dist/css'), esmDir]
+    ? [cssDir, esmDir]
     : [esmDir]
 
   return {
@@ -254,7 +254,7 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
 }
 
 // === All builds ===
-const ALL_BUILDS = [
+export const ALL_BUILDS = [
   // Core
   { entryPath: './src/index.js', outDir: 'dist/esm', isCore: true },
 

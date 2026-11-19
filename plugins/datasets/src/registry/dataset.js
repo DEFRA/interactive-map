@@ -17,6 +17,7 @@ export class Dataset {
   get hasFill () { return !this.hasSublayers && !this.hasSymbol && (this.hasPattern || (this.style?.fill && this.style?.fill !== 'transparent')) }
   get hasStroke () { return !this.hasSublayers && !this.hasSymbol && Boolean(this.style?.stroke) }
   get tiles () { return this._datasetDefinition.tiles }
+  get tileMatrixSet () { return this._datasetDefinition.tileMatrixSet }
   get geojson () { return this._datasetDefinition.geojson }
   get idProperty () { return this._datasetDefinition.idProperty }
   get generateIds () { return this._datasetDefinition.generateIds }
