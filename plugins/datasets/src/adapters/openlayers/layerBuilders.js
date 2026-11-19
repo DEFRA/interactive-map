@@ -29,19 +29,36 @@ const toOlMaxZoom = (maxZoom) => (maxZoom === undefined ? undefined : maxZoom - 
 const SYMBOL_Z_INDEX = 1
 const DEFAULT_Z_INDEX = 0
 
-// Must stay in sync with the ST_MakeEnvelope(0, 0, 1300000, 1300000, 27700) bounds hardcoded in
-// the farming-tiles server's own vector tile sources — a wrong tile grid silently misplaces or
-// fails to load every tile. Independent of the ArcGIS-hosted OSGB36 tiles used elsewhere, which
-// use a different origin/resolution/tileSize despite sharing the same EPSG:27700 projection.
-const BNG_TILE_GRID_SIZE = 1300000
-const BNG_TILE_GRID_EXTENT = [0, 0, BNG_TILE_GRID_SIZE, BNG_TILE_GRID_SIZE]
-const BNG_TILE_SIZE = 256
-const BNG_TILE_GRID = new TileGrid({
-  extent: BNG_TILE_GRID_EXTENT,
-  origin: [BNG_TILE_GRID_EXTENT[0], BNG_TILE_GRID_EXTENT[3]], // NOSONAR: bbox [west, south, east, north] coords
-  resolutions: Array.from({ length: 25 }, (_, zoom) => (BNG_TILE_GRID_EXTENT[2] - BNG_TILE_GRID_EXTENT[0]) / (BNG_TILE_SIZE * 2 ** zoom)), // NOSONAR: bbox coords
-  tileSize: BNG_TILE_SIZE
-})
+// The grid a vector tile dataset's tiles are cut on, when it doesn't set its own tileMatrixSet:
+// the OS National Grid tile grid, with zoom 0 as one square from the OS origin, so tile z/x/y is
+// OS tile (z-3)/x/y. Same shape as MapLibre's addProjection tileMatrixSet. A wrong grid silently
+// misplaces or fails to load every tile.
+const OS_ORIGIN_EASTING = -238375
+const OS_ORIGIN_NORTHING = 1376256
+const OS_EXTENT_AT_ZOOM_0 = 1835008
+const OS_TILE_MATRIX_SET = {
+  origin: [OS_ORIGIN_EASTING, OS_ORIGIN_NORTHING],
+  extentAtZoom0: OS_EXTENT_AT_ZOOM_0
+}
+const TILE_SIZE = 256
+const ZOOM_LEVELS = 25
+
+/**
+ * Builds the OL tile grid for a square, power-of-two quad tile matrix set.
+ * @param {{ origin: [number, number], extentAtZoom0: number }} tileMatrixSet
+ * @returns {TileGrid}
+ */
+const createTileGrid = ({ origin, extentAtZoom0 }) => {
+  const [minX, maxY] = origin
+  return new TileGrid({
+    extent: [minX, maxY - extentAtZoom0, minX + extentAtZoom0, maxY],
+    origin,
+    resolutions: Array.from({ length: ZOOM_LEVELS }, (_, zoom) => extentAtZoom0 / (TILE_SIZE * 2 ** zoom)),
+    tileSize: TILE_SIZE
+  })
+}
+
+const OS_TILE_GRID = createTileGrid(OS_TILE_MATRIX_SET)
 
 /**
  * Reads GeoJSON into OL Features, promoting idProperty onto each feature's id first —
@@ -86,7 +103,7 @@ const populateFromUrl = (olSource, url, idProperty, datasetId) => {
 
 /**
  * Build the OL source for a dataset — a plain VectorSource for geojson/dynamicGeoJSON, or a
- * VectorTileSource (BNG-native tile grid, see BNG_TILE_GRID) for a tiles-backed dataset. Several
+ * VectorTileSource (on the dataset's own tileMatrixSet, or the OS tile grid) for a tiles-backed dataset. Several
  * top-level datasets can point at the same tiles URL with different sourceLayer values (mirroring
  * MapLibre's own multiple-paint-layers-per-vector-source model, e.g. existing-fields/hedge-control
  * both reading field_parcels_with_hedges_*) — registryDataset.sourceId is already hashed from the
@@ -124,7 +141,7 @@ export const createDatasetSource = (registryDataset) => {
       format: new MVT({ featureClass: Feature, idProperty: idStrategy || undefined }),
       urls,
       projection: PROJECTION,
-      tileGrid: BNG_TILE_GRID
+      tileGrid: source.tileMatrixSet ? createTileGrid(source.tileMatrixSet) : OS_TILE_GRID
     })
   }
   logger.warn(`OpenLayers datasets adapter: unsupported source type "${source.type}" (dataset "${id}")`)
