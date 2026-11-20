@@ -1,4 +1,4 @@
-import { addFillLayer, addStrokeLayer, addSymbolLayer } from './layerBuilders.js'
+import { addFillLayer, addStrokeLayer, addSymbolLayer, addDatasetLayers } from './layerBuilders.js'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -95,5 +95,49 @@ describe('addSymbolLayer', () => {
     expect(mapProvider.getSymbolIconLayout).toHaveBeenCalledWith(symbolDef)
     expect(ds.getSymbolSource).toHaveBeenCalledWith('img', ICON_LAYOUT)
     expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ layout: { 'icon-image': 'img', ...ICON_LAYOUT } }))
+  })
+})
+
+// ─── addDatasetLayers zoom ranges ─────────────────────────────────────────────
+
+describe('addDatasetLayers zoom ranges', () => {
+  const zoomRangeDataset = (minzoom, maxzoom) => makeDataset({
+    hasFill: true,
+    fillLayerId: 'test-ds',
+    hasStroke: true,
+    strokeLayerId: 'test-ds-stroke',
+    style: { fill: '#ff0000', stroke: '#000000' },
+    sourceId: 'tiles-test',
+    source: { type: 'vector', tiles: ['https://example.com/{z}/{x}/{y}'], minzoom, maxzoom },
+    getFillSource: jest.fn(paint => ({ id: 'test-ds', type: 'fill', paint, minzoom, maxzoom })),
+    getStrokeSource: jest.fn(paint => ({ id: 'test-ds-stroke', type: 'line', paint, minzoom, maxzoom }))
+  })
+  const patternRegistry = { getPatternImageId: jest.fn(() => null) }
+  const addedLayers = (map) => map.addLayer.mock.calls.map(([spec]) => spec)
+
+  it('leaves off a layer maxzoom at MapLibre\'s highest zoom, so the layer still shows there', () => {
+    const map = makeMap()
+    addDatasetLayers(makeMapProvider(map), zoomRangeDataset(6, 24), { id: 'outdoor' }, null, patternRegistry, 1)
+    addedLayers(map).forEach(layer => {
+      expect(layer.minzoom).toBe(6)
+      expect(layer).not.toHaveProperty('maxzoom')
+    })
+  })
+
+  it('keeps a lower layer maxzoom', () => {
+    const map = makeMap()
+    addDatasetLayers(makeMapProvider(map), zoomRangeDataset(6, 19), { id: 'outdoor' }, null, patternRegistry, 1)
+    addedLayers(map).forEach(layer => expect(layer.maxzoom).toBe(19))
+  })
+
+  it('converts layer and tile source zooms to MapLibre\'s own on a map with a zoom offset', () => {
+    const map = makeMap()
+    const mapProvider = { ...makeMapProvider(map), zoomOffset: 2, toMapLibreZoom: zoom => zoom + 2 }
+    addDatasetLayers(mapProvider, zoomRangeDataset(5, 19), { id: 'outdoor' }, null, patternRegistry, 1)
+    addedLayers(map).forEach(layer => {
+      expect(layer.minzoom).toBe(7)
+      expect(layer.maxzoom).toBe(21)
+    })
+    expect(map.addSource).toHaveBeenCalledWith('tiles-test', expect.objectContaining({ minzoom: 7, maxzoom: 21 }))
   })
 })

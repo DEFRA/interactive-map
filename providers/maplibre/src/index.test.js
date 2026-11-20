@@ -103,14 +103,15 @@ describe('createMapLibreProvider', () => {
     expect(result.mapFramework).toBeDefined()
     expect(result.mapProviderConfig).toEqual({
       tileSize: 512,
-      crs: 'EPSG:4326'
+      crs: 'EPSG:4326',
+      crsProjection: null
     })
   })
 
   test('load uses empty default config', async () => {
     const { mapProviderConfig } = await createMapLibreProvider().load()
 
-    expect(mapProviderConfig).toEqual({ crs: 'EPSG:4326' })
+    expect(mapProviderConfig).toEqual({ crs: 'EPSG:4326', crsProjection: null })
   })
 
   test('load sets the configured workerUrl when provided', async () => {

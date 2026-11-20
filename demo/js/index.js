@@ -303,7 +303,7 @@ const interactiveMap = new InteractiveMap('map', {
   mapLabel: 'Field parcels and land use map',
   // zoom: 14,
   minZoom: 6,
-  maxZoom: 20,
+  maxZoom: 24,
   autoColorScheme: true,
   // center: [-2.938769, 54.893806],
   bounds: [-2.450804, 54.5599279, -2.403804, 54.6199279],

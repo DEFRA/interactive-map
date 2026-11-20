@@ -203,7 +203,7 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
   /**
    * Update the GeoJSON data for a dataset's source.
    * @param {string} datasetId
-   * @param {Object} geojson - GeoJSON FeatureCollection
+   * @param {Object} geojson - GeoJSON FeatureCollection in the map's CRS
    */
   setData (datasetId, geojson) {
     const sourceId = this._datasetSourceMap.get(datasetId)
@@ -212,7 +212,7 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
     }
     const source = this._map.getSource(sourceId)
     if (source && typeof source.setData === 'function') {
-      source.setData(geojson)
+      source.setData(this._mapProvider.geojsonToLngLat?.(geojson) ?? geojson)
     }
   }
 

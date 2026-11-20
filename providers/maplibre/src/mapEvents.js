@@ -11,7 +11,9 @@ export function attachMapEvents ({
   getCenter,
   getZoom,
   getBounds,
-  getResolution
+  getResolution,
+  fromLngLat = lngLat => lngLat,
+  zoomOffset = 0
 }) {
   const handlers = []
   const debouncers = []
@@ -23,8 +25,8 @@ export function attachMapEvents ({
       bounds: getBounds(),
       resolution: getResolution(),
       zoom,
-      isAtMaxZoom: map.getMaxZoom() <= zoom,
-      isAtMinZoom: map.getMinZoom() >= zoom
+      isAtMaxZoom: map.getMaxZoom() - zoomOffset <= zoom,
+      isAtMinZoom: map.getMinZoom() - zoomOffset >= zoom
     }
   }
 
@@ -89,7 +91,7 @@ export function attachMapEvents ({
   // click
   const onClick = (e) => emitEvent(events.MAP_CLICK, {
     point: e.point,
-    coords: [e.lngLat.lng, e.lngLat.lat]
+    coords: fromLngLat([e.lngLat.lng, e.lngLat.lat])
   })
 
   map.on('click', onClick)

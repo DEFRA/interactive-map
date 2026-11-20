@@ -8,6 +8,7 @@
 import { getWebGL } from './utils/detectWebgl.js'
 import { supportsModuleWorkers } from './utils/detectModuleWorker.js'
 import { getWorkerUrl, isUnbundledWorkerUrl } from './utils/workerUrl.js'
+import { BNG_CRS, registerBngProjection } from './utils/bngProjection.js'
 import { logger } from '../../../src/services/logger.js'
 
 const MISSING_WORKER_MESSAGE = "MapLibre's worker file wasn't included in the build, so the map can't load. " +
@@ -81,12 +82,16 @@ export default function createMapLibreProvider (config = {}) {
       }
       mapFramework.setWorkerUrl(workerUrl)
 
+      const crs = config.crs || 'EPSG:4326'
+      const crsProjection = crs === BNG_CRS ? await registerBngProjection(mapFramework) : null
+
       const MapProvider = (await import(/* webpackChunkName: "im-maplibre-provider" */ './maplibreProvider.js')).default
 
       /** @type {MapProviderConfig} */
       const mapProviderConfig = {
         ...config,
-        crs: 'EPSG:4326'
+        crs,
+        crsProjection
       }
 
       return {
