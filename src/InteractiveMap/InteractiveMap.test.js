@@ -43,8 +43,17 @@ jest.mock('../services/eventBus.js', () => ({
   default: { on: jest.fn(), off: jest.fn(), emit: jest.fn(), emitWhenReady: jest.fn(), destroy: jest.fn() }
 }))
 jest.mock('../App/initialiseApp.js', () => ({ initialiseApp: jest.fn() }))
+jest.mock('./mapLoadingOverlay.js', () => ({
+  createLoadingOverlay: jest.fn(() => ({
+    show: jest.fn(),
+    dismiss: jest.fn(),
+    destroy: jest.fn(),
+    isShown: jest.fn(() => false)
+  }))
+}))
 
 const { initialiseApp } = require('../App/initialiseApp.js')
+const { createLoadingOverlay } = require('./mapLoadingOverlay.js')
 const createButtonMock = require('./buttonManager.js').createButton
 const mapProviderMock = {
   load: jest.fn().mockResolvedValue({
@@ -651,5 +660,137 @@ describe('InteractiveMap — Public API Methods', () => {
     map.dismissHint()
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:showhint', { text: 'Press <kbd>Enter</kbd> to select', options: { duration: 2000 } })
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:dismisshint')
+  })
+})
+
+// --- map loading overlay ---
+
+describe('InteractiveMap — map loading', () => {
+  beforeEach(setupBeforeEach)
+  afterEach(() => jest.restoreAllMocks())
+
+  const handlerFor = (bus, event) => bus.on.mock.calls.find(([name]) => name === event)?.[1]
+
+  it('does not create a loading overlay when enableMapLoading is off', () => {
+    const map = new InteractiveMap('map', { behaviour: 'inline', mapProvider: mapProviderMock })
+    expect(map).toBeDefined()
+    expect(createLoadingOverlay).not.toHaveBeenCalled()
+  })
+
+  it('creates a deferred fullscreen overlay for buttonFirst when enabled', () => {
+    shouldLoadComponent.mockReturnValue(false)
+    const map = new InteractiveMap('map', {
+      behaviour: 'buttonFirst',
+      enableMapLoading: true,
+      mapLoading: { delay: 0, text: 'Loading projects' },
+      mapProvider: mapProviderMock
+    })
+
+    expect(createLoadingOverlay).toHaveBeenCalledWith(expect.objectContaining({
+      container: map.rootEl,
+      deferred: true,
+      fullscreen: true,
+      delay: 0,
+      text: 'Loading projects'
+    }))
+  })
+
+  it('creates a non-deferred overlay for inline when enabled', () => {
+    const map = new InteractiveMap('map', {
+      behaviour: 'inline',
+      enableMapLoading: true,
+      mapLoading: { delay: 0 },
+      mapProvider: mapProviderMock
+    })
+
+    expect(createLoadingOverlay).toHaveBeenCalledWith(expect.objectContaining({
+      container: map.rootEl,
+      deferred: false,
+      fullscreen: false,
+      delay: 0
+    }))
+  })
+
+  it('honours explicit deferred and fullscreen overrides', () => {
+    shouldLoadComponent.mockReturnValue(false)
+    const map = new InteractiveMap('map', {
+      behaviour: 'buttonFirst',
+      enableMapLoading: true,
+      mapLoading: { deferred: false, fullscreen: false, delay: 0 },
+      mapProvider: mapProviderMock
+    })
+
+    expect(map).toBeDefined()
+    expect(createLoadingOverlay).toHaveBeenCalledWith(expect.objectContaining({
+      deferred: false,
+      fullscreen: false
+    }))
+  })
+
+  it('wires lifecycle events to the overlay controller', () => {
+    shouldLoadComponent.mockReturnValue(false)
+    const map = new InteractiveMap('map', {
+      behaviour: 'buttonFirst',
+      enableMapLoading: true,
+      mapLoading: { delay: 0 },
+      mapProvider: mapProviderMock
+    })
+    const controller = createLoadingOverlay.mock.results.at(-1).value
+
+    handlerFor(map.eventBus, 'map:ready')()
+    expect(controller.show).toHaveBeenCalled()
+
+    handlerFor(map.eventBus, 'map:firstidle')()
+    expect(controller.dismiss).toHaveBeenCalledWith('firstidle')
+
+    handlerFor(map.eventBus, 'map:destroy')()
+    expect(controller.dismiss).toHaveBeenCalledWith('destroy')
+
+    handlerFor(map.eventBus, 'app:opened')({ statePreserved: true })
+    expect(controller.dismiss).toHaveBeenCalledWith('appopened')
+
+    controller.dismiss.mockClear()
+    handlerFor(map.eventBus, 'app:opened')({ statePreserved: false })
+    expect(controller.dismiss).not.toHaveBeenCalled()
+  })
+
+  it('skips firstidle dismissal when dismissOnFirstIdle is false', () => {
+    shouldLoadComponent.mockReturnValue(false)
+    const map = new InteractiveMap('map', {
+      behaviour: 'inline',
+      enableMapLoading: true,
+      mapLoading: { delay: 0, dismissOnFirstIdle: false },
+      mapProvider: mapProviderMock
+    })
+    const controller = createLoadingOverlay.mock.results.at(-1).value
+
+    handlerFor(map.eventBus, 'map:firstidle')()
+    expect(controller.dismiss).not.toHaveBeenCalled()
+  })
+
+  it('destroys the overlay and unsubscribes on destroy()', () => {
+    shouldLoadComponent.mockReturnValue(false)
+    const map = new InteractiveMap('map', {
+      behaviour: 'buttonFirst',
+      enableMapLoading: true,
+      mapLoading: { delay: 0 },
+      mapProvider: mapProviderMock
+    })
+    const controller = createLoadingOverlay.mock.results.at(-1).value
+    const { onMapLoadingReady, onMapLoadingFirstIdle, onMapLoadingDestroy, onMapLoadingOpened } = {
+      onMapLoadingReady: map._onMapLoadingReady,
+      onMapLoadingFirstIdle: map._onMapLoadingFirstIdle,
+      onMapLoadingDestroy: map._onMapLoadingDestroy,
+      onMapLoadingOpened: map._onMapLoadingOpened
+    }
+
+    map.destroy()
+
+    expect(controller.destroy).toHaveBeenCalled()
+    expect(map.eventBus.off).toHaveBeenCalledWith('map:ready', onMapLoadingReady)
+    expect(map.eventBus.off).toHaveBeenCalledWith('map:firstidle', onMapLoadingFirstIdle)
+    expect(map.eventBus.off).toHaveBeenCalledWith('map:destroy', onMapLoadingDestroy)
+    expect(map.eventBus.off).toHaveBeenCalledWith('app:opened', onMapLoadingOpened)
+    expect(map._mapLoading).toBeUndefined()
   })
 })

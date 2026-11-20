@@ -252,6 +252,44 @@ zoom control buttons (`enableZoomControls`) are hidden to avoid duplication.
 
 ---
 
+### `enableMapLoading`
+**Type:** `boolean`
+**Default:** `false`
+
+Whether an accessible loading overlay is shown over the map while the app downloads, mounts
+and loads its first tiles.
+
+The overlay is created in the InteractiveMap constructor — before `loadApp` — so it can
+cover the im-core and provider chunk-download phase that a React plugin cannot. It mounts
+as a sibling of the map container (surviving `createRoot`) and dismisses automatically on
+`map:firstidle`, when `.im-c-error` appears, on `map:destroy`, or after a safety timeout.
+
+**Accessibility:** the overlay uses `role="status"` with explicit `aria-live="polite"` and
+`aria-atomic="true"` so assistive technology announces the message without interrupting the
+user. The decorative spinner is `aria-hidden`. While shown, the map container gets
+`aria-busy="true"` and `inert` so keyboard users cannot tab into content beneath the
+overlay. Spinner spin and the enter fade run only when
+`prefers-reduced-motion: no-preference`; under `reduce` the ring stays static. Forced-colors
+mode uses system `Canvas` / `Highlight` colours for contrast.
+
+For `buttonFirst` and `hybrid` it stays deferred until the open button is hidden, so the
+launcher is not covered. Fast loads that reach first idle inside the show delay (default
+200ms) never flash a spinner.
+
+```js
+const interactiveMap = new InteractiveMap('map', {
+  enableMapLoading: true,
+  mapLoading: {
+    text: 'Loading flood map'
+  }
+})
+```
+
+Customise appearance and behaviour with [`mapLoading`](#maploading). Theme with the
+`--im-map-loading-*` custom properties listed there.
+
+---
+
 ### `enableResetView`
 **Type:** `boolean`
 **Default:** `false`
@@ -335,6 +373,62 @@ new InteractiveMap('map', {
   mapLabel: 'Flood risk areas map'
 })
 ```
+
+---
+
+### `mapLoading`
+**Type:** `object`
+**Default:** `{}`
+
+Options for the loading overlay when [`enableMapLoading`](#enablemaploading) is `true`. The map
+container is always the host element passed to `InteractiveMap` — it is not configurable here.
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `text` | `string` | `'Loading map'` | Message under the spinner |
+| `spinner` | `boolean` | `true` | Include the spinner in the default content |
+| `content` | `Node \| string \| function` | — | Custom content; a Node replaces spinner and text, a string replaces the text only |
+| `className` | `string` | — | Extra class names on the overlay |
+| `role` | `string` | `'status'` | Overlay ARIA role |
+| `adopt` | `string \| false` | `'.im-c-map-loading'` | Selector for a server-rendered overlay to adopt; `false` disables |
+| `deferred` | `boolean` | from `behaviour` | Stay hidden until the launcher is hidden; defaults to `true` for `buttonFirst`/`hybrid` |
+| `fullscreen` | `boolean` | from `behaviour` | Cover the viewport; defaults to `true` for `mapOnly`/`buttonFirst` and hybrid-when-fullscreen |
+| `delay` | `number` | `200` | Ms to wait before mounting; `0` mounts immediately |
+| `timeout` | `number` | `60000` | Safety dismiss after this many ms; `0` disables |
+| `errorSelector` | `string \| false` | `'.im-c-error'` | Dismiss when this marker appears; falsy disables |
+| `dismissOnFirstIdle` | `boolean` | `true` | Dismiss on `map:firstidle` |
+| `onShow` | `function` | — | Called when the overlay mounts |
+| `onDismiss` | `function` | — | Called with the dismissal reason when removed |
+
+`onDismiss` is not called if the overlay never mounted (for example dismiss during the show
+delay, or while still waiting in deferred mode).
+
+For an even earlier first paint, render the overlay markup server-side inside the container and
+the component adopts it:
+
+```html
+<div id="map">
+  <div class="im-c-map-loading" role="status">
+    <span class="im-c-map-loading__spinner" aria-hidden="true"></span>
+    <span class="im-c-map-loading__text">Loading map</span>
+  </div>
+</div>
+```
+
+The overlay sits outside the app root, so theme it with these custom properties on `:root`,
+`body`, or the overlay class:
+
+| Custom property | Default | Description |
+|---|---|---|
+| `--im-map-loading-background` | `rgba(255, 255, 255, 0.85)` | Overlay backdrop |
+| `--im-map-loading-color` | `--foreground-color` | Text colour |
+| `--im-map-loading-z-index` | `1000` | Stacking order (above the fullscreen app's 999) |
+| `--im-map-loading-gap` | `16px` | Space between spinner and text |
+| `--im-map-loading-font-size` | `1.5rem` | Message size |
+| `--im-map-loading-spinner-size` | `96px` | Spinner diameter |
+| `--im-map-loading-spinner-width` | `12px` | Spinner ring thickness |
+| `--im-map-loading-spinner-color` | `--primary-button-color` | Spinner highlight colour |
+| `--im-map-loading-spinner-track-color` | `#f3f2f1` | Spinner ring colour |
 
 ---
 
