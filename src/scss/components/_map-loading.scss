@@ -21,6 +21,9 @@
     justify-content: center;
     background: var(--im-map-loading-background, rgba(255, 255, 255, 0.85));
     color: var(--im-map-loading-color, var(--foreground-color, #0b0c0c));
+    // Intentionally blocks pointer events to the map beneath while loading
+    pointer-events: auto;
+    user-select: none;
 }
 
 .im-c-map-loading--fullscreen {
@@ -39,17 +42,52 @@
     border: var(--im-map-loading-spinner-width, 12px) solid var(--im-map-loading-spinner-track-color, #f3f2f1);
     border-top-color: var(--im-map-loading-spinner-color, var(--primary-button-color, #00703c));
     border-radius: 50%;
+}
 
-    // Spin only when motion is fine — under prefers-reduced-motion the ring
-    // stays static so the loading state is still visible without continuous
-    // rotation (a vestibular motion trigger).
-    @media (prefers-reduced-motion: no-preference) {
+// Motion only when preferred — under reduce the ring stays static (still conveys
+// loading via the asymmetric border) and any enter fade is skipped.
+@media (prefers-reduced-motion: no-preference) {
+    .im-c-map-loading {
+        animation: im-map-loading-fade-in 150ms ease-out;
+    }
+
+    .im-c-map-loading__spinner {
         animation: im-map-loading-spin 1s linear infinite;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .im-c-map-loading,
+    .im-c-map-loading__spinner {
+        animation: none;
+    }
+}
+
+@media (forced-colors: active) {
+    .im-c-map-loading {
+        background: Canvas;
+        color: CanvasText;
+        forced-color-adjust: none;
+    }
+
+    .im-c-map-loading__spinner {
+        border-color: GrayText;
+        border-top-color: Highlight;
     }
 }
 
 @keyframes im-map-loading-spin {
     to {
         transform: rotate(360deg);
+    }
+}
+
+@keyframes im-map-loading-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
     }
 }

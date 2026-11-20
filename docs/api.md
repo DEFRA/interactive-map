@@ -256,18 +256,25 @@ zoom control buttons (`enableZoomControls`) are hidden to avoid duplication.
 **Type:** `boolean`
 **Default:** `false`
 
-Whether an accessible loading overlay (`role="status"`) is shown over the map while the
-app downloads, mounts and loads its first tiles.
+Whether an accessible loading overlay is shown over the map while the app downloads, mounts
+and loads its first tiles.
 
 The overlay is created in the InteractiveMap constructor — before `loadApp` — so it can
 cover the im-core and provider chunk-download phase that a React plugin cannot. It mounts
 as a sibling of the map container (surviving `createRoot`) and dismisses automatically on
 `map:firstidle`, when `.im-c-error` appears, on `map:destroy`, or after a safety timeout.
 
+**Accessibility:** the overlay uses `role="status"` with explicit `aria-live="polite"` and
+`aria-atomic="true"` so assistive technology announces the message without interrupting the
+user. The decorative spinner is `aria-hidden`. While shown, the map container gets
+`aria-busy="true"` and `inert` so keyboard users cannot tab into content beneath the
+overlay. Spinner spin and the enter fade run only when
+`prefers-reduced-motion: no-preference`; under `reduce` the ring stays static. Forced-colors
+mode uses system `Canvas` / `Highlight` colours for contrast.
+
 For `buttonFirst` and `hybrid` it stays deferred until the open button is hidden, so the
 launcher is not covered. Fast loads that reach first idle inside the show delay (default
-200ms) never flash a spinner. The spinner only animates when
-`prefers-reduced-motion: no-preference`.
+200ms) never flash a spinner.
 
 ```js
 const interactiveMap = new InteractiveMap('map', {

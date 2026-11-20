@@ -26,9 +26,51 @@ describe('mounting', () => {
     expect(overlay).toBeTruthy()
     expect(overlay.parentElement).toBe(wrapper)
     expect(overlay.getAttribute('role')).toBe('status')
+    expect(overlay.getAttribute('aria-live')).toBe('polite')
+    expect(overlay.getAttribute('aria-atomic')).toBe('true')
     expect(overlay.querySelector('.im-c-map-loading__text').textContent).toBe('Loading map')
     expect(overlay.querySelector('.im-c-map-loading__spinner').getAttribute('aria-hidden')).toBe('true')
     expect(controller.isShown()).toBe(true)
+    controller.destroy()
+  })
+
+  it('marks the map container busy and inert while the overlay is shown', async () => {
+    const container = setup()
+    const controller = create({ container })
+    const overlay = document.querySelector('.im-c-map-loading')
+
+    expect(container.getAttribute('aria-busy')).toBe('true')
+    expect(container.hasAttribute('inert')).toBe(true)
+    // live region busy is cleared after mount so AT announces the message
+    await Promise.resolve()
+    expect(overlay.getAttribute('aria-busy')).toBe('false')
+
+    controller.dismiss()
+    expect(container.hasAttribute('aria-busy')).toBe(false)
+    expect(container.hasAttribute('inert')).toBe(false)
+    controller.destroy()
+  })
+
+  it('does not inert a detached container (would hide the live region inside it)', () => {
+    const container = document.createElement('div')
+    const controller = create({ container })
+
+    expect(container.getAttribute('aria-busy')).toBe('true')
+    expect(container.hasAttribute('inert')).toBe(false)
+    expect(container.querySelector('.im-c-map-loading')).toBeTruthy()
+    controller.destroy()
+  })
+
+  it('applies live-region attrs when adopting server-rendered markup', () => {
+    const container = setup(
+      '<div id="map"><div class="im-c-map-loading"><span class="im-c-map-loading__text">Loading map</span></div></div>'
+    )
+    const controller = create({ container })
+    const overlay = document.querySelector('.im-c-map-loading')
+
+    expect(overlay.getAttribute('role')).toBe('status')
+    expect(overlay.getAttribute('aria-live')).toBe('polite')
+    expect(overlay.getAttribute('aria-atomic')).toBe('true')
     controller.destroy()
   })
 
@@ -174,7 +216,18 @@ describe('options', () => {
   it('applies a custom role', () => {
     const container = setup()
     const controller = create({ container, role: 'progressbar' })
-    expect(document.querySelector('.im-c-map-loading').getAttribute('role')).toBe('progressbar')
+    const overlay = document.querySelector('.im-c-map-loading')
+    expect(overlay.getAttribute('role')).toBe('progressbar')
+    expect(overlay.getAttribute('aria-live')).toBe('polite')
+    controller.destroy()
+  })
+
+  it('uses assertive live updates for an alert role', () => {
+    const container = setup()
+    const controller = create({ container, role: 'alert' })
+    const overlay = document.querySelector('.im-c-map-loading')
+    expect(overlay.getAttribute('role')).toBe('alert')
+    expect(overlay.getAttribute('aria-live')).toBe('assertive')
     controller.destroy()
   })
 })

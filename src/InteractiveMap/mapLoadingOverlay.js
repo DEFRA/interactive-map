@@ -47,6 +47,29 @@ const inert = {
 }
 
 /**
+ * Ensure the overlay is a polite live region.
+ *
+ * `role="status"` implies aria-live=polite and aria-atomic=true, but setting them
+ * explicitly improves announcement reliability across AT/browser combinations
+ * (notably NVDA + Firefox) and covers adopted markup that only had a class.
+ *
+ * @param {HTMLElement} overlay
+ * @param {string} role
+ */
+function applyLiveRegionAttrs (overlay, role) {
+  if (!overlay.getAttribute('role')) {
+    overlay.setAttribute('role', role)
+  }
+  const resolvedRole = overlay.getAttribute('role')
+  if (!overlay.hasAttribute('aria-live')) {
+    overlay.setAttribute('aria-live', resolvedRole === 'alert' ? 'assertive' : 'polite')
+  }
+  if (!overlay.hasAttribute('aria-atomic')) {
+    overlay.setAttribute('aria-atomic', 'true')
+  }
+}
+
+/**
  * Build the default overlay content: a decorative spinner plus the message.
  * `content` (a Node, string, or function returning either) replaces both.
  *
@@ -56,7 +79,7 @@ const inert = {
 function buildOverlay ({ text, spinner, content, role }) {
   const overlay = document.createElement('div')
   overlay.className = OVERLAY_CLASS
-  overlay.setAttribute('role', role)
+  applyLiveRegionAttrs(overlay, role)
 
   const custom = typeof content === 'function' ? content(overlay) : content
   if (custom?.nodeType) {
@@ -67,6 +90,7 @@ function buildOverlay ({ text, spinner, content, role }) {
   if (spinner) {
     const el = document.createElement('span')
     el.className = SPINNER_CLASS
+    // Decorative only — the visible text (or aria-live contents) carries the name
     el.setAttribute('aria-hidden', 'true')
     overlay.appendChild(el)
   }
@@ -130,6 +154,7 @@ export function createLoadingOverlay ({
   const overlay = (adopt && el.querySelector(adopt)) || buildOverlay({ text, spinner, content, role })
   overlay.remove() // detach until shown - keeps it out of createRoot()'s way either way
   overlay.classList.add(OVERLAY_CLASS)
+  applyLiveRegionAttrs(overlay, role)
   className?.split(/\s+/).filter(Boolean).forEach(name => overlay.classList.add(name))
   if (fullscreen) {
     overlay.classList.add(FULLSCREEN_CLASS)
@@ -156,6 +181,25 @@ export function createLoadingOverlay ({
     return el.parentElement?.classList.contains(WRAPPER_CLASS) ? el.parentElement : el
   }
 
+  /**
+   * Mark the map container busy and take it out of the tab order while covered.
+   * `inert` is only applied when the overlay is a sibling — if the overlay had to
+   * mount inside a detached container, inert would hide the live region itself.
+   */
+  function setContainerLoadingState (isLoading) {
+    if (isLoading) {
+      el.setAttribute('aria-busy', 'true')
+      // Prefer the inert attribute over the IDL property so behaviour is
+      // consistent in environments (and tests) without full inert support
+      if (overlay.parentElement && overlay.parentElement !== el) {
+        el.setAttribute('inert', '')
+      }
+      return
+    }
+    el.removeAttribute('aria-busy')
+    el.removeAttribute('inert')
+  }
+
   // Move the overlay next to the container, wrapping the container in a
   // positioned div first if needed. The sibling position is what keeps the
   // overlay alive when React mounts over the container.
@@ -177,6 +221,19 @@ export function createLoadingOverlay ({
     el.parentElement.appendChild(overlay)
   }
 
+  /**
+   * Mark the status region busy around mount, then clear it so AT that waits on
+   * aria-busy announces the loading message once (MDN live-region pattern).
+   */
+  function announceLoadingMessage () {
+    overlay.setAttribute('aria-busy', 'true')
+    queueMicrotask(() => {
+      if (shown && !destroyed) {
+        overlay.setAttribute('aria-busy', 'false')
+      }
+    })
+  }
+
   function clearDelay () {
     clearTimeout(delayTimer)
     delayTimer = undefined
@@ -187,7 +244,10 @@ export function createLoadingOverlay ({
       return
     }
     shown = true
+    // busy first so AT can wait through the DOM insert, then clear after mount
+    announceLoadingMessage()
     mount()
+    setContainerLoadingState(true)
     if (timeout > 0) {
       timer = setTimeout(() => dismiss('timeout'), timeout)
     }
@@ -216,6 +276,7 @@ export function createLoadingOverlay ({
     shown = false
     clearTimeout(timer)
     timer = undefined
+    setContainerLoadingState(false)
     overlay.remove()
     onDismiss?.(reason)
   }
