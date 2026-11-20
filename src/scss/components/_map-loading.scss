@@ -1,5 +1,5 @@
 // ===================================================
-// Plugin: MapLoading
+// Component: MapLoading (opt-in via enableMapLoading)
 // ===================================================
 
 // The overlay sits outside the app root (it must exist before the React app
@@ -19,7 +19,7 @@
     gap: var(--im-map-loading-gap, 16px);
     align-items: center;
     justify-content: center;
-    background: var(--im-map-loading-background, rgb(255 255 255 / 85%));
+    background: var(--im-map-loading-background, rgba(255, 255, 255, 0.85));
     color: var(--im-map-loading-color, var(--foreground-color, #0b0c0c));
 }
 

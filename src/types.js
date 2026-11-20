@@ -821,6 +821,57 @@
  */
 
 /**
+ * Options for the opt-in map loading overlay (`enableMapLoading`).
+ *
+ * `deferred` and `fullscreen` default from `behaviour` when omitted.
+ *
+ * @typedef {Object} MapLoadingOptions
+ *
+ * @property {string} [text='Loading map']
+ * Message under the spinner.
+ *
+ * @property {boolean} [spinner=true]
+ * Whether the default content includes the spinner element.
+ *
+ * @property {Node|string|function} [content]
+ * Custom overlay content. A Node (or function returning one) replaces the default
+ * spinner and text; a string replaces the text but keeps the spinner.
+ *
+ * @property {string} [className]
+ * Extra class names added to the overlay element.
+ *
+ * @property {string} [role='status']
+ * Overlay ARIA role.
+ *
+ * @property {string|false} [adopt='.im-c-map-loading']
+ * Selector for a server-rendered overlay inside the container to adopt; `false` disables.
+ *
+ * @property {boolean} [fullscreen]
+ * Cover the viewport rather than the container. Defaults from behaviour when omitted.
+ *
+ * @property {boolean} [deferred]
+ * Stay hidden until the launcher is hidden. Defaults to true for buttonFirst/hybrid.
+ *
+ * @property {number} [delay=200]
+ * Milliseconds to wait before mounting so fast loads never flash a spinner; `0` mounts immediately.
+ *
+ * @property {number} [timeout=60000]
+ * Safety dismiss after this many ms; `0` disables.
+ *
+ * @property {string|false} [errorSelector='.im-c-error']
+ * Dismiss when this marker appears inside the container; falsy disables.
+ *
+ * @property {boolean} [dismissOnFirstIdle=true]
+ * Dismiss on `map:firstidle`.
+ *
+ * @property {function} [onShow]
+ * Called when the overlay mounts.
+ *
+ * @property {function} [onDismiss]
+ * Called with the dismissal reason when the overlay is removed.
+ */
+
+/**
  * Configuration options for the InteractiveMap constructor.
  *
  * Some properties (zoom, center, minZoom, maxZoom, bounds, extent) are passed
@@ -874,6 +925,14 @@
  * switch access users) and for voice interfaces such as Voice Control, which can
  * trigger a button click but not a drag. When enabled, enableZoomControls' buttons
  * are hidden to avoid duplication.
+ *
+ * @property {boolean} [enableMapLoading=false]
+ * Whether an accessible loading overlay is shown while the app downloads, mounts
+ * and loads its first tiles. Deferred automatically for buttonFirst/hybrid so the
+ * launcher stays visible until the user opens the map.
+ *
+ * @property {MapLoadingOptions} [mapLoading]
+ * Options for the loading overlay when enableMapLoading is true.
  *
  * @property {boolean} [enableResetView=false]
  * Whether a reset view button is displayed. It moves the map to the configured bounds

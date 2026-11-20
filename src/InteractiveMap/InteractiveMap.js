@@ -20,10 +20,12 @@ import { renderError } from './renderError.js'
 import { mergeConfig } from '../config/mergeConfig.js'
 import { createBreakpointDetector } from '../utils/detectBreakpoint.js'
 import { createInterfaceDetector, getInterfaceType } from '../utils/detectInterfaceType.js'
+import { getIsFullscreen } from '../utils/getIsFullscreen.js'
 import { createReverseGeocode } from '../services/reverseGeocode.js'
 import { EVENTS as events } from '../config/events.js'
 import { createEventBus } from '../services/eventBus.js'
 import { toggleInertElements } from '../utils/toggleInertElements.js'
+import { createLoadingOverlay } from './mapLoadingOverlay.js'
 
 // Polyfills to ensure entry point works on all devices
 import './polyfills.js'
@@ -96,6 +98,8 @@ export default class InteractiveMap {
       })
     }
 
+    this._setupMapLoading()
+
     this._hybridBehaviourCleanup = setupBehavior(this)
 
     if (shouldLoadComponent(this.config)) {
@@ -104,6 +108,69 @@ export default class InteractiveMap {
     } else {
       removeLoadingState()
     }
+  }
+
+  /**
+   * Opt-in loading overlay: covers chunk download through first idle.
+   * Created after the launcher button so deferred mode can watch it.
+   *
+   * @private
+   */
+  _setupMapLoading () {
+    if (!this.config.enableMapLoading) {
+      return
+    }
+
+    const {
+      dismissOnFirstIdle = true,
+      deferred = ['buttonFirst', 'hybrid'].includes(this.config.behaviour),
+      fullscreen = getIsFullscreen(this.config),
+      ...overlayOptions
+    } = this.config.mapLoading || {}
+
+    this._mapLoading = createLoadingOverlay({
+      container: this.rootEl,
+      deferred,
+      fullscreen,
+      ...overlayOptions
+    })
+    this._mapLoadingDismissOnFirstIdle = dismissOnFirstIdle
+
+    this._onMapLoadingReady = () => this._mapLoading.show()
+    this._onMapLoadingFirstIdle = () => {
+      if (this._mapLoadingDismissOnFirstIdle !== false) {
+        this._mapLoading.dismiss('firstidle')
+      }
+    }
+    this._onMapLoadingDestroy = () => this._mapLoading.dismiss('destroy')
+    this._onMapLoadingOpened = ({ statePreserved } = {}) => {
+      if (statePreserved) {
+        this._mapLoading.dismiss('appopened')
+      }
+    }
+
+    this.eventBus.on(events.MAP_READY, this._onMapLoadingReady)
+    this.eventBus.on(events.MAP_DESTROY, this._onMapLoadingDestroy)
+    this.eventBus.on(events.APP_OPENED, this._onMapLoadingOpened)
+    this.eventBus.on(events.MAP_FIRST_IDLE, this._onMapLoadingFirstIdle)
+  }
+
+  /**
+   * Tear down the loading overlay and its event subscriptions.
+   *
+   * @private
+   */
+  _teardownMapLoading () {
+    if (!this._mapLoading) {
+      return
+    }
+
+    this.eventBus.off(events.MAP_READY, this._onMapLoadingReady)
+    this.eventBus.off(events.MAP_DESTROY, this._onMapLoadingDestroy)
+    this.eventBus.off(events.APP_OPENED, this._onMapLoadingOpened)
+    this.eventBus.off(events.MAP_FIRST_IDLE, this._onMapLoadingFirstIdle)
+    this._mapLoading.destroy()
+    this._mapLoading = undefined
   }
 
   _handleButtonClick (e) {
@@ -324,6 +391,7 @@ export default class InteractiveMap {
    */
   destroy () {
     this.removeApp()
+    this._teardownMapLoading()
     this._breakpointDetector?.destroy()
     this._interfaceDetectorCleanup?.()
     this._hybridBehaviourCleanup?.()

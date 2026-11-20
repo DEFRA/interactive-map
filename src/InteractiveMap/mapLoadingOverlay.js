@@ -1,15 +1,13 @@
-// src/plugins/map-loading/overlay.js
+// src/InteractiveMap/mapLoadingOverlay.js
 
 /**
- * DOM overlay shown while the map app loads.
+ * DOM overlay shown while the map app loads (opt-in via `enableMapLoading`).
  *
- * The component has no built-in loading message: `im-is-loading` only hides the
- * page body until the app mounts, and a plugin manifest can't help either - a
- * plugin's load() runs inside loadApp(), after the im-core and provider chunks
- * have downloaded, so nothing registered there can cover the chunk-download
- * phase. The `middle` slot is documented for loading screens but only exists
- * once the React app has mounted, and createRoot() discards anything already
- * inside the container at that point.
+ * `im-is-loading` only hides the page body until the app mounts — it is not a
+ * per-map loading message. The `middle` slot is documented for loading screens
+ * but only exists once the React app has mounted, and createRoot() discards
+ * anything already inside the container at that point. A React InitComponent
+ * also cannot cover the im-core / provider chunk-download phase.
  *
  * This controller therefore manages the overlay itself, outside the app: the
  * map container is wrapped in a positioned div and the overlay appended as a

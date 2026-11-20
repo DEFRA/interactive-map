@@ -1,4 +1,4 @@
-import { createLoadingOverlay } from './overlay.js'
+import { createLoadingOverlay } from './mapLoadingOverlay.js'
 
 /** MutationObserver callbacks deliver asynchronously — a macrotask is enough. */
 const nextTask = (ms = 10) => new Promise((resolve) => setTimeout(resolve, ms))

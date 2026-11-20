@@ -343,11 +343,6 @@ const ALL_BUILDS = [
     entryPath: './plugins/menu/src/index.js',
     outDir: 'plugins/menu/dist/esm',
     manualChunks: (id) => id.includes('/manifest') ? 'im-menu-plugin' : undefined
-  },
-  {
-    entryPath: './plugins/map-loading/src/index.js',
-    outDir: 'plugins/map-loading/dist/esm',
-    manualChunks: (id) => id.includes('/manifest') ? 'im-map-loading-plugin' : undefined
   }
 ]
 
