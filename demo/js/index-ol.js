@@ -12,6 +12,11 @@ import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 import { shieldSymbolSvg } from './customSymbols.js'
 
+// Temporary: the outdoor style from farming-data, whose OS NGD tiles swap in the real OS features
+// at the deepest zooms, instead of OS's rounded copies. Its source is an OGC tileset, hence ogc-vt.
+const NGD_OUTDOOR_URL = 'https://farming-data-7db3d1889632.herokuapp.com/tiles/collections/ngd-base/styles/outdoor-27700'
+const mapStyles = vtsMapStyles27700.map(mapStyle => mapStyle.id === 'outdoor' ? { ...mapStyle, type: 'ogc-vt', url: NGD_OUTDOOR_URL } : mapStyle)
+
 const FARMING_TILES_URL = 'https://farming-tiles-702a60f45633.herokuapp.com'
 const FARMING_API_URL = process.env.FARMING_API_URL
 const SBI = 106325052 // Same farm as demo/js/index.js's land-covers
@@ -265,7 +270,7 @@ const interactiveMap = new InteractiveMap('map', {
     datasetsPlugin,
     createMapKeyPlugin(),
     mapStylesPlugin({
-      mapStyles: vtsMapStyles27700
+      mapStyles
     }),
     interactPlugin
   ]

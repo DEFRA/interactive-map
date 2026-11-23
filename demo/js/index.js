@@ -25,6 +25,11 @@ import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/frame/src/index.js'
 import { shieldSymbolSvg } from './customSymbols.js'
 
+// Temporary: the outdoor style from farming-data, whose OS NGD tiles swap in the real OS features
+// at the deepest zooms, instead of OS's rounded copies
+const NGD_OUTDOOR_URL = 'https://farming-data-7db3d1889632.herokuapp.com/tiles/collections/ngd-base/styles/outdoor-3857'
+const mapStyles = vtsMapStyles3857.map(mapStyle => mapStyle.id === 'outdoor' ? { ...mapStyle, url: NGD_OUTDOOR_URL } : mapStyle)
+
 const POINT_DATA = {
   type: 'FeatureCollection',
   features: [
@@ -321,7 +326,7 @@ const interactiveMap = new InteractiveMap('map', {
   //   color: { outdoor: '#ff0000', dark: '#00ff00' }
   // }],
   mapStyle: {
-    url: process.env.OZS_OUTDOOR_URL,
+    url: NGD_OUTDOOR_URL,
     logo: '/assets/images/os-logo.svg',
     logoAltText: 'Ordnance survey logo',
     attribution: `Contains OS data ${String.fromCharCode(169)} Crown copyright and database rights ${(new Date()).getFullYear()}`,
@@ -358,7 +363,7 @@ const interactiveMap = new InteractiveMap('map', {
     datasetsPlugin,
     createMapKeyPlugin(),
     mapStylesPlugin({
-      mapStyles: vtsMapStyles3857
+      mapStyles
     }),
     scaleBarPlugin({
       units: 'metric'

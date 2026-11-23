@@ -28,6 +28,11 @@ import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/frame/src/index.js'
 import { shieldSymbolSvg } from './customSymbols.js'
 
+// Temporary: the outdoor style from farming-data, whose OS NGD tiles swap in the real OS features
+// at the deepest zooms, instead of OS's rounded copies
+const NGD_OUTDOOR_URL = 'http://localhost:8000/tiles/collections/ngd-base/styles/outdoor-27700'
+const mapStyles = vtsMapStyles27700.map(mapStyle => mapStyle.id === 'outdoor' ? { ...mapStyle, url: NGD_OUTDOOR_URL } : mapStyle)
+
 // Bounds and points from index-ol.js: index.js's, converted to EPSG:27700
 const BOUNDS = [370945, 518391, 374023, 525049]
 
@@ -323,7 +328,7 @@ const interactiveMap = new InteractiveMap('map', {
   //   color: { outdoor: '#ff0000', dark: '#00ff00' }
   // }],
   mapStyle: {
-    url: process.env.VTS_OUTDOOR_URL_27700,
+    url: NGD_OUTDOOR_URL,
     logo: '/assets/images/os-logo.svg',
     logoAltText: 'Ordnance survey logo',
     attribution: `Contains OS data ${String.fromCharCode(169)} Crown copyright and database rights ${(new Date()).getFullYear()}`,
@@ -360,7 +365,7 @@ const interactiveMap = new InteractiveMap('map', {
     datasetsPlugin,
     createMapKeyPlugin(),
     mapStylesPlugin({
-      mapStyles: vtsMapStyles27700
+      mapStyles
     }),
     scaleBarPlugin({
       units: 'metric'
