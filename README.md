@@ -32,6 +32,8 @@ See [getting started](./docs/getting-started.md) developer guide.
 
 [Architecture](./docs/architecture.md)
 
+[Accessibility statement](./docs/accessibility.md)
+
 ## Contributing
 
 To follow...

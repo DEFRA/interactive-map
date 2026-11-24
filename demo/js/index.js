@@ -310,10 +310,11 @@ const interactiveMap = new InteractiveMap('map', {
   containerHeight: '650px',
   transformRequest: transformVtsRequest3857,
   enableZoomControls: false,
+  enableMapLoading: true,
   readMapText: true,
   // urlPosition: 'none',
   enableFullscreen: true,
-  enableResetView: true,
+  // enableResetView: true,
   // hasExitButton: true,
   // markers: [{
   //   id: 'location',

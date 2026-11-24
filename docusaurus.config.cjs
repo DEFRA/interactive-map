@@ -3,6 +3,8 @@ const path = require('node:path');
 const { getBabelOptions } = require('@docusaurus/babel');
 require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 
+const baseUrl = '/interactive-map/';
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   staticDirectories: ['assets', 'docs/assets'],
@@ -11,7 +13,7 @@ const config = {
   favicon: 'images/favicon.svg',
 
   url: 'https://defra.github.io',
-  baseUrl: '/interactive-map/',
+  baseUrl,
 
   organizationName: 'defra',
   projectName: 'interactive-map',
@@ -176,12 +178,8 @@ const config = {
           ],
         },
         {
-          text: 'Architecture',
-          href: '/architecture',
-          sidebar: [
-            { text: 'Diagrams', href: 'architecture-diagrams' },
-            { text: 'Diagram Viewer', href: 'diagrams-viewer' },
-          ],
+          text: 'Accessibility',
+          href: '/accessibility',
         }
       ],
 
@@ -191,7 +189,9 @@ const config = {
       },
 
       footer: {
+        // The theme passes footer links through as written, without adding baseUrl
         meta: [
+          { text: 'Accessibility statement', href: `${baseUrl}accessibility` },
           { text: 'GitHub', href: 'https://github.com/DEFRA/interactive-map' },
         ],
       },
