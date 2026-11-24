@@ -60,17 +60,28 @@ Some issues depend on the content each service provides, and are not part of the
 
 ## Using Interactive Map in your service
 
-Your service's accessibility statement must cover the map as it appears in your service. You are responsible for:
+Your service's accessibility statement must cover the map and its interface as they appear in your service. You are responsible for:
 
 - testing the map with your own configuration, data and base map styles
 - choosing colours and patterns for your datasets, markers and shapes that meet [WCAG 2.2 contrast requirements](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast)
 - choosing base map styles that are readable in every style you offer
 - providing the information in the map in a non-visual way, as described in [Screen reader users](#screen-reader-users)
+- setting up a [reverse geocode provider](./api.md#reversegeocodeprovider), so screen reader users can hear the place name at the centre of the map
 - listing any known issues from this statement that affect your service
 
-You can adapt this wording for your own statement:
+You can adapt this wording for your own statement.
+
+To describe the map and its alternative:
 
 > This service uses the Defra Interactive Map component to show [what the map shows]. If you cannot use the map, you can [the non-visual alternative, for example enter a grid reference or address, or contact us].
+
+To explain the map exemption:
+
+> The map image is exempt from the accessibility regulations. The information it shows is also available by [the alternative].
+
+To point to the component's known issues:
+
+> The map uses the Defra Interactive Map component, which has some known accessibility issues. See the [Interactive Map accessibility statement](https://defra.github.io/interactive-map/accessibility).
 
 ## Feedback and contact information
 
