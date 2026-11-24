@@ -120,11 +120,11 @@ The following issues found in the audit have been fixed and will be checked when
 
 #### The map image
 
-Online maps are exempt from the [accessibility regulations](https://www.gov.uk/guidance/accessibility-requirements-for-public-sector-websites-and-apps). This applies to the map image only, not the interface around it, which this statement covers. Services must provide the essential information in the map in an accessible format. See [Screen reader users](#screen-reader-users).
+Online maps are exempt from the [accessibility regulations](https://www.gov.uk/guidance/accessibility-requirements-for-public-sector-websites-and-apps). This applies to the map image only, not the interface around it, which this statement covers. Services must provide the essential information in the map in an accessible format (1.1.1). See [Screen reader users](#screen-reader-users).
 
 #### Third-party base maps and data
 
-The base map styles, such as those from the Ordnance Survey, and the datasets shown on a map are provided by each service, not by the component. They are not covered by this statement. In the audit, some base map styles had low contrast lines and labels (1.4.3 and 1.4.11).
+The base map styles, such as those from the Ordnance Survey, and the datasets shown on a map are provided by each service, not by the component. They are not covered by this statement. In the audit, some base map styles had low contrast lines and labels, and a dataset colour in an example map had low contrast (1.4.3 and 1.4.11).
 
 ## What we're doing to improve accessibility
 
