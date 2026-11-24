@@ -111,8 +111,6 @@ The content listed below is non-accessible for the following reasons.
 
 Markers that are only a text label cannot be reached using a keyboard, screen reader or voice control. This fails WCAG 2.2 success criterion 4.1.2 (Name, Role, Value).
 
-Placing a marker is not announced, so screen reader users do not know whether a marker was placed or where. This fails WCAG 2.2 success criterion 4.1.3 (Status Messages).
-
 TalkBack on Android 16 reads some map and drawing buttons as unlabelled, because their names come from tooltips hidden from assistive technology. This fails WCAG 2.2 success criterion 4.1.2 (Name, Role, Value).
 
 We plan to fix these issues by [date to be confirmed].
