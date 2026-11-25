@@ -41,7 +41,8 @@ export const initialiseDatasets = ({
       const dynamicSource = createDynamicSource({
         dynamicGeoJSON,
         mapProvider,
-        onUpdate: (datasetId, geojson) => adapter.setData(datasetId, geojson)
+        onUpdate: (datasetId, geojson) => adapter.setData(datasetId, geojson),
+        onChange: (datasetId, changes) => adapter.updateData(datasetId, changes)
       })
       dynamicSources.set(registryDataset.id, dynamicSource)
     })
@@ -74,31 +75,6 @@ export const initialiseDatasets = ({
       dynamicSources.forEach(source => source.destroy())
       dynamicSources.clear()
       adapter.destroy()
-    },
-
-    /**
-     * Refresh a dynamic source - clears cache and re-fetches
-     * @param {string} datasetId - Dataset ID to refresh
-     */
-    refreshDataset (datasetId) {
-      dynamicSources.get(datasetId)?.refresh()
-    },
-
-    /**
-     * Clear a dynamic source's cache
-     * @param {string} datasetId - Dataset ID to clear
-     */
-    clearDatasetCache (datasetId) {
-      dynamicSources.get(datasetId)?.clear()
-    },
-
-    /**
-     * Get feature count for a dynamic source
-     * @param {string} datasetId - Dataset ID
-     * @returns {number|null} Feature count or null if not a dynamic source
-     */
-    getFeatureCount (datasetId) {
-      return dynamicSources.get(datasetId)?.getFeatureCount() ?? null
     }
   }
 }
