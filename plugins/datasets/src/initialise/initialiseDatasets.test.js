@@ -19,6 +19,7 @@ const makeAdapter = (overrides = {}) => ({
   onMapStyleChange: jest.fn(),
   onMapSizeChange: jest.fn(),
   setData: jest.fn(),
+  updateData: jest.fn(),
   applyGlobalVisibility: jest.fn(),
   destroy: jest.fn(),
   createDataset: jest.fn(),
@@ -120,7 +121,7 @@ describe('initialiseDatasets', () => {
     })
 
     it('creates dynamic sources for datasets with dynamicGeoJSON', async () => {
-      const mockDynamicSource = { destroy: jest.fn(), refresh: jest.fn(), clear: jest.fn(), getFeatureCount: jest.fn() }
+      const mockDynamicSource = { destroy: jest.fn() }
       createDynamicSource.mockReturnValue(mockDynamicSource)
 
       const dynamicDataset = {
@@ -176,7 +177,7 @@ describe('returned API', () => {
   })
 
   it('remove() destroys all dynamic sources', async () => {
-    const mockSource = { destroy: jest.fn(), refresh: jest.fn(), clear: jest.fn(), getFeatureCount: jest.fn() }
+    const mockSource = { destroy: jest.fn() }
     createDynamicSource.mockReturnValue(mockSource)
     const mockDataset = { id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: { url: 'http://x.com', idProperty: 'id' } }
     datasetRegistry.forEachDataset.mockImplementation(cb =>
@@ -190,81 +191,16 @@ describe('returned API', () => {
 
     expect(mockSource.destroy).toHaveBeenCalled()
   })
-
-  it('refreshDataset() calls refresh on the matching dynamic source', async () => {
-    const mockSource = { destroy: jest.fn(), refresh: jest.fn(), clear: jest.fn(), getFeatureCount: jest.fn() }
-    createDynamicSource.mockReturnValue(mockSource)
-    const mockDataset = { id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: { url: 'http://x.com', idProperty: 'id' } }
-    datasetRegistry.forEachDataset.mockImplementation(cb =>
-      cb(mockDataset)
-    )
-
-    const args = makeArgs()
-    const instance = initialiseDatasets(args)
-    await Promise.resolve()
-    instance.refreshDataset('parcels')
-
-    expect(mockSource.refresh).toHaveBeenCalled()
-  })
-
-  it('clearDatasetCache() calls clear on the matching dynamic source', async () => {
-    const mockSource = { destroy: jest.fn(), refresh: jest.fn(), clear: jest.fn(), getFeatureCount: jest.fn() }
-    createDynamicSource.mockReturnValue(mockSource)
-    const mockDataset = { id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: { url: 'http://x.com', idProperty: 'id' } }
-    datasetRegistry.forEachDataset.mockImplementation(cb =>
-      cb(mockDataset)
-    )
-
-    const args = makeArgs()
-    const instance = initialiseDatasets(args)
-    await Promise.resolve()
-    instance.clearDatasetCache('parcels')
-
-    expect(mockSource.clear).toHaveBeenCalled()
-  })
-
-  it('getFeatureCount() returns the count from the matching dynamic source', async () => {
-    const mockSource = { destroy: jest.fn(), refresh: jest.fn(), clear: jest.fn(), getFeatureCount: jest.fn().mockReturnValue(42) }
-    createDynamicSource.mockReturnValue(mockSource)
-    const mockDataset = { id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: { url: 'http://x.com', idProperty: 'id' } }
-    datasetRegistry.forEachDataset.mockImplementation(cb =>
-      cb(mockDataset)
-    )
-
-    const args = makeArgs()
-    const instance = initialiseDatasets(args)
-    await Promise.resolve()
-
-    expect(instance.getFeatureCount('parcels')).toBe(42)
-  })
-
-  it('getFeatureCount() returns null for a non-dynamic dataset', () => {
-    const args = makeArgs()
-    const instance = initialiseDatasets(args)
-    expect(instance.getFeatureCount('unknown')).toBeNull()
-  })
-
-  it('refreshDataset() does nothing for a non-dynamic dataset', () => {
-    const args = makeArgs()
-    const instance = initialiseDatasets(args)
-    expect(() => instance.refreshDataset('unknown')).not.toThrow()
-  })
-
-  it('clearDatasetCache() does nothing for a non-dynamic dataset', () => {
-    const args = makeArgs()
-    const instance = initialiseDatasets(args)
-    expect(() => instance.clearDatasetCache('unknown')).not.toThrow()
-  })
 })
 
-// ─── onUpdate callback ────────────────────────────────────────────────────────
+// ─── onUpdate and onChange callbacks ──────────────────────────────────────────
 
-describe('onUpdate callback', () => {
-  it('calls adapter.setData when the onUpdate callback fires', async () => {
-    const mockSource = { destroy: jest.fn(), refresh: jest.fn(), clear: jest.fn(), getFeatureCount: jest.fn() }
-    let capturedOnUpdate
-    createDynamicSource.mockImplementation(({ onUpdate }) => {
-      capturedOnUpdate = onUpdate
+describe('onUpdate and onChange callbacks', () => {
+  it('pass a dynamic source\'s full data to adapter.setData, and its changes to adapter.updateData', async () => {
+    const mockSource = { destroy: jest.fn() }
+    let callbacks
+    createDynamicSource.mockImplementation(({ onUpdate, onChange }) => {
+      callbacks = { onUpdate, onChange }
       return mockSource
     })
     const mockDataset = { id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: {} }
@@ -275,8 +211,12 @@ describe('onUpdate callback', () => {
     await Promise.resolve()
 
     const geojson = { type: 'FeatureCollection', features: [] }
-    capturedOnUpdate('parcels', geojson)
+    callbacks.onUpdate('parcels', geojson)
     expect(args.adapter.setData).toHaveBeenCalledWith('parcels', geojson)
+
+    const changes = { add: [], remove: ['a'] }
+    callbacks.onChange('parcels', changes)
+    expect(args.adapter.updateData).toHaveBeenCalledWith('parcels', changes)
   })
 })
 

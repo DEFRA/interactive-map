@@ -10,5 +10,9 @@ export const setData = ({ pluginState: { datasetRegistry }, mapProvider }, geojs
     logger.warn(`setData called on vector tile dataset "${datasetId}" — has no effect`)
     return
   }
+  if (registryDataset.hasDynamicGeoJSON) {
+    logger.warn(`setData called on dynamic GeoJSON dataset "${datasetId}" — has no effect, use refreshDataset to reload it`)
+    return
+  }
   mapProvider.datasets?.setData(datasetId, geojson)
 }
