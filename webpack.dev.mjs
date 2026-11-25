@@ -22,6 +22,7 @@ export default {
     'index-27700': path.join(__dirname, 'demo/js/index-27700.js'),
     draw: path.join(__dirname, 'demo/js/draw.js'),
     'draw-ol': path.join(__dirname, 'demo/js/draw-ol.js'),
+    'draw-27700': path.join(__dirname, 'demo/js/draw-27700.js'),
     farming: path.join(__dirname, 'demo/js/farming.js'),
     planning: path.join(__dirname, 'demo/js/planning.js'),
     'planning-ol': path.join(__dirname, 'demo/js/planning-ol.js'),

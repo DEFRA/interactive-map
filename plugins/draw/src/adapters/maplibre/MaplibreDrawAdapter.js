@@ -77,6 +77,10 @@ export class MaplibreDrawAdapter {
   constructor (mapProvider, options) {
     this._mapProvider = mapProvider
     this._map = mapProvider.map
+    // mapbox-gl-draw works in lng/lat; everything on the adapter interface is in the map's CRS.
+    // Both are the same on a lng/lat map, where these return what they're given.
+    this._toDraw = (geojson) => mapProvider.geojsonToLngLat?.(geojson) ?? geojson
+    this._fromDraw = (geojson) => mapProvider.geojsonFromLngLat?.(geojson) ?? geojson
     this._symbolRegistry = options.symbolRegistry
     this._bus = createEventBus()
     this._editingFeatureId = null
@@ -129,26 +133,17 @@ export class MaplibreDrawAdapter {
         // see drawPointMode.js's onCreate) finishes first, or this targets a stale feature id.
         setTimeout(() => {
           this._draw.setFeatureProperty(feature.id, 'sortKey', this._nextSortKey())
-          this._bus.emit(ADAPTER_EVENTS.CREATE, this._draw.get(feature.id))
+          this._bus.emit(ADAPTER_EVENTS.CREATE, this.get(feature.id))
         }, 0)
       },
-      editfinish: (event) => this._bus.emit(ADAPTER_EVENTS.EDIT_FINISH, event.features[0]),
+      editfinish: (event) => this._bus.emit(ADAPTER_EVENTS.EDIT_FINISH, this._fromDraw(event.features[0])),
       cancel: () => this._bus.emit(ADAPTER_EVENTS.CANCEL),
       vertexselection: (event) => this._bus.emit(ADAPTER_EVENTS.VERTEX_SELECTION, event),
       vertexchange: (event) => this._bus.emit(ADAPTER_EVENTS.VERTEX_CHANGE, event),
       undochange: (event) => this._bus.emit(ADAPTER_EVENTS.UNDO_CHANGE, event.length),
-      update: (event) => this._bus.emit(ADAPTER_EVENTS.UPDATE, event.features[0]),
-      geometrychange: (event) => {
-        // Phase-less events are rubber-band moves carrying the in-progress feature — they
-        // drive the live invalid stroke, and are cached for setDrawingPreviewProperty (which
-        // has no stable id yet to target via setFeatureProperty).
-        if (!event?.phase) {
-          this._updateLiveStroke(event)
-          this._currentDrawEvent = event
-        }
-        this._bus.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, event)
-      },
-      placementblocked: (event) => this._bus.emit(ADAPTER_EVENTS.PLACEMENT_BLOCKED, event),
+      update: (event) => this._bus.emit(ADAPTER_EVENTS.UPDATE, this._fromDraw(event.features[0])),
+      geometrychange: (event) => this._handleGeometryChange(event),
+      placementblocked: (event) => this._handlePlacementBlocked(event),
       interfacetypechange: (event) => this._bus.emit(ADAPTER_EVENTS.INTERFACE_TYPE_CHANGE, { interfaceType: event.interfaceType }),
       modechange: (event) => this._handleModeChange(event),
       styledata: () => this._handleStyleData()
@@ -205,10 +200,11 @@ export class MaplibreDrawAdapter {
     const mode = this._draw.getMode()
     const shape = displayedShape(mode, event.coordinates)
     if (!shape) { return }
+    const onGeometryPreview = this._map._drawPreviewValidator
     if (mode === 'draw_polygon' || mode === 'draw_line') {
-      this._liveDrawChecks.update({ feature: shape.feature, numVertices: shape.numVertices, context: { mode }, onGeometryPreview: this._previewValidator })
+      this._liveDrawChecks.update({ feature: shape.feature, numVertices: shape.numVertices, context: { mode }, onGeometryPreview })
     } else {
-      this._liveStroke.update({ ...shape, context: { mode }, onGeometryPreview: this._previewValidator })
+      this._liveStroke.update({ ...shape, context: { mode }, onGeometryPreview })
     }
   }
 
@@ -245,6 +241,11 @@ export class MaplibreDrawAdapter {
     }
     this._draw.changeMode('disabled')
     this._handleModeChange({ mode: 'disabled' })
+    // An abandoned draw is a cancel, as when the mode cancels itself on Escape, so a session
+    // waiting on its create (e.g. split) stops listening
+    if (mode === 'draw_polygon' || mode === 'draw_line' || mode === 'draw_point') {
+      this._bus.emit(ADAPTER_EVENTS.CANCEL)
+    }
   }
 
   undo () {
@@ -271,7 +272,8 @@ export class MaplibreDrawAdapter {
       return empty
     }
     const geometry = dedupeClosedRings(feature.geometry)
-    return { vertices: getCoords(geometry), midpoints: getMidpointCoords(geometry) }
+    const toMapCoords = (coordinates) => this._fromDraw({ type: 'MultiPoint', coordinates }).coordinates
+    return { vertices: toMapCoords(getCoords(geometry)), midpoints: toMapCoords(getMidpointCoords(geometry)) }
   }
 
   // Moves the live vertex/midpoint cursor to `index` — preview only, no geometry change.
@@ -289,7 +291,7 @@ export class MaplibreDrawAdapter {
   // Replaces the edited shape as a single undoable change. Bridged into
   // the mode via a custom event, same pattern as insertVertexAtMidpoint.
   setGeometry (geometry) {
-    this._map.fire(CUSTOM_DRAW_EVENTS.SET_GEOMETRY, { geometry })
+    this._map.fire(CUSTOM_DRAW_EVENTS.SET_GEOMETRY, { geometry: this._toDraw(geometry) })
   }
 
   // Record whether the in-progress shape can be finished, so the draw mode can block finish
@@ -300,9 +302,16 @@ export class MaplibreDrawAdapter {
 
   // The api entry points assign the session's onGeometryPreview callback to the adapter
   // (see validation/commitChecks.js's startCheckSession); store it on the map (like
-  // _drawCanFinish) so modes can veto placements synchronously.
-  set _previewValidator (fn) { this._map._drawPreviewValidator = fn }
-  get _previewValidator () { return this._map._drawPreviewValidator }
+  // _drawCanFinish) so modes can veto placements synchronously. The modes check lng/lat
+  // shapes, so the map's copy gets the shape in the map's CRS, as the callback expects.
+  set _previewValidator (fn) {
+    this._previewValidatorFn = fn
+    this._map._drawPreviewValidator = typeof fn === 'function'
+      ? (event, ...rest) => fn({ ...event, feature: this._fromDraw(event.feature) }, ...rest)
+      : fn
+  }
+
+  get _previewValidator () { return this._previewValidatorFn }
 
   // Committed-verdict write (events.js, edit mode): routed through the live-stroke
   // controller so its cached state stays in sync with the rendered layers.
@@ -333,7 +342,7 @@ export class MaplibreDrawAdapter {
     // The OL adapter implements this for real; here it only satisfies the shared interface.
   }
 
-  get (id) { return this._draw.get(id) }
+  get (id) { return this._fromDraw(this._draw.get(id)) }
 
   _nextSortKey () {
     this._sortKeyCounter += 1
@@ -343,6 +352,11 @@ export class MaplibreDrawAdapter {
   // A directly-added Point skips draw_point's own icon-resolving handler, so it must be
   // resolved here instead, or styles.js's point-symbol layer renders nothing.
   add (feature) {
+    return this._addToDraw(this._toDraw(feature))
+  }
+
+  // Adds a feature already in mapbox-gl-draw's lng/lat
+  _addToDraw (feature) {
     // Only a genuinely new feature gets a fresh sort key — setStyle() re-adds an existing one
     // (via a shallow properties spread) to re-render it, and must not bump it back to the front.
     const properties = feature.properties?.sortKey == null
@@ -364,7 +378,7 @@ export class MaplibreDrawAdapter {
     if (!feature) {
       return
     }
-    this.add({ ...feature, properties: definedOnly({ ...feature.properties, ...properties }) })
+    this._addToDraw({ ...feature, properties: definedOnly({ ...feature.properties, ...properties }) })
   }
 
   delete (id) { this._draw.delete(id) }
@@ -441,6 +455,29 @@ export class MaplibreDrawAdapter {
 
   off (type, handler) {
     this._bus.off(type, handler)
+  }
+
+  _handleGeometryChange (event) {
+    // Phase-less events are rubber-band moves carrying the in-progress feature — they
+    // drive the live invalid stroke, and are cached for setDrawingPreviewProperty (which
+    // has no stable id yet to target via setFeatureProperty). They're emitted as they are,
+    // since the plugin only reads the commit-level ones.
+    if (!event?.phase) {
+      this._updateLiveStroke(event)
+      this._currentDrawEvent = event
+      this._bus.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, event)
+      return
+    }
+    this._bus.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, { ...event, feature: this._fromDraw(event.feature) })
+  }
+
+  // The payload goes on to the public draw:geometryinvalid event, so it leaves out the type and
+  // target (the map) MapLibre's fire() adds
+  _handlePlacementBlocked (event) {
+    const payload = { ...event, feature: this._fromDraw(event.feature) }
+    delete payload.type
+    delete payload.target
+    this._bus.emit(ADAPTER_EVENTS.PLACEMENT_BLOCKED, payload)
   }
 
   _handleModeChange (event) {

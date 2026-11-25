@@ -353,7 +353,7 @@ export default class MapLibreProvider extends MapProvider {
    * @returns {any[]}
    */
   getFeaturesAtPoint (point, options) {
-    return queryFeatures(this.map, point, options)
+    return this._toMapCrsFeatures(queryFeatures(this.map, point, options))
   }
 
   getVisibleFeatures (layerIds) {
@@ -361,7 +361,20 @@ export default class MapLibreProvider extends MapProvider {
     if (!presentLayers.length) {
       return []
     }
-    return this.map.queryRenderedFeatures(undefined, { layers: presentLayers })
+    return this._toMapCrsFeatures(this.map.queryRenderedFeatures(undefined, { layers: presentLayers }))
+  }
+
+  // MapLibre returns feature geometry in lng/lat; callers get it in the map's CRS. Each query
+  // returns new feature objects, so their geometry is replaced in place, which keeps MapLibre's
+  // own feature properties (layer, source, state). A lng/lat map's geometry isn't touched.
+  _toMapCrsFeatures (features) {
+    if (!this.crsProjection) {
+      return features
+    }
+    features.forEach(feature => {
+      feature.geometry = this.coordinates.geojsonFromLngLat(feature.geometry)
+    })
+    return features
   }
 
   /**

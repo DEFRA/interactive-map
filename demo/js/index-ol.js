@@ -169,7 +169,7 @@ const datasetsPlugin = createDatasetsPlugin({
     // ground) — index.js's minZoom:10/maxZoom:24 (Mercator) become roughly minZoom:5/maxZoom:19
     // here, per the farming-tiles server's own conversion guidance. Tune to taste.
     minZoom: 5,
-    maxZoom: 19,
+    maxZoom: 23,
     showInKey: true,
     showInMenu: true,
     style: {
@@ -187,7 +187,7 @@ const datasetsPlugin = createDatasetsPlugin({
     tiles: [`${FARMING_TILES_URL}/field_parcels_with_hedges_osgb36/{z}/{x}/{y}`],
     sourceLayer: 'hedge_control',
     minZoom: 5,
-    maxZoom: 19,
+    maxZoom: 23,
     showInKey: true,
     showInMenu: true,
     style: {
@@ -244,14 +244,14 @@ const datasetsPlugin = createDatasetsPlugin({
 
 const interactiveMap = new InteractiveMap('map', {
   behaviour: 'hybrid',
-  mapProvider: openLayersProvider(),
+  mapProvider: openLayersProvider({ zoomAlignment: 'world' }),
   reverseGeocodeProvider: openNamesProvider({
     url: process.env.OS_NEAREST_URL,
     transformRequest: transformGeocodeRequest
   }),
   mapLabel: 'Field parcels and land use map (OpenLayers)',
   minZoom: 6,
-  maxZoom: 20,
+  maxZoom: 23,
   autoColorScheme: true,
   bounds: BOUNDS,
   containerHeight: '650px',
@@ -277,7 +277,7 @@ const interactiveMap = new InteractiveMap('map', {
 })
 
 interactiveMap.on('app:ready', function (e) {
-  interactiveMap.showHint('My hint', { duration: 0 })
+  // interactiveMap.showHint('My hint', { duration: 0 })
 })
 
 interactiveMap.on('map:ready', function (e) {

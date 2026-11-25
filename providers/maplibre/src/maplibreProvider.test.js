@@ -298,6 +298,36 @@ describe('MapLibreProvider', () => {
     expect(map.queryRenderedFeatures).toHaveBeenCalledWith(undefined, { layers: ['l1'] })
   })
 
+  describe('feature queries on a projected map', () => {
+    // A CRS whose coordinates are lng/lat × 1000
+    const crsProjection = { forward: ([x, y]) => [x * 1000, y * 1000], inverse: ([x, y]) => [x / 1000, y / 1000] }
+    const lngLatFeature = () => ({ id: 'f1', layer: { id: 'l1' }, geometry: { type: 'Polygon', coordinates: [[[1, 2], [3, 2], [3, 4], [1, 2]]] } })
+    const mapGeometry = { type: 'Polygon', coordinates: [[[1000, 2000], [3000, 2000], [3000, 4000], [1000, 2000]]] }
+
+    test('getVisibleFeatures returns geometry in the map CRS, keeping the rest of the feature', async () => {
+      const provider = makeProvider({ mapProviderConfig: { crs: 'EPSG:27700', crsProjection } })
+      await doInitMap(provider)
+      map.getLayer.mockReturnValue({})
+      map.queryRenderedFeatures.mockReturnValue([lngLatFeature()])
+      expect(provider.getVisibleFeatures(['l1'])).toEqual([{ id: 'f1', layer: { id: 'l1' }, geometry: mapGeometry }])
+    })
+
+    test('getFeaturesAtPoint returns geometry in the map CRS', async () => {
+      const provider = makeProvider({ mapProviderConfig: { crs: 'EPSG:27700', crsProjection } })
+      await doInitMap(provider)
+      queryFeatures.mockReturnValueOnce([lngLatFeature()])
+      expect(provider.getFeaturesAtPoint({ x: 10, y: 20 })[0].geometry).toEqual(mapGeometry)
+    })
+
+    test('a lng/lat map returns MapLibre\'s geometry as it is', async () => {
+      const provider = makeProvider()
+      await doInitMap(provider)
+      const feature = lngLatFeature()
+      queryFeatures.mockReturnValueOnce([feature])
+      expect(provider.getFeaturesAtPoint({ x: 10, y: 20 })[0].geometry).toBe(feature.geometry)
+    })
+  })
+
   // The provider's own record of registered symbol images, created with its map
   const initWithSymbolImages = async () => {
     const provider = makeProvider()

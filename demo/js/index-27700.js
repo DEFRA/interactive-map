@@ -208,7 +208,7 @@ const datasetsPlugin = createDatasetsPlugin({
     tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_osgb36/{z}/{x}/{y}'],
     sourceLayer: 'field_parcels_osgb36',
     minZoom: 5,
-    maxZoom: 19,
+    maxZoom: 23,
     showInKey: true,
     showInMenu: true,
     style: {
@@ -284,7 +284,7 @@ const datasetsPlugin = createDatasetsPlugin({
     tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_osgb36/{z}/{x}/{y}'],
     sourceLayer: 'hedge_control',
     minZoom: 5,
-    maxZoom: 19,
+    maxZoom: 23,
     showInKey: true,
     showInMenu: true,
     // visibility: 'hidden',
@@ -298,7 +298,7 @@ const datasetsPlugin = createDatasetsPlugin({
 
 const interactiveMap = new InteractiveMap('map', {
   behaviour: 'hybrid',
-  mapProvider: maplibreProvider({ crs: 'EPSG:27700' }),
+  mapProvider: maplibreProvider({ crs: 'EPSG:27700', zoomAlignment: 'world' }),
   reverseGeocodeProvider: openNamesProvider({
     url: process.env.OS_NEAREST_URL,
     // url: '/api/os-nearest-proxy?query={query}',
@@ -310,7 +310,7 @@ const interactiveMap = new InteractiveMap('map', {
   mapLabel: 'Field parcels and land use map',
   // zoom: 14,
   minZoom: 6,
-  maxZoom: 20,
+  maxZoom: 23,
   autoColorScheme: true,
   // center: [-2.938769, 54.893806],
   bounds: BOUNDS,
@@ -379,7 +379,7 @@ const interactiveMap = new InteractiveMap('map', {
 
 interactiveMap.on('app:ready', function (e) {
   // console.log('app:ready')
-  interactiveMap.showHint('My hint', { duration: 0 })
+  // interactiveMap.showHint('My hint', { duration: 0 })
 })
 
 // Spike: reachable from the browser console for checking positions
