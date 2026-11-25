@@ -2,6 +2,13 @@ import { addDatasetLayers } from './layerBuilders.js'
 import { MapLibreDataset } from './registry/mapLibreDataset.js'
 import { MapboxStyleLayerAdapter } from '../mapboxStyleLayerAdapter.js'
 
+// A dynamic source identifies a feature by its idProperty value, or its own id without one, as
+// OpenLayers does. MapLibre's promoteId has no such fallback, and updateData needs every feature's
+// id, so a feature without the value gets its own id copied into it.
+const withPromotedId = (feature, idProperty) => feature.properties?.[idProperty] == null
+  ? { ...feature, properties: { ...feature.properties, [idProperty]: feature.id } }
+  : feature
+
 /**
  * MapLibre GL JS implementation of the LayerAdapter interface for the datasets plugin.
  *
@@ -206,17 +213,41 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
    * @param {Object} geojson - GeoJSON FeatureCollection
    */
   setData (datasetId, geojson) {
-    const sourceId = this._datasetSourceMap.get(datasetId)
-    if (!sourceId) {
+    const source = this._getGeoJSONSource(datasetId)
+    if (!source) {
       return
     }
-    const source = this._map.getSource(sourceId)
-    if (source && typeof source.setData === 'function') {
-      source.setData(geojson)
+    const idProperty = this._getDynamicIdProperty(datasetId)
+    source.setData(idProperty && geojson?.features
+      ? { ...geojson, features: geojson.features.map(feature => withPromotedId(feature, idProperty)) }
+      : geojson)
+  }
+
+  /**
+   * Add and remove features by id, without passing the rest of the dataset again.
+   * @param {string} datasetId
+   * @param {{ add: Object[], remove: Array }} changes - Features to add, and IDs of features to remove
+   */
+  updateData (datasetId, { add, remove }) {
+    const source = this._getGeoJSONSource(datasetId)
+    if (!source) {
+      return
     }
+    const idProperty = this._getDynamicIdProperty(datasetId)
+    source.updateData({ add: add.map(feature => withPromotedId(feature, idProperty)), remove })
   }
 
   // ─── Private ─────────────────────────────────────────────────────────────────
+
+  _getDynamicIdProperty (datasetId) {
+    return this._datasetRegistry.getDataset(datasetId)?.dynamicGeoJSON?.idProperty
+  }
+
+  _getGeoJSONSource (datasetId) {
+    const sourceId = this._datasetSourceMap.get(datasetId)
+    const source = sourceId && this._map.getSource(sourceId)
+    return typeof source?.setData === 'function' ? source : null
+  }
 
   _addLayers (registryDataset) {
     const { mapStyle } = this._datasetRegistry

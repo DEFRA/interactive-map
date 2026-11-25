@@ -29,6 +29,9 @@ const makeMapProvider = ({ bbox = [-1, -1, 1, 1], zoom = 10 } = {}) => {
 
 const featureCollection = (features) => ({ type: 'FeatureCollection', features })
 
+// Without an idProperty, every fetch passes onUpdate every feature held
+const heldCount = (onUpdate) => onUpdate.mock.calls.at(-1)[1].features.length
+
 // Point feature - its bbox collapses to the point itself, handy for in/out-of-viewport tests
 const makePointFeature = (id, [x, y], properties = {}) => ({
   type: 'Feature',
@@ -70,16 +73,16 @@ afterEach(() => {
 // ─── tests ─────────────────────────────────────────────────────────────────
 
 describe('createDynamicSource', () => {
-  it('fetches the initial viewport on creation and pushes features to onUpdate', async () => {
+  it('fetches the initial viewport on creation and passes its features to onChange', async () => {
     const mapProvider = makeMapProvider({ bbox: [-1, -1, 1, 1], zoom: 10 })
-    const onUpdate = jest.fn()
+    const onChange = jest.fn()
     const dynamicGeoJSON = makeDynamicGeoJSON({ idProperty: 'featureId' })
     const feature = makePointFeature('ignored', [0, 0], { featureId: 'abc' })
     // No featureId in properties - falls back to feature.id despite idProperty being configured
     const featureWithoutIdProperty = makePointFeature('fallback-id', [0, 0])
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([feature, featureWithoutIdProperty]))
 
-    const instance = createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate })
+    createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate: jest.fn(), onChange })
     await flushMicrotasks()
 
     expect(fetchGeoJSON).toHaveBeenCalledWith(
@@ -88,8 +91,18 @@ describe('createDynamicSource', () => {
       dynamicGeoJSON.transformRequest,
       expect.anything()
     )
-    expect(instance.getFeatureCount()).toBe(2)
-    expect(onUpdate).toHaveBeenCalledWith('test-source', featureCollection([feature, featureWithoutIdProperty]))
+    expect(onChange).toHaveBeenCalledWith('test-source', { add: [feature, featureWithoutIdProperty], remove: [] })
+  })
+
+  it('passes onUpdate the whole cache when there\'s no idProperty to remove features by', async () => {
+    const onUpdate = jest.fn()
+    const feature = makePointFeature('a', [0, 0])
+    fetchGeoJSON.mockResolvedValueOnce(featureCollection([feature]))
+
+    createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), mapProvider: makeMapProvider(), onUpdate, onChange: jest.fn() })
+    await flushMicrotasks()
+
+    expect(onUpdate).toHaveBeenCalledWith('test-source', featureCollection([feature]))
   })
 
   it('falls back to feature.id when no idProperty is configured, and skips features with no resolvable id', async () => {
@@ -100,10 +113,10 @@ describe('createDynamicSource', () => {
     const withoutId = { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [0, 0] } }
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([withId, withoutId]))
 
-    const instance = createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate })
+    createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate })
     await flushMicrotasks()
 
-    expect(instance.getFeatureCount()).toBe(1)
+    expect(heldCount(onUpdate)).toBe(1)
     expect(console.warn).toHaveBeenCalledWith('Feature missing ID, skipping:', withoutId)
   })
 
@@ -175,11 +188,12 @@ describe('createDynamicSource', () => {
   it('evicts least-recently-seen features once over the maxFeatures threshold, out-of-view first then in-view', async () => {
     const mapProvider = makeMapProvider({ bbox: [-1, -1, 1, 1] })
     const dynamicGeoJSON = makeDynamicGeoJSON({ maxFeatures: 1 })
+    const onUpdate = jest.fn()
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([makePointFeature('a', [0, 0])]))
 
-    const instance = createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate: jest.fn() })
+    createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate })
     await flushMicrotasks()
-    expect(instance.getFeatureCount()).toBe(1) // under threshold (1 <= 1 * 1.2), no eviction yet
+    expect(heldCount(onUpdate)).toBe(1) // under threshold (1 <= 1 * 1.2), no eviction yet
 
     // New viewport, far from 'a': one in-view feature pushes total to 2 (> 1 * 1.2).
     // Evicting the single out-of-view feature ('a') alone reaches the target, so the
@@ -188,7 +202,7 @@ describe('createDynamicSource', () => {
     mapProvider.pan([10, 10, 12, 12])
     mapProvider.fireMoveEnd()
     await advanceDebounce()
-    expect(instance.getFeatureCount()).toBe(1)
+    expect(heldCount(onUpdate)).toBe(1)
 
     // New viewport again, far from 'b': two in-view features push total to 3 (> 1 * 1.2).
     // 'b' is out-of-view and evicted first; still over target, so the least-recently-seen
@@ -200,20 +214,21 @@ describe('createDynamicSource', () => {
     mapProvider.pan([20, 20, 22, 22])
     mapProvider.fireMoveEnd()
     await advanceDebounce()
-    expect(instance.getFeatureCount()).toBe(1)
+    expect(heldCount(onUpdate)).toBe(1)
   })
 
   it('sorts multiple out-of-view features by lastSeenAt when evicting', async () => {
     const mapProvider = makeMapProvider({ bbox: [-1, -1, 1, 1] })
     const dynamicGeoJSON = makeDynamicGeoJSON({ maxFeatures: 2 })
+    const onUpdate = jest.fn()
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([
       makePointFeature('a', [0, 0]),
       makePointFeature('b', [0.5, 0.5])
     ]))
 
-    const instance = createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate: jest.fn() })
+    createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate })
     await flushMicrotasks()
-    expect(instance.getFeatureCount()).toBe(2) // under threshold (2 <= 2 * 1.2), no eviction yet
+    expect(heldCount(onUpdate)).toBe(2) // under threshold (2 <= 2 * 1.2), no eviction yet
 
     // New viewport, far from 'a' and 'b': both become out-of-view at once, exercising the
     // out-of-view sort-by-lastSeenAt comparator (a no-op array has nothing to compare)
@@ -222,7 +237,7 @@ describe('createDynamicSource', () => {
     mapProvider.fireMoveEnd()
     await advanceDebounce()
 
-    expect(instance.getFeatureCount()).toBe(2) // one of a/b evicted, 'c' kept
+    expect(heldCount(onUpdate)).toBe(2) // one of a/b evicted, 'c' kept
   })
 
   it('swallows AbortError from the fetch without logging', async () => {
@@ -280,48 +295,110 @@ describe('createDynamicSource', () => {
     expect(mapProvider.map.un).toHaveBeenCalledWith('moveend', expect.any(Function))
   })
 
-  it('clear() empties the cache and pushes an empty FeatureCollection', async () => {
+  it('refresh() clears the cache and re-fetches the current viewport', async () => {
     const onUpdate = jest.fn()
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([makePointFeature('a', [0, 0])]))
-
     const instance = createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), mapProvider: makeMapProvider(), onUpdate })
     await flushMicrotasks()
 
-    instance.clear()
-
-    expect(instance.getFeatureCount()).toBe(0)
-    expect(onUpdate).toHaveBeenLastCalledWith('test-source', featureCollection([]))
-  })
-
-  it('refresh() clears the cache and re-fetches the current viewport', async () => {
-    fetchGeoJSON.mockResolvedValueOnce(featureCollection([makePointFeature('a', [0, 0])]))
-    const instance = createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), mapProvider: makeMapProvider(), onUpdate: jest.fn() })
-    await flushMicrotasks()
-
-    fetchGeoJSON.mockResolvedValueOnce(featureCollection([makePointFeature('b', [0, 0])]))
+    const b = makePointFeature('b', [0, 0])
+    fetchGeoJSON.mockResolvedValueOnce(featureCollection([b]))
     instance.refresh()
     await flushMicrotasks()
 
     expect(fetchGeoJSON).toHaveBeenCalledTimes(2)
-    expect(instance.getFeatureCount()).toBe(1)
+    expect(onUpdate).toHaveBeenLastCalledWith('test-source', featureCollection([b]))
   })
 
   it('reapply() re-pushes cached features, and does nothing when the cache is empty', async () => {
     const onUpdate = jest.fn()
+    const onEmptyUpdate = jest.fn()
     const feature = makePointFeature('a', [0, 0])
-    fetchGeoJSON.mockResolvedValueOnce(featureCollection([feature]))
+    fetchGeoJSON.mockResolvedValueOnce(featureCollection([feature])).mockResolvedValueOnce(featureCollection([]))
 
     const instance = createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), mapProvider: makeMapProvider(), onUpdate })
+    const emptyInstance = createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), mapProvider: makeMapProvider(), onUpdate: onEmptyUpdate })
     await flushMicrotasks()
     onUpdate.mockClear()
+    onEmptyUpdate.mockClear()
 
     instance.reapply()
+    emptyInstance.reapply()
     expect(onUpdate).toHaveBeenCalledWith('test-source', featureCollection([feature]))
+    expect(onEmptyUpdate).not.toHaveBeenCalled()
+  })
 
-    onUpdate.mockClear()
-    instance.clear()
-    onUpdate.mockClear()
-    instance.reapply()
-    expect(onUpdate).not.toHaveBeenCalled()
+  describe('with an idProperty, passing only what changed', () => {
+    const parcel = (ref, position) => makePointFeature(undefined, position, { ref })
+    const setup = (overrides = {}) => {
+      const mapProvider = makeMapProvider({ bbox: [-1, -1, 1, 1] })
+      const onUpdate = jest.fn()
+      const onChange = jest.fn()
+      const dynamicGeoJSON = makeDynamicGeoJSON({ idProperty: 'ref', ...overrides })
+      const instance = createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate, onChange })
+      const moveTo = async (bbox) => {
+        mapProvider.pan(bbox)
+        mapProvider.fireMoveEnd()
+        await advanceDebounce()
+      }
+      return { instance, onUpdate, onChange, moveTo }
+    }
+
+    it('passes only new features, keeping the held copy of a feature fetched again', async () => {
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([parcel('a', [0, 0])]))
+      const { onChange, moveTo } = setup()
+      await flushMicrotasks()
+
+      const b = parcel('b', [10, 10])
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([parcel('a', [0, 0]), b]))
+      await moveTo([-1, -1, 12, 12])
+
+      expect(onChange).toHaveBeenLastCalledWith('test-source', { add: [b], remove: [] })
+    })
+
+    it('passes nothing when a fetch brings no new features', async () => {
+      fetchGeoJSON.mockResolvedValue(featureCollection([parcel('a', [0, 0])]))
+      const { onChange, moveTo } = setup()
+      await flushMicrotasks()
+
+      await moveTo([-1, -1, 12, 12])
+
+      expect(fetchGeoJSON).toHaveBeenCalledTimes(2)
+      expect(onChange).toHaveBeenCalledTimes(1)
+    })
+
+    it('passes the IDs of evicted features to remove, leaving out features added and evicted together', async () => {
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([parcel('a', [0, 0])]))
+      const { onChange, moveTo } = setup({ maxFeatures: 1 })
+      await flushMicrotasks()
+
+      const b = parcel('b', [10, 10])
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([b]))
+      await moveTo([10, 10, 12, 12])
+      expect(onChange).toHaveBeenLastCalledWith('test-source', { add: [b], remove: ['a'] })
+
+      // 'b' is evicted, then 'c', the least recently seen of the two new features
+      const d = parcel('d', [21, 21])
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([parcel('c', [20, 20]), d]))
+      await moveTo([20, 20, 22, 22])
+      expect(onChange).toHaveBeenLastCalledWith('test-source', { add: [d], remove: ['b'] })
+    })
+
+    it('replaces the map\'s data on the first fetch after refresh(), then passes changes again', async () => {
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([parcel('a', [0, 0])]))
+      const { instance, onUpdate, onChange, moveTo } = setup()
+      await flushMicrotasks()
+
+      const reloaded = parcel('a', [0, 0])
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([reloaded]))
+      instance.refresh()
+      await flushMicrotasks()
+      expect(onUpdate).toHaveBeenCalledWith('test-source', featureCollection([reloaded]))
+
+      const b = parcel('b', [10, 10])
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([b]))
+      await moveTo([-1, -1, 12, 12])
+      expect(onChange).toHaveBeenLastCalledWith('test-source', { add: [b], remove: [] })
+    })
   })
 })
