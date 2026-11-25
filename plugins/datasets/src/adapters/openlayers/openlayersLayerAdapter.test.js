@@ -206,6 +206,29 @@ describe('setData', () => {
   })
 })
 
+describe('updateData', () => {
+  const parcel = (ref, x) => ({ type: 'Feature', properties: { ref }, geometry: { type: 'Point', coordinates: [x, x] } })
+  const featureIds = (source) => source.getFeatures().map(feature => feature.getId()).sort()
+
+  it('adds and removes features by id, leaving the rest in place', async () => {
+    await adapter.addDataset('ds-dynamic')
+    const source = getLayer('ds-dynamic').getSource()
+    adapter.setData('ds-dynamic', { type: 'FeatureCollection', features: [parcel('a', 1), parcel('b', 2)] })
+    const kept = source.getFeatureById('b')
+
+    adapter.updateData('ds-dynamic', { add: [parcel('c', 3)], remove: ['a', 'not-held'] })
+    expect(featureIds(source)).toEqual(['b', 'c'])
+    expect(source.getFeatureById('b')).toBe(kept)
+
+    adapter.updateData('ds-dynamic', { add: [], remove: ['c'] })
+    expect(featureIds(source)).toEqual(['b'])
+  })
+
+  it('is a no-op for a dataset with no tracked source', () => {
+    expect(() => adapter.updateData('does-not-exist', { add: [], remove: [] })).not.toThrow()
+  })
+})
+
 describe('opacity', () => {
   it('applyDatasetOpacity sets the layer opacity', async () => {
     await adapter.addDataset('ds-fill')
