@@ -366,6 +366,41 @@ With other bundlers (such as Rollup and esbuild), copy `node_modules/maplibre-gl
 maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-worker.mjs' })
 ```
 
+##### `crs`
+**Type:** `string`
+**Default:** `'EPSG:4326'`
+
+The coordinate system the map uses. Coordinates you give the map, and coordinates it gives back, are in this system.
+
+| Possible values | Description |
+| :--- | :--- |
+| `'EPSG:4326'` | Longitude and latitude. |
+| `'EPSG:27700'` | British National Grid eastings and northings. |
+
+On an `'EPSG:27700'` map, data from another coordinate system must be converted to eastings and northings before you add it, and vector tiles must be cut on the OS National Grid tile grid.
+
+> [!CAUTION]
+> `crs` is experimental. Setting it to `'EPSG:27700'` relies on MapLibre's experimental support for other projections, and isn't yet compatible with a strict Content Security Policy. Do **not** use it in production unless fully tested.
+
+```js
+maplibreProvider({ crs: 'EPSG:27700' })
+```
+
+##### `zoomAlignment`
+**Type:** `string`
+**Default:** `'uk'`
+
+Which zoom levels an `'EPSG:27700'` map uses. The values match the OpenLayers provider's, so a zoom level shows the same scale with either provider. Has no effect on an `'EPSG:4326'` map.
+
+| Possible values | Description |
+| :--- | :--- |
+| `'uk'` | OS tile grid zoom levels; zoom 0 shows all of Great Britain. |
+| `'world'` | ESRI zoom levels, matching the ESRI SDK; all of the UK is visible at around zoom 7. |
+
+```js
+maplibreProvider({ crs: 'EPSG:27700', zoomAlignment: 'world' })
+```
+
 #### OpenLayers provider options
 
 `openLayersProvider()` accepts an optional config object. The provider renders in British National Grid (EPSG:27700) — this isn't configurable.
