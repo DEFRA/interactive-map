@@ -138,7 +138,7 @@ For data that needs authentication headers or viewport-based filtering, use `dyn
 
 **Type:** `Object`
 
-Enables dynamic, bbox-aware GeoJSON fetching — the plugin calls your API as the map pans and zooms, loading features for the current viewport and evicting distant ones. Configure this instead of `geojson` when your data is too large to load all at once. A feature that's already held is kept as it is when a later fetch returns it again.
+Enables dynamic, bbox-aware GeoJSON fetching — the plugin calls your API as the map pans and zooms, loading features for the current viewport and evicting distant ones. Configure this instead of `geojson` when your data is too large to load all at once. A feature that's already held is kept as it is when a later fetch returns it again; use [`refreshDataset`](#refreshdatasetdatasetid) to reload changed data.
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -710,7 +710,7 @@ const opacity = datasetsPlugin.getOpacity({ datasetId: 'my-parcels', sublayerId:
 
 ### `setData(geojson, scope)`
 
-Replace the GeoJSON data for a dataset source. Has no effect on vector tile datasets.
+Replace the GeoJSON data for a dataset source. Has no effect on vector tile or `dynamicGeoJSON` datasets.
 
 | Argument | Type | Description |
 |----------|------|-------------|
@@ -722,6 +722,20 @@ datasetsPlugin.setData(
   { type: 'FeatureCollection', features: [...] },
   { datasetId: 'my-parcels' }
 )
+```
+
+---
+
+### `refreshDataset(datasetId)`
+
+Reload a `dynamicGeoJSON` dataset: clear the features it holds and fetch the current viewport again. Features that are already held aren't replaced by later fetches, so use this when the data behind the API has changed. Has no effect on other datasets.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `datasetId` | `string` | ID of the dataset to reload |
+
+```js
+datasetsPlugin.refreshDataset('land-parcels')
 ```
 
 ---
