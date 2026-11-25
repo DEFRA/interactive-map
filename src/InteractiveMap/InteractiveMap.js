@@ -15,12 +15,11 @@ import { parseDataProperties } from './parseDataProperties.js'
 import { checkDeviceSupport } from './deviceChecker.js'
 import { createButton } from './buttonManager.js'
 import { setupBehavior, shouldLoadComponent } from './behaviourController.js'
-import { updateDOMState, removeLoadingState, showPageIfMapInline } from './domStateManager.js'
+import { getIsFullscreen, updateDOMState, removeLoadingState, showPageIfMapInline } from './domStateManager.js'
 import { renderError } from './renderError.js'
 import { mergeConfig } from '../config/mergeConfig.js'
 import { createBreakpointDetector } from '../utils/detectBreakpoint.js'
 import { createInterfaceDetector, getInterfaceType } from '../utils/detectInterfaceType.js'
-import { getIsFullscreen } from '../utils/getIsFullscreen.js'
 import { createReverseGeocode } from '../services/reverseGeocode.js'
 import { EVENTS as events } from '../config/events.js'
 import { createEventBus } from '../services/eventBus.js'
@@ -111,8 +110,8 @@ export default class InteractiveMap {
   }
 
   /**
-   * Opt-in loading overlay: covers chunk download through first idle.
-   * Created after the launcher button so deferred mode can watch it.
+   * Create the loading overlay and dismiss it when the map first finishes
+   * loading, or after mapLoadingTimeout.
    *
    * @private
    */
@@ -120,57 +119,11 @@ export default class InteractiveMap {
     if (!this.config.enableMapLoading) {
       return
     }
-
-    const {
-      dismissOnFirstIdle = true,
-      deferred = ['buttonFirst', 'hybrid'].includes(this.config.behaviour),
-      fullscreen = getIsFullscreen(this.config),
-      ...overlayOptions
-    } = this.config.mapLoading || {}
-
     this._mapLoading = createLoadingOverlay({
-      container: this.rootEl,
-      deferred,
-      fullscreen,
-      ...overlayOptions
+      text: this.config.mapLoadingText,
+      timeout: this.config.mapLoadingTimeout
     })
-    this._mapLoadingDismissOnFirstIdle = dismissOnFirstIdle
-
-    this._onMapLoadingReady = () => this._mapLoading.show()
-    this._onMapLoadingFirstIdle = () => {
-      if (this._mapLoadingDismissOnFirstIdle !== false) {
-        this._mapLoading.dismiss('firstidle')
-      }
-    }
-    this._onMapLoadingDestroy = () => this._mapLoading.dismiss('destroy')
-    this._onMapLoadingOpened = ({ statePreserved } = {}) => {
-      if (statePreserved) {
-        this._mapLoading.dismiss('appopened')
-      }
-    }
-
-    this.eventBus.on(events.MAP_READY, this._onMapLoadingReady)
-    this.eventBus.on(events.MAP_DESTROY, this._onMapLoadingDestroy)
-    this.eventBus.on(events.APP_OPENED, this._onMapLoadingOpened)
-    this.eventBus.on(events.MAP_FIRST_IDLE, this._onMapLoadingFirstIdle)
-  }
-
-  /**
-   * Tear down the loading overlay and its event subscriptions.
-   *
-   * @private
-   */
-  _teardownMapLoading () {
-    if (!this._mapLoading) {
-      return
-    }
-
-    this.eventBus.off(events.MAP_READY, this._onMapLoadingReady)
-    this.eventBus.off(events.MAP_DESTROY, this._onMapLoadingDestroy)
-    this.eventBus.off(events.APP_OPENED, this._onMapLoadingOpened)
-    this.eventBus.off(events.MAP_FIRST_IDLE, this._onMapLoadingFirstIdle)
-    this._mapLoading.destroy()
-    this._mapLoading = undefined
+    this.eventBus.on(events.MAP_FIRST_IDLE, () => this._mapLoading.dismiss())
   }
 
   _handleButtonClick (e) {
@@ -256,6 +209,8 @@ export default class InteractiveMap {
     }
     this._isLoading = true
 
+    this._mapLoading?.show({ container: this.rootEl, isFullscreen: getIsFullscreen(this.config) })
+
     if (this._openButton) {
       this._openButton.style.display = 'none'
     }
@@ -283,6 +238,7 @@ export default class InteractiveMap {
         mapProviderConfig,
         mapFramework,
         eventBus: this.eventBus,
+        mapLoading: this._mapLoading,
         breakpointDetector: this._breakpointDetector,
         handleExitClick: this._handleExitClick.bind(this)
       })
@@ -303,6 +259,7 @@ export default class InteractiveMap {
       const { isFullscreen } = updateDOMState(this)
       this.eventBus.emit(events.APP_OPENED, { statePreserved: false, isFullscreen })
     } catch (err) {
+      this._mapLoading?.dismiss()
       this._openButton?.removeAttribute('style')
       renderError(this.rootEl, this.config.genericErrorText)
       console.error(err)
@@ -318,6 +275,8 @@ export default class InteractiveMap {
    * @internal Not intended for end-user use.
    */
   removeApp () {
+    this._mapLoading?.dismiss()
+
     if (this._root && typeof this.unmount === 'function') {
       this.unmount()
       this._root = null
@@ -391,7 +350,6 @@ export default class InteractiveMap {
    */
   destroy () {
     this.removeApp()
-    this._teardownMapLoading()
     this._breakpointDetector?.destroy()
     this._interfaceDetectorCleanup?.()
     this._hybridBehaviourCleanup?.()

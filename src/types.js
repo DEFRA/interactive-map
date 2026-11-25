@@ -821,57 +821,6 @@
  */
 
 /**
- * Options for the opt-in map loading overlay (`enableMapLoading`).
- *
- * `deferred` and `fullscreen` default from `behaviour` when omitted.
- *
- * @typedef {Object} MapLoadingOptions
- *
- * @property {string} [text='Loading map']
- * Message under the spinner.
- *
- * @property {boolean} [spinner=true]
- * Whether the default content includes the spinner element.
- *
- * @property {Node|string|function} [content]
- * Custom overlay content. A Node (or function returning one) replaces the default
- * spinner and text; a string replaces the text but keeps the spinner.
- *
- * @property {string} [className]
- * Extra class names added to the overlay element.
- *
- * @property {string} [role='status']
- * Overlay ARIA role.
- *
- * @property {string|false} [adopt='.im-c-map-loading']
- * Selector for a server-rendered overlay inside the container to adopt; `false` disables.
- *
- * @property {boolean} [fullscreen]
- * Cover the viewport rather than the container. Defaults from behaviour when omitted.
- *
- * @property {boolean} [deferred]
- * Stay hidden until the launcher is hidden. Defaults to true for buttonFirst/hybrid.
- *
- * @property {number} [delay=200]
- * Milliseconds to wait before mounting so fast loads never flash a spinner; `0` mounts immediately.
- *
- * @property {number} [timeout=60000]
- * Safety dismiss after this many ms; `0` disables.
- *
- * @property {string|false} [errorSelector='.im-c-error']
- * Dismiss when this marker appears inside the container; falsy disables.
- *
- * @property {boolean} [dismissOnFirstIdle=true]
- * Dismiss on `map:firstidle`.
- *
- * @property {function} [onShow]
- * Called when the overlay mounts.
- *
- * @property {function} [onDismiss]
- * Called with the dismissal reason when the overlay is removed.
- */
-
-/**
  * Configuration options for the InteractiveMap constructor.
  *
  * Some properties (zoom, center, minZoom, maxZoom, bounds, extent) are passed
@@ -927,12 +876,7 @@
  * are hidden to avoid duplication.
  *
  * @property {boolean} [enableMapLoading=false]
- * Whether an accessible loading overlay is shown while the app downloads, mounts
- * and loads its first tiles. Deferred automatically for buttonFirst/hybrid so the
- * launcher stays visible until the user opens the map.
- *
- * @property {MapLoadingOptions} [mapLoading]
- * Options for the loading overlay when enableMapLoading is true.
+ * Whether a loading spinner and message are shown over the map until it has loaded.
  *
  * @property {boolean} [enableResetView=false]
  * Whether a reset view button is displayed. It moves the map to the configured bounds
@@ -972,6 +916,18 @@
  *
  * @property {string} [mapLabel='Interactive map application']
  * Accessible label for the map, announced by screen readers. Also prefixed onto mapHintText, so give each map on a page a distinct label.
+ *
+ * @property {string} [mapLoadedText='Map loaded']
+ * Announced to screen reader users in the map when it finishes loading, when enableMapLoading is true.
+ *
+ * @property {string} [mapLoadingText='Loading map']
+ * Message shown under the loading spinner, and added to the map's accessible name while it loads, when enableMapLoading is true.
+ *
+ * @property {number} [mapLoadingTimeout=30000]
+ * Milliseconds after which the loading spinner is removed and the map's controls can be used, even if the map hasn't finished loading, when enableMapLoading is true. `0` turns the timeout off.
+ *
+ * @property {string} [mapLoadingTimeoutText='Map may not have loaded fully']
+ * Announced to screen reader users in the map instead of mapLoadedText when mapLoadingTimeout has passed before the map finished loading.
  *
  * @property {string} [mapControlsHintText]
  * Visually hidden text describing the map controls button, appended to keyboardHintText when enableMapControls is true.

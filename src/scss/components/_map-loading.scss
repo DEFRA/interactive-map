@@ -2,32 +2,46 @@
 // Component: MapLoading (opt-in via enableMapLoading)
 // ===================================================
 
-// The overlay sits outside the app root (it must exist before the React app
-// mounts), so the app's own custom properties don't reach it - every value is
-// exposed as an --im-map-loading-* variable for hosts to theme instead.
+// The overlay starts in the map container before the app has mounted, so the
+// app's own custom properties don't reach it until then - its colours and sizes
+// are exposed as --im-map-loading-* variables for hosts to theme instead.
 
-.im-c-map-loading-wrap {
-    position: relative;
-}
-
+// Before the app mounts: fills the inline map container
 .im-c-map-loading {
-    position: absolute;
-    inset: 0;
-    z-index: var(--im-map-loading-z-index, 1000); // above the fullscreen app's 999
     display: flex;
     flex-direction: column;
     gap: var(--im-map-loading-gap, 16px);
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
     background: var(--im-map-loading-background, rgba(255, 255, 255, 0.85));
     color: var(--im-map-loading-color, var(--foreground-color, #0b0c0c));
+    // The app's typography, so the text doesn't change when the overlay moves
+    // into the app
+    font-family: var(--font-family);
+    line-height: var(--line-height);
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    // Shows through im-is-loading, which hides the page until the app mounts
+    visibility: visible;
     // Intentionally blocks pointer events to the map beneath while loading
     pointer-events: auto;
     user-select: none;
 }
 
+// Once the app mounts: covers the app, above the map controls
+.im-o-app > .im-c-map-loading {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+}
+
 .im-c-map-loading--fullscreen {
     position: fixed;
+    inset: 0;
+    z-index: 999; // Same as the fullscreen app
 }
 
 .im-c-map-loading__text {
@@ -40,7 +54,7 @@
     width: var(--im-map-loading-spinner-size, 96px);
     height: var(--im-map-loading-spinner-size, 96px);
     border: var(--im-map-loading-spinner-width, 12px) solid var(--im-map-loading-spinner-track-color, #f3f2f1);
-    border-top-color: var(--im-map-loading-spinner-color, var(--primary-button-color, #00703c));
+    border-top-color: var(--im-map-loading-spinner-color, #1d70b8);
     border-radius: 50%;
 }
 

@@ -7,7 +7,7 @@ import historyManager from './historyManager.js'
 import { parseDataProperties } from './parseDataProperties.js'
 import { checkDeviceSupport } from './deviceChecker.js'
 import { setupBehavior, shouldLoadComponent } from './behaviourController.js'
-import { updateDOMState, removeLoadingState, showPageIfMapInline } from './domStateManager.js'
+import { getIsFullscreen, updateDOMState, removeLoadingState, showPageIfMapInline } from './domStateManager.js'
 import { renderError } from './renderError.js'
 import { createBreakpointDetector } from '../utils/detectBreakpoint.js'
 import { createInterfaceDetector } from '../utils/detectInterfaceType.js'
@@ -23,7 +23,7 @@ jest.mock('./behaviourController.js', () => ({
   setupBehavior: jest.fn(),
   shouldLoadComponent: jest.fn(() => true)
 }))
-jest.mock('./domStateManager.js', () => ({ updateDOMState: jest.fn().mockReturnValue({ isFullscreen: false }), removeLoadingState: jest.fn(), showPageIfMapInline: jest.fn() }))
+jest.mock('./domStateManager.js', () => ({ getIsFullscreen: jest.fn(() => false), updateDOMState: jest.fn().mockReturnValue({ isFullscreen: false }), removeLoadingState: jest.fn(), showPageIfMapInline: jest.fn() }))
 jest.mock('./renderError.js', () => ({ renderError: jest.fn() }))
 jest.mock('../config/mergeConfig.js', () => ({ mergeConfig: jest.fn(cfg => cfg) }))
 const mockBreakpointDetector = {
@@ -44,12 +44,7 @@ jest.mock('../services/eventBus.js', () => ({
 }))
 jest.mock('../App/initialiseApp.js', () => ({ initialiseApp: jest.fn() }))
 jest.mock('./mapLoadingOverlay.js', () => ({
-  createLoadingOverlay: jest.fn(() => ({
-    show: jest.fn(),
-    dismiss: jest.fn(),
-    destroy: jest.fn(),
-    isShown: jest.fn(() => false)
-  }))
+  createLoadingOverlay: jest.fn(() => ({ show: jest.fn(), attachTo: jest.fn(), dismiss: jest.fn(), isLoading: jest.fn(), onDismiss: jest.fn() }))
 }))
 
 const { initialiseApp } = require('../App/initialiseApp.js')
@@ -670,127 +665,59 @@ describe('InteractiveMap — map loading', () => {
   afterEach(() => jest.restoreAllMocks())
 
   const handlerFor = (bus, event) => bus.on.mock.calls.find(([name]) => name === event)?.[1]
+  const lastOverlay = () => createLoadingOverlay.mock.results.at(-1).value
 
   it('does not create a loading overlay when enableMapLoading is off', () => {
     const map = new InteractiveMap('map', { behaviour: 'inline', mapProvider: mapProviderMock })
-    expect(map).toBeDefined()
+    expect(map._mapLoading).toBeUndefined()
     expect(createLoadingOverlay).not.toHaveBeenCalled()
   })
 
-  it('creates a deferred fullscreen overlay for buttonFirst when enabled', () => {
+  it('shows the overlay in the container when the app starts loading', async () => {
     shouldLoadComponent.mockReturnValue(false)
+    getIsFullscreen.mockReturnValueOnce(true)
     const map = new InteractiveMap('map', {
-      behaviour: 'buttonFirst',
+      behaviour: 'mapOnly',
       enableMapLoading: true,
-      mapLoading: { delay: 0, text: 'Loading projects' },
+      mapLoadingText: 'Loading flood map',
+      mapLoadingTimeout: 10000,
       mapProvider: mapProviderMock
     })
+    await map.loadApp()
 
-    expect(createLoadingOverlay).toHaveBeenCalledWith(expect.objectContaining({
-      container: map.rootEl,
-      deferred: true,
-      fullscreen: true,
-      delay: 0,
-      text: 'Loading projects'
-    }))
+    expect(createLoadingOverlay).toHaveBeenCalledWith({ text: 'Loading flood map', timeout: 10000 })
+    expect(lastOverlay().show).toHaveBeenCalledWith({ container: map.rootEl, isFullscreen: true })
   })
 
-  it('creates a non-deferred overlay for inline when enabled', () => {
-    const map = new InteractiveMap('map', {
-      behaviour: 'inline',
-      enableMapLoading: true,
-      mapLoading: { delay: 0 },
-      mapProvider: mapProviderMock
-    })
+  it('passes the overlay to the app so it can move it into its layout', async () => {
+    const map = new InteractiveMap('map', { behaviour: 'inline', enableMapLoading: true, mapProvider: mapProviderMock })
+    await map.loadApp()
 
-    expect(createLoadingOverlay).toHaveBeenCalledWith(expect.objectContaining({
-      container: map.rootEl,
-      deferred: false,
-      fullscreen: false,
-      delay: 0
-    }))
+    expect(initialiseApp).toHaveBeenCalledWith(map.rootEl, expect.objectContaining({ mapLoading: lastOverlay() }))
   })
 
-  it('honours explicit deferred and fullscreen overrides', () => {
-    shouldLoadComponent.mockReturnValue(false)
-    const map = new InteractiveMap('map', {
-      behaviour: 'buttonFirst',
-      enableMapLoading: true,
-      mapLoading: { deferred: false, fullscreen: false, delay: 0 },
-      mapProvider: mapProviderMock
-    })
-
-    expect(map).toBeDefined()
-    expect(createLoadingOverlay).toHaveBeenCalledWith(expect.objectContaining({
-      deferred: false,
-      fullscreen: false
-    }))
-  })
-
-  it('wires lifecycle events to the overlay controller', () => {
-    shouldLoadComponent.mockReturnValue(false)
-    const map = new InteractiveMap('map', {
-      behaviour: 'buttonFirst',
-      enableMapLoading: true,
-      mapLoading: { delay: 0 },
-      mapProvider: mapProviderMock
-    })
-    const controller = createLoadingOverlay.mock.results.at(-1).value
-
-    handlerFor(map.eventBus, 'map:ready')()
-    expect(controller.show).toHaveBeenCalled()
+  it('dismisses the overlay when the map first finishes loading', () => {
+    const map = new InteractiveMap('map', { behaviour: 'inline', enableMapLoading: true, mapProvider: mapProviderMock })
 
     handlerFor(map.eventBus, 'map:firstidle')()
-    expect(controller.dismiss).toHaveBeenCalledWith('firstidle')
-
-    handlerFor(map.eventBus, 'map:destroy')()
-    expect(controller.dismiss).toHaveBeenCalledWith('destroy')
-
-    handlerFor(map.eventBus, 'app:opened')({ statePreserved: true })
-    expect(controller.dismiss).toHaveBeenCalledWith('appopened')
-
-    controller.dismiss.mockClear()
-    handlerFor(map.eventBus, 'app:opened')({ statePreserved: false })
-    expect(controller.dismiss).not.toHaveBeenCalled()
+    expect(lastOverlay().dismiss).toHaveBeenCalled()
   })
 
-  it('skips firstidle dismissal when dismissOnFirstIdle is false', () => {
+  it('dismisses the overlay when the app fails to load', async () => {
     shouldLoadComponent.mockReturnValue(false)
-    const map = new InteractiveMap('map', {
-      behaviour: 'inline',
-      enableMapLoading: true,
-      mapLoading: { delay: 0, dismissOnFirstIdle: false },
-      mapProvider: mapProviderMock
-    })
-    const controller = createLoadingOverlay.mock.results.at(-1).value
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+    const map = new InteractiveMap('map', { behaviour: 'inline', enableMapLoading: true, mapProvider: mapProviderMock })
+    initialiseApp.mockRejectedValueOnce(new Error('fail'))
 
-    handlerFor(map.eventBus, 'map:firstidle')()
-    expect(controller.dismiss).not.toHaveBeenCalled()
+    await expect(map.loadApp()).rejects.toThrow('fail')
+    expect(lastOverlay().dismiss).toHaveBeenCalled()
   })
 
-  it('destroys the overlay and unsubscribes on destroy()', () => {
+  it('dismisses the overlay when the app is removed', () => {
     shouldLoadComponent.mockReturnValue(false)
-    const map = new InteractiveMap('map', {
-      behaviour: 'buttonFirst',
-      enableMapLoading: true,
-      mapLoading: { delay: 0 },
-      mapProvider: mapProviderMock
-    })
-    const controller = createLoadingOverlay.mock.results.at(-1).value
-    const { onMapLoadingReady, onMapLoadingFirstIdle, onMapLoadingDestroy, onMapLoadingOpened } = {
-      onMapLoadingReady: map._onMapLoadingReady,
-      onMapLoadingFirstIdle: map._onMapLoadingFirstIdle,
-      onMapLoadingDestroy: map._onMapLoadingDestroy,
-      onMapLoadingOpened: map._onMapLoadingOpened
-    }
+    const map = new InteractiveMap('map', { behaviour: 'buttonFirst', enableMapLoading: true, mapProvider: mapProviderMock })
 
-    map.destroy()
-
-    expect(controller.destroy).toHaveBeenCalled()
-    expect(map.eventBus.off).toHaveBeenCalledWith('map:ready', onMapLoadingReady)
-    expect(map.eventBus.off).toHaveBeenCalledWith('map:firstidle', onMapLoadingFirstIdle)
-    expect(map.eventBus.off).toHaveBeenCalledWith('map:destroy', onMapLoadingDestroy)
-    expect(map.eventBus.off).toHaveBeenCalledWith('app:opened', onMapLoadingOpened)
-    expect(map._mapLoading).toBeUndefined()
+    map.removeApp()
+    expect(lastOverlay().dismiss).toHaveBeenCalled()
   })
 })

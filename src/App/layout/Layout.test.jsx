@@ -7,6 +7,7 @@ import { useApp } from '../store/appContext'
 import { useMap } from '../store/mapContext'
 import { useLayoutMeasurements } from '../hooks/useLayoutMeasurements'
 import { useFocusVisible } from '../hooks/useFocusVisible'
+import { useMapLoading } from '../hooks/useMapLoading.js'
 
 // Mock child components to simplify
 jest.mock('../components/Viewport/Viewport', () => ({
@@ -32,6 +33,7 @@ jest.mock('../store/mapContext', () => ({ useMap: jest.fn() }))
 jest.mock('../hooks/useLayoutMeasurements', () => ({ useLayoutMeasurements: jest.fn() }))
 jest.mock('../hooks/useFocusVisible', () => ({ useFocusVisible: jest.fn() }))
 jest.mock('../hooks/useApplicationModeFocus.js', () => ({ useApplicationModeFocus: jest.fn() }))
+jest.mock('../hooks/useMapLoading.js', () => ({ useMapLoading: jest.fn() }))
 
 describe('Layout', () => {
   const mockRefs = {
@@ -66,6 +68,17 @@ describe('Layout', () => {
         backgroundColor: 'pink'
       }
     })
+  })
+
+  test('stops the controls being reached while the map is loading', () => {
+    useMapLoading.mockReturnValue(true)
+    const { rerender } = render(<Layout />)
+    const overlay = document.querySelector('.im-o-app__overlay')
+    expect(overlay).toHaveAttribute('inert')
+
+    useMapLoading.mockReturnValue(false)
+    rerender(<Layout />)
+    expect(overlay).not.toHaveAttribute('inert')
   })
 
   test('renders layout with correct class names, children and fullscreen=false', () => {
