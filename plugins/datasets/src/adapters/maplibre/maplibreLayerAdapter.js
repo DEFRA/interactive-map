@@ -1,4 +1,4 @@
-import { addDatasetLayers } from './layerBuilders.js'
+import { addDatasetLayers, isLngLatMap } from './layerBuilders.js'
 import { MapLibreDataset } from './registry/mapLibreDataset.js'
 import { MapboxStyleLayerAdapter } from '../mapboxStyleLayerAdapter.js'
 
@@ -28,6 +28,9 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
     window._datasetSourceMap = this._datasetSourceMap // Expose for debugging
     // Tracks all active symbol-type layer IDs so non-symbol layers can be kept below them
     this._symbolLayerIds = new Set()
+    // Each feature's lng/lat copy, on a map in another CRS. A dynamic source passes its whole
+    // cache to setData on every update, with the same feature objects, so each is converted once.
+    this._lngLatFeatures = new WeakMap()
   }
 
   createDataset (datasetDefinition, datasetRegistry) {
@@ -212,8 +215,24 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
     }
     const source = this._map.getSource(sourceId)
     if (source && typeof source.setData === 'function') {
-      source.setData(this._mapProvider.geojsonToLngLat?.(geojson) ?? geojson)
+      source.setData(this._toLngLat(geojson))
     }
+  }
+
+  _toLngLat (geojson) {
+    if (isLngLatMap(this._mapProvider)) {
+      return geojson
+    }
+    if (geojson?.type !== 'FeatureCollection') {
+      return this._mapProvider.geojsonToLngLat(geojson)
+    }
+    const features = geojson.features.map(feature => {
+      if (!this._lngLatFeatures.has(feature)) {
+        this._lngLatFeatures.set(feature, this._mapProvider.geojsonToLngLat(feature))
+      }
+      return this._lngLatFeatures.get(feature)
+    })
+    return { ...geojson, features }
   }
 
   // ─── Private ─────────────────────────────────────────────────────────────────

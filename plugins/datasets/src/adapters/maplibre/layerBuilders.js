@@ -41,7 +41,7 @@ const createLayerZoomRangeConverter = (mapProvider) => {
 
 // ─── Source ───────────────────────────────────────────────────────────────────
 
-const isLngLatMap = (mapProvider) => !mapProvider.crs || mapProvider.crs === 'EPSG:4326'
+export const isLngLatMap = (mapProvider) => !mapProvider.crs || mapProvider.crs === 'EPSG:4326'
 
 // Fetches a GeoJSON URL and passes its features, converted to lng/lat, to the source
 const populateFromUrl = (mapProvider, sourceId, url) => {
