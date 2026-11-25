@@ -2,6 +2,13 @@ import { addDatasetLayers, isLngLatMap } from './layerBuilders.js'
 import { MapLibreDataset } from './registry/mapLibreDataset.js'
 import { MapboxStyleLayerAdapter } from '../mapboxStyleLayerAdapter.js'
 
+// A dynamic source identifies a feature by its idProperty value, or its own id without one, as
+// OpenLayers does. MapLibre's promoteId has no such fallback, and updateData needs every feature's
+// id, so a feature without the value gets its own id copied into it.
+const withPromotedId = (feature, idProperty) => feature.properties?.[idProperty] == null
+  ? { ...feature, properties: { ...feature.properties, [idProperty]: feature.id } }
+  : feature
+
 /**
  * MapLibre GL JS implementation of the LayerAdapter interface for the datasets plugin.
  *
@@ -209,15 +216,32 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
    * @param {Object} geojson - GeoJSON FeatureCollection in the map's CRS
    */
   setData (datasetId, geojson) {
-    const sourceId = this._datasetSourceMap.get(datasetId)
-    if (!sourceId) {
+    const source = this._getGeoJSONSource(datasetId)
+    if (!source) {
       return
     }
-    const source = this._map.getSource(sourceId)
-    if (source && typeof source.setData === 'function') {
-      source.setData(this._toLngLat(geojson))
-    }
+    const idProperty = this._getDynamicIdProperty(datasetId)
+    const lngLatGeoJSON = this._toLngLat(geojson)
+    source.setData(idProperty && lngLatGeoJSON?.features
+      ? { ...lngLatGeoJSON, features: lngLatGeoJSON.features.map(feature => withPromotedId(feature, idProperty)) }
+      : lngLatGeoJSON)
   }
+
+  /**
+   * Add and remove features by id, without passing the rest of the dataset again.
+   * @param {string} datasetId
+   * @param {{ add: Object[], remove: Array }} changes - Features to add, and IDs of features to remove
+   */
+  updateData (datasetId, { add, remove }) {
+    const source = this._getGeoJSONSource(datasetId)
+    if (!source) {
+      return
+    }
+    const idProperty = this._getDynamicIdProperty(datasetId)
+    source.updateData({ add: add.map(feature => withPromotedId(this._featureToLngLat(feature), idProperty)), remove })
+  }
+
+  // ─── Private ─────────────────────────────────────────────────────────────────
 
   _toLngLat (geojson) {
     if (isLngLatMap(this._mapProvider)) {
@@ -226,16 +250,29 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
     if (geojson?.type !== 'FeatureCollection') {
       return this._mapProvider.geojsonToLngLat(geojson)
     }
-    const features = geojson.features.map(feature => {
-      if (!this._lngLatFeatures.has(feature)) {
-        this._lngLatFeatures.set(feature, this._mapProvider.geojsonToLngLat(feature))
-      }
-      return this._lngLatFeatures.get(feature)
-    })
-    return { ...geojson, features }
+    return { ...geojson, features: geojson.features.map(feature => this._featureToLngLat(feature)) }
   }
 
-  // ─── Private ─────────────────────────────────────────────────────────────────
+  // Converted once per feature: a dynamic source passes the same feature objects again
+  _featureToLngLat (feature) {
+    if (isLngLatMap(this._mapProvider)) {
+      return feature
+    }
+    if (!this._lngLatFeatures.has(feature)) {
+      this._lngLatFeatures.set(feature, this._mapProvider.geojsonToLngLat(feature))
+    }
+    return this._lngLatFeatures.get(feature)
+  }
+
+  _getDynamicIdProperty (datasetId) {
+    return this._datasetRegistry.getDataset(datasetId)?.dynamicGeoJSON?.idProperty
+  }
+
+  _getGeoJSONSource (datasetId) {
+    const sourceId = this._datasetSourceMap.get(datasetId)
+    const source = sourceId && this._map.getSource(sourceId)
+    return typeof source?.setData === 'function' ? source : null
+  }
 
   _addLayers (registryDataset) {
     const { mapStyle } = this._datasetRegistry
