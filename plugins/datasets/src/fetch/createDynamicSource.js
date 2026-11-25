@@ -186,7 +186,7 @@ const offMoveEnd = (map, handler) => (map.off || map.un).call(map, 'moveend', ha
  *   held feature, when the map's data should be replaced
  * @param {Function} options.onChange - Called with the dataset ID and `{ add, remove }` (features,
  *   and the IDs of features) after a fetch, when the dataset has an idProperty
- * @returns {Object} { destroy, clear, refresh, getFeatureCount, reapply }
+ * @returns {Object} { destroy, refresh, reapply }
  */
 export const createDynamicSource = ({ dynamicGeoJSON, mapProvider, onUpdate, onChange }) => {
   // state.features: id → { feature, bbox, lastSeenAt }
@@ -225,15 +225,6 @@ export const createDynamicSource = ({ dynamicGeoJSON, mapProvider, onUpdate, onC
     },
 
     /**
-     * Clear all cached features and reset fetch tracking
-     */
-    clear () {
-      state.features.clear()
-      state.fetchedBbox = null
-      onUpdate(dynamicGeoJSON.id, { type: 'FeatureCollection', features: [] })
-    },
-
-    /**
      * Force refresh - clear cache and fetch current viewport
      */
     refresh () {
@@ -241,13 +232,6 @@ export const createDynamicSource = ({ dynamicGeoJSON, mapProvider, onUpdate, onC
       state.fetchedBbox = null
       state.replaceOnNextFetch = true
       fetchData() // NOSONAR: Not changing for now as used in production
-    },
-
-    /**
-     * Get current feature count
-     */
-    getFeatureCount () {
-      return state.features.size
     },
 
     /**
