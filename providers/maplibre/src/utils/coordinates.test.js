@@ -52,10 +52,11 @@ describe('createCoordinateConverter', () => {
       expect(geojson.features[0].geometry.coordinates).toEqual([370619, 518593, 12])
     })
 
-    it('converts geometry collections and features without geometry', () => {
+    it('converts geometry collections, and leaves missing GeoJSON or geometry as it is', () => {
       const collection = { type: 'GeometryCollection', geometries: [{ type: 'Point', coordinates: [370619, 518593] }] }
       expectPositionClose(converter.geojsonToLngLat(collection).geometries[0].coordinates, converter.toLngLat([370619, 518593]), 9)
       expect(converter.geojsonToLngLat({ type: 'Feature', properties: {}, geometry: null }).geometry).toBeNull()
+      expect(converter.geojsonToLngLat(null)).toBeNull()
     })
 
     it('converts bounds to the box enclosing all four converted corners', () => {
@@ -67,6 +68,13 @@ describe('createCoordinateConverter', () => {
         Math.max(...corners.map(([lng]) => lng)),
         Math.max(...corners.map(([, lat]) => lat))
       ])
+    })
+
+    it('converts lng/lat bounds back to eastings and northings', () => {
+      const [lng, lat] = converter.toLngLat([370619, 518593])
+      const [minX, minY, maxX, maxY] = converter.bboxFromLngLat([lng, lat, lng, lat])
+      expectPositionClose([minX, minY], [370619, 518593], 2)
+      expectPositionClose([maxX, maxY], [370619, 518593], 2)
     })
   })
 })

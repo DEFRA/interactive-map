@@ -1,4 +1,5 @@
 import { addFillLayer, addStrokeLayer, addSymbolLayer, addDatasetLayers } from './layerBuilders.js'
+import { logger } from '../../../../../src/services/logger.js'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -139,5 +140,41 @@ describe('addDatasetLayers zoom ranges', () => {
       expect(layer.maxzoom).toBe(21)
     })
     expect(map.addSource).toHaveBeenCalledWith('tiles-test', expect.objectContaining({ minzoom: 7, maxzoom: 21 }))
+  })
+})
+
+// ─── addDatasetLayers GeoJSON on a projected map ──────────────────────────────
+
+describe('addDatasetLayers GeoJSON on a projected map', () => {
+  const emptyCollection = { type: 'FeatureCollection', features: [] }
+  const addGeoJSONDataset = (data) => {
+    const map = makeMap()
+    const source = { setData: jest.fn() }
+    const mapProvider = { ...makeMapProvider(map), crs: 'EPSG:27700', geojsonToLngLat: () => 'converted' }
+    addDatasetLayers(mapProvider, makeDataset({ sourceId: 'geo', source: { type: 'geojson', data } }), { id: 'outdoor' }, null, null, 1)
+    map.getSource.mockReturnValue(source)
+    return { map, source }
+  }
+  const waitForFetch = () => new Promise(resolve => setTimeout(resolve, 0))
+
+  it('converts inline GeoJSON to lng/lat', () => {
+    const { map } = addGeoJSONDataset(emptyCollection)
+    expect(map.addSource).toHaveBeenCalledWith('geo', { type: 'geojson', data: 'converted' })
+  })
+
+  it('fetches a GeoJSON URL itself, then sets the converted data', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: () => emptyCollection }))
+    const { map, source } = addGeoJSONDataset('/data.json')
+    expect(map.addSource).toHaveBeenCalledWith('geo', { type: 'geojson', data: emptyCollection })
+    await waitForFetch()
+    expect(source.setData).toHaveBeenCalledWith('converted')
+  })
+
+  it('logs a failed fetch', async () => {
+    const warn = jest.spyOn(logger, 'warn').mockImplementation(() => {})
+    global.fetch = jest.fn(() => Promise.resolve({ ok: false, status: 404, statusText: 'Not Found' }))
+    addGeoJSONDataset('/missing.json')
+    await waitForFetch()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('404 Not Found'))
   })
 })

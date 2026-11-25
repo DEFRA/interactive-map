@@ -298,14 +298,49 @@ describe('MapLibreProvider', () => {
     expect(map.queryRenderedFeatures).toHaveBeenCalledWith(undefined, { layers: ['l1'] })
   })
 
-  describe('feature queries on a projected map', () => {
-    // A CRS whose coordinates are lng/lat × 1000
+  describe('on a British National Grid map', () => {
+    // Stands in for the BNG projection: eastings and northings are lng/lat × 1000
     const crsProjection = { forward: ([x, y]) => [x * 1000, y * 1000], inverse: ([x, y]) => [x / 1000, y / 1000] }
-    const lngLatFeature = () => ({ id: 'f1', layer: { id: 'l1' }, geometry: { type: 'Polygon', coordinates: [[[1, 2], [3, 2], [3, 4], [1, 2]]] } })
+    const makeBngProvider = () => makeProvider({ mapProviderConfig: { crs: 'EPSG:27700', crsProjection } })
+    const lngLatGeometry = { type: 'Polygon', coordinates: [[[1, 2], [3, 2], [3, 4], [1, 2]]] }
+    const lngLatFeature = () => ({ id: 'f1', layer: { id: 'l1' }, geometry: lngLatGeometry })
     const mapGeometry = { type: 'Polygon', coordinates: [[[1000, 2000], [3000, 2000], [3000, 4000], [1000, 2000]]] }
 
+    test('initMap keeps the projection when the style changes', async () => {
+      await doInitMap(makeBngProvider())
+      const { transformStyle } = maplibreModule.Map.mock.calls[0][0]
+      expect(transformStyle(null, { layers: [] })).toEqual({ layers: [], projection: { type: 'EPSG:27700' } })
+    })
+
+    test('initMap converts the zoom range to MapLibre zooms, 2 levels deeper for uk alignment', async () => {
+      const provider = makeBngProvider()
+      await doInitMap(provider, { minZoom: 6, maxZoom: 20 })
+      expect(maplibreModule.Map).toHaveBeenCalledWith(expect.objectContaining({ zoom: 7, minZoom: 8, maxZoom: 22 }))
+      expect(provider.toMapLibreZoom(undefined)).toBeUndefined()
+      expect(provider.toMapLibreZoom(null)).toBeNull()
+    })
+
+    test('initMap fits the bounds once the style, and so the projection, has loaded', async () => {
+      await doInitMap(makeBngProvider(), { bounds: [1000, 2000, 3000, 4000] })
+      expect(map.fitBounds).not.toHaveBeenCalled()
+      const onStyleLoad = map.once.mock.calls.find(([event]) => event === 'style.load')[1]
+      onStyleLoad()
+      expect(map.fitBounds).toHaveBeenCalledWith([1, 2, 3, 4], { duration: 0 })
+    })
+
+    test('getBounds, getResolution and the GeoJSON converters use eastings and northings', async () => {
+      const provider = makeBngProvider()
+      await doInitMap(provider)
+      map.getCanvas.mockReturnValue({ clientWidth: 4, clientHeight: 3 })
+      map.unproject.mockImplementation(([x, y]) => ({ lng: x, lat: y }))
+      expect(provider.getBounds()).toEqual([0, 3000, 4000, 0])
+      expect(provider.getResolution()).toBe(3584 / 2 ** 10)
+      expect(provider.geojsonToLngLat(mapGeometry)).toEqual(lngLatGeometry)
+      expect(provider.geojsonFromLngLat(lngLatGeometry)).toEqual(mapGeometry)
+    })
+
     test('getVisibleFeatures returns geometry in the map CRS, keeping the rest of the feature', async () => {
-      const provider = makeProvider({ mapProviderConfig: { crs: 'EPSG:27700', crsProjection } })
+      const provider = makeBngProvider()
       await doInitMap(provider)
       map.getLayer.mockReturnValue({})
       map.queryRenderedFeatures.mockReturnValue([lngLatFeature()])
@@ -313,7 +348,7 @@ describe('MapLibreProvider', () => {
     })
 
     test('getFeaturesAtPoint returns geometry in the map CRS', async () => {
-      const provider = makeProvider({ mapProviderConfig: { crs: 'EPSG:27700', crsProjection } })
+      const provider = makeBngProvider()
       await doInitMap(provider)
       queryFeatures.mockReturnValueOnce([lngLatFeature()])
       expect(provider.getFeaturesAtPoint({ x: 10, y: 20 })[0].geometry).toEqual(mapGeometry)

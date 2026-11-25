@@ -14,6 +14,7 @@ jest.mock('./utils/workerUrl.js', () => ({
 jest.mock('../../../src/services/logger.js', () => ({ logger: { error: jest.fn() } }))
 jest.mock('maplibre-gl', () => ({ getVersion: () => '6.0.0', setWorkerUrl: jest.fn() }))
 jest.mock('./maplibreProvider.js', () => ({ default: class MockProvider {} }))
+jest.mock('./utils/bngProjection.js', () => ({ BNG_CRS: 'EPSG:27700', registerBngProjection: jest.fn(() => Promise.resolve('bng projection')) }))
 
 describe('createMapLibreProvider', () => {
   beforeEach(() => {
@@ -112,6 +113,12 @@ describe('createMapLibreProvider', () => {
     const { mapProviderConfig } = await createMapLibreProvider().load()
 
     expect(mapProviderConfig).toEqual({ crs: 'EPSG:4326', crsProjection: null })
+  })
+
+  test('load registers the British National Grid projection for an EPSG:27700 map', async () => {
+    const { mapProviderConfig } = await createMapLibreProvider({ crs: 'EPSG:27700' }).load()
+
+    expect(mapProviderConfig).toEqual({ crs: 'EPSG:27700', crsProjection: 'bng projection' })
   })
 
   test('load sets the configured workerUrl when provided', async () => {
