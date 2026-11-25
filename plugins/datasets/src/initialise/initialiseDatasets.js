@@ -41,7 +41,8 @@ export const initialiseDatasets = ({
       const dynamicSource = createDynamicSource({
         dynamicGeoJSON,
         mapProvider,
-        onUpdate: (datasetId, geojson) => adapter.setData(datasetId, geojson)
+        onUpdate: (datasetId, geojson) => adapter.setData(datasetId, geojson),
+        onChange: (datasetId, changes) => adapter.updateData(datasetId, changes)
       })
       dynamicSources.set(registryDataset.id, dynamicSource)
     })

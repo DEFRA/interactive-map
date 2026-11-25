@@ -138,12 +138,12 @@ For data that needs authentication headers or viewport-based filtering, use `dyn
 
 **Type:** `Object`
 
-Enables dynamic, bbox-aware GeoJSON fetching — the plugin calls your API as the map pans and zooms, loading features for the current viewport and evicting distant ones. Configure this instead of `geojson` when your data is too large to load all at once.
+Enables dynamic, bbox-aware GeoJSON fetching — the plugin calls your API as the map pans and zooms, loading features for the current viewport and evicting distant ones. Configure this instead of `geojson` when your data is too large to load all at once. A feature that's already held is kept as it is when a later fetch returns it again.
 
 | Property | Type | Description |
 |----------|------|-------------|
 | `url` | `string` | **Required.** Base URL for the GeoJSON API endpoint |
-| `idProperty` | `string` | **Required.** Property name that uniquely identifies each feature. Used for deduplication across viewport fetches |
+| `idProperty` | `string` | **Required.** Property name that uniquely identifies each feature. Used to deduplicate features across viewport fetches, and to add and remove individual features as the map moves. A feature without this property is identified by its own `id` |
 | `transformRequest` | `Function` | Called before each fetch. Return a URL string or `{ url, headers }` object to add auth headers or modify the URL |
 | `maxFeatures` | `number` | Optional. Cap on features held in memory across all viewport fetches. Older out-of-viewport features are evicted when exceeded |
 

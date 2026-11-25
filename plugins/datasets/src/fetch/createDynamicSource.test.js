@@ -70,16 +70,16 @@ afterEach(() => {
 // ─── tests ─────────────────────────────────────────────────────────────────
 
 describe('createDynamicSource', () => {
-  it('fetches the initial viewport on creation and pushes features to onUpdate', async () => {
+  it('fetches the initial viewport on creation and passes its features to onChange', async () => {
     const mapProvider = makeMapProvider({ bbox: [-1, -1, 1, 1], zoom: 10 })
-    const onUpdate = jest.fn()
+    const onChange = jest.fn()
     const dynamicGeoJSON = makeDynamicGeoJSON({ idProperty: 'featureId' })
     const feature = makePointFeature('ignored', [0, 0], { featureId: 'abc' })
     // No featureId in properties - falls back to feature.id despite idProperty being configured
     const featureWithoutIdProperty = makePointFeature('fallback-id', [0, 0])
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([feature, featureWithoutIdProperty]))
 
-    const instance = createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate })
+    const instance = createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate: jest.fn(), onChange })
     await flushMicrotasks()
 
     expect(fetchGeoJSON).toHaveBeenCalledWith(
@@ -89,7 +89,18 @@ describe('createDynamicSource', () => {
       expect.anything()
     )
     expect(instance.getFeatureCount()).toBe(2)
-    expect(onUpdate).toHaveBeenCalledWith('test-source', featureCollection([feature, featureWithoutIdProperty]))
+    expect(onChange).toHaveBeenCalledWith('test-source', { add: [feature, featureWithoutIdProperty], remove: [] })
+  })
+
+  it('passes onUpdate the whole cache when there\'s no idProperty to remove features by', async () => {
+    const onUpdate = jest.fn()
+    const feature = makePointFeature('a', [0, 0])
+    fetchGeoJSON.mockResolvedValueOnce(featureCollection([feature]))
+
+    createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), mapProvider: makeMapProvider(), onUpdate, onChange: jest.fn() })
+    await flushMicrotasks()
+
+    expect(onUpdate).toHaveBeenCalledWith('test-source', featureCollection([feature]))
   })
 
   it('falls back to feature.id when no idProperty is configured, and skips features with no resolvable id', async () => {
@@ -323,5 +334,79 @@ describe('createDynamicSource', () => {
     onUpdate.mockClear()
     instance.reapply()
     expect(onUpdate).not.toHaveBeenCalled()
+  })
+
+  describe('with an idProperty, passing only what changed', () => {
+    const parcel = (ref, position) => makePointFeature(undefined, position, { ref })
+    const setup = (overrides = {}) => {
+      const mapProvider = makeMapProvider({ bbox: [-1, -1, 1, 1] })
+      const onUpdate = jest.fn()
+      const onChange = jest.fn()
+      const dynamicGeoJSON = makeDynamicGeoJSON({ idProperty: 'ref', ...overrides })
+      const instance = createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate, onChange })
+      const moveTo = async (bbox) => {
+        mapProvider.pan(bbox)
+        mapProvider.fireMoveEnd()
+        await advanceDebounce()
+      }
+      return { instance, onUpdate, onChange, moveTo }
+    }
+
+    it('passes only new features, keeping the held copy of a feature fetched again', async () => {
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([parcel('a', [0, 0])]))
+      const { onChange, moveTo } = setup()
+      await flushMicrotasks()
+
+      const b = parcel('b', [10, 10])
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([parcel('a', [0, 0]), b]))
+      await moveTo([-1, -1, 12, 12])
+
+      expect(onChange).toHaveBeenLastCalledWith('test-source', { add: [b], remove: [] })
+    })
+
+    it('passes nothing when a fetch brings no new features', async () => {
+      fetchGeoJSON.mockResolvedValue(featureCollection([parcel('a', [0, 0])]))
+      const { onChange, moveTo } = setup()
+      await flushMicrotasks()
+
+      await moveTo([-1, -1, 12, 12])
+
+      expect(fetchGeoJSON).toHaveBeenCalledTimes(2)
+      expect(onChange).toHaveBeenCalledTimes(1)
+    })
+
+    it('passes the IDs of evicted features to remove, leaving out features added and evicted together', async () => {
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([parcel('a', [0, 0])]))
+      const { onChange, moveTo } = setup({ maxFeatures: 1 })
+      await flushMicrotasks()
+
+      const b = parcel('b', [10, 10])
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([b]))
+      await moveTo([10, 10, 12, 12])
+      expect(onChange).toHaveBeenLastCalledWith('test-source', { add: [b], remove: ['a'] })
+
+      // 'b' is evicted, then 'c', the least recently seen of the two new features
+      const d = parcel('d', [21, 21])
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([parcel('c', [20, 20]), d]))
+      await moveTo([20, 20, 22, 22])
+      expect(onChange).toHaveBeenLastCalledWith('test-source', { add: [d], remove: ['b'] })
+    })
+
+    it('replaces the map\'s data on the first fetch after refresh(), then passes changes again', async () => {
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([parcel('a', [0, 0])]))
+      const { instance, onUpdate, onChange, moveTo } = setup()
+      await flushMicrotasks()
+
+      const reloaded = parcel('a', [0, 0])
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([reloaded]))
+      instance.refresh()
+      await flushMicrotasks()
+      expect(onUpdate).toHaveBeenCalledWith('test-source', featureCollection([reloaded]))
+
+      const b = parcel('b', [10, 10])
+      fetchGeoJSON.mockResolvedValueOnce(featureCollection([b]))
+      await moveTo([-1, -1, 12, 12])
+      expect(onChange).toHaveBeenLastCalledWith('test-source', { add: [b], remove: [] })
+    })
   })
 })

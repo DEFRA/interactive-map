@@ -19,6 +19,7 @@ const makeAdapter = (overrides = {}) => ({
   onMapStyleChange: jest.fn(),
   onMapSizeChange: jest.fn(),
   setData: jest.fn(),
+  updateData: jest.fn(),
   applyGlobalVisibility: jest.fn(),
   destroy: jest.fn(),
   createDataset: jest.fn(),
@@ -257,14 +258,14 @@ describe('returned API', () => {
   })
 })
 
-// ─── onUpdate callback ────────────────────────────────────────────────────────
+// ─── onUpdate and onChange callbacks ──────────────────────────────────────────
 
-describe('onUpdate callback', () => {
-  it('calls adapter.setData when the onUpdate callback fires', async () => {
+describe('onUpdate and onChange callbacks', () => {
+  it('pass a dynamic source\'s full data to adapter.setData, and its changes to adapter.updateData', async () => {
     const mockSource = { destroy: jest.fn(), refresh: jest.fn(), clear: jest.fn(), getFeatureCount: jest.fn() }
-    let capturedOnUpdate
-    createDynamicSource.mockImplementation(({ onUpdate }) => {
-      capturedOnUpdate = onUpdate
+    let callbacks
+    createDynamicSource.mockImplementation(({ onUpdate, onChange }) => {
+      callbacks = { onUpdate, onChange }
       return mockSource
     })
     const mockDataset = { id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: {} }
@@ -275,8 +276,12 @@ describe('onUpdate callback', () => {
     await Promise.resolve()
 
     const geojson = { type: 'FeatureCollection', features: [] }
-    capturedOnUpdate('parcels', geojson)
+    callbacks.onUpdate('parcels', geojson)
     expect(args.adapter.setData).toHaveBeenCalledWith('parcels', geojson)
+
+    const changes = { add: [], remove: ['a'] }
+    callbacks.onChange('parcels', changes)
+    expect(args.adapter.updateData).toHaveBeenCalledWith('parcels', changes)
   })
 })
 
