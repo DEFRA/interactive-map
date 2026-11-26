@@ -38,7 +38,6 @@
 {% block pageScripts %}
   <!-- Defra library scripts -->
   <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
-  <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/datasets/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/interact/dist/umd/index.js"></script>
 
@@ -113,7 +112,6 @@
 
     const map = new defra.InteractiveMap('map', {
       behaviour: 'inline',
-      mapProvider: defra.maplibreProvider(),
       mapStyle: {
         url: 'https://tiles.openfreemap.org/styles/liberty',
         attribution: 'OpenFreeMap © OpenMapTiles Data from OpenStreetMap',

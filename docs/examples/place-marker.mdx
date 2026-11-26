@@ -3,12 +3,9 @@ import CodeTabs from '../../demo/js/codeTabs.js'
 
 # Place a marker to continue
 
-Use the interact plugin's `placeMarker` mode to let users drop a location pin on the map before continuing a journey.
+Use the interact plugin's `placeMarker` mode to let users drop a location pin on the map before continuing a journey. Two patterns work together in this example, depending on the screen size.
 
-Two patterns work together in this example:
-
-- **Hybrid behaviour with built-in back and continue** — on mobile the map opens fullscreen and the `backAndContinue` option renders Back and Continue buttons inside the map. The Continue button is enabled declaratively via `continueEnabledWhen` once a marker has been placed.
-- **External Continue button for inline** — when the map is inline (tablet/desktop), a Continue button sits outside the map container. It uses `app:opened`, `app:closed`, and `app:fullscreenchange` to show and hide in sync with the map's display mode, and `interact:markerchange` to enable once a marker is placed.
+On mobile, the map opens fullscreen and the `backAndContinue` option adds Back and Continue buttons inside the map, with Continue enabled by `continueEnabledWhen` once a marker is placed. On tablet and desktop, the map is inline and a Continue button sits outside it. That button uses `app:opened`, `app:closed` and `app:fullscreenchange` to show and hide with the map, and `interact:markerchange` to enable once a marker is placed.
 
 <DemoMapPlaceMarker />
 
@@ -18,7 +15,6 @@ Two patterns work together in this example:
     language: 'js',
     code: `
       import InteractiveMap from '@defra/interactive-map'
-      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
       import createInteractPlugin from '@defra/interactive-map/plugins/interact'
 
       const interactPlugin = createInteractPlugin({
@@ -27,7 +23,6 @@ Two patterns work together in this example:
 
       const map = new InteractiveMap('my-map', {
         behaviour: 'hybrid',
-        mapProvider: maplibreProvider(),
         mapStyle: {
           url: 'https://your-tile-url/style.json',
           logo: '/path/to/logo.svg',
@@ -87,7 +82,6 @@ Two patterns work together in this example:
     language: 'html',
     code: `
       <script defer src="/your-assets-path/interactive-map/index.js"></script>
-      <script defer src="/your-assets-path/maplibre-provider/index.js"></script>
       <script defer src="/your-assets-path/interact-plugin/index.js"></script>
 
       <div id="my-map"></div>
@@ -103,7 +97,6 @@ Two patterns work together in this example:
 
         const map = new defra.InteractiveMap('my-map', {
           behaviour: 'hybrid',
-          mapProvider: defra.maplibreProvider(),
           mapStyle: {
             url: 'https://your-tile-url/style.json',
             logo: '/path/to/logo.svg',
