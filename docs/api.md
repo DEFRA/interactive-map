@@ -380,10 +380,22 @@ The coordinate system the map uses. Coordinates you give the map, and coordinate
 On an `'EPSG:27700'` map, data from another coordinate system must be converted to eastings and northings before you add it, and vector tiles must be cut on the OS National Grid tile grid.
 
 > [!CAUTION]
-> `crs` is experimental. Setting it to `'EPSG:27700'` relies on MapLibre's experimental support for other projections, and isn't yet compatible with a strict Content Security Policy. Do **not** use it in production unless fully tested.
+> `crs` is experimental. Setting it to `'EPSG:27700'` relies on MapLibre's experimental support for other projections. Do **not** use it in production unless fully tested.
 
 ```js
 maplibreProvider({ crs: 'EPSG:27700' })
+```
+
+##### `crsWorkerUrl`
+**Type:** `string`
+**Default:** `undefined`
+
+URL of the projection file an `'EPSG:27700'` map needs. This is set automatically with webpack, Vite and the UMD build.
+
+With other bundlers (such as Rollup and esbuild), copy `node_modules/@defra/interactive-map/providers/maplibre/dist/esm/bngTransform.mjs` to your assets and set its URL here. If it's missing, the console explains this.
+
+```js
+maplibreProvider({ crs: 'EPSG:27700', crsWorkerUrl: '/your-assets-path/bngTransform.mjs' })
 ```
 
 ##### `zoomAlignment`

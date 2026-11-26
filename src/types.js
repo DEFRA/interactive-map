@@ -406,6 +406,18 @@
  * URL of the MapLibre worker file. Set automatically with webpack, Vite and the UMD
  * build; with other bundlers (such as esbuild), serve `maplibre-gl/dist/maplibre-gl-worker.mjs`
  * and set its URL here.
+ *
+ * @property {'EPSG:4326' | 'EPSG:27700'} [crs='EPSG:4326']
+ * The coordinate system the map uses. 'EPSG:27700' is experimental.
+ *
+ * @property {string} [crsWorkerUrl]
+ * URL of `bngTransform.mjs`, for an 'EPSG:27700' map. Set automatically with webpack, Vite and
+ * the UMD build; with other bundlers, serve the file from the MapLibre provider's `dist/esm`
+ * folder and set its URL here.
+ *
+ * @property {'uk' | 'world'} [zoomAlignment='uk']
+ * Which zoom levels an 'EPSG:27700' map uses: 'uk' for OS tile grid zoom levels, 'world' for
+ * ESRI zoom levels.
  */
 
 /**

@@ -4,6 +4,7 @@ import { supportsModuleWorkers } from './utils/detectModuleWorker.js'
 import * as maplibreGl from 'maplibre-gl'
 import { isUnbundledWorkerUrl } from './utils/workerUrl.js'
 import { logger } from '../../../src/services/logger.js'
+import { registerBngProjection } from './utils/bngProjection.js'
 
 jest.mock('./utils/detectWebgl.js', () => ({ getWebGL: jest.fn() }))
 jest.mock('./utils/detectModuleWorker.js', () => ({ supportsModuleWorkers: jest.fn() }))
@@ -14,7 +15,7 @@ jest.mock('./utils/workerUrl.js', () => ({
 jest.mock('../../../src/services/logger.js', () => ({ logger: { error: jest.fn() } }))
 jest.mock('maplibre-gl', () => ({ getVersion: () => '6.0.0', setWorkerUrl: jest.fn() }))
 jest.mock('./maplibreProvider.js', () => ({ default: class MockProvider {} }))
-jest.mock('./utils/bngProjection.js', () => ({ BNG_CRS: 'EPSG:27700', registerBngProjection: jest.fn(() => Promise.resolve('bng projection')) }))
+jest.mock('./utils/bngProjection.js', () => ({ registerBngProjection: jest.fn(() => Promise.resolve('bng projection')) }))
 
 describe('createMapLibreProvider', () => {
   beforeEach(() => {
@@ -119,6 +120,12 @@ describe('createMapLibreProvider', () => {
     const { mapProviderConfig } = await createMapLibreProvider({ crs: 'EPSG:27700' }).load()
 
     expect(mapProviderConfig).toEqual({ crs: 'EPSG:27700', crsProjection: 'bng projection' })
+  })
+
+  test('load passes crsWorkerUrl to the British National Grid registration', async () => {
+    await createMapLibreProvider({ crs: 'EPSG:27700', crsWorkerUrl: '/assets/bngTransform.mjs' }).load()
+
+    expect(registerBngProjection).toHaveBeenCalledWith(expect.anything(), '/assets/bngTransform.mjs')
   })
 
   test('load sets the configured workerUrl when provided', async () => {

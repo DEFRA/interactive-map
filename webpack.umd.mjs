@@ -138,6 +138,9 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
         // Emitted with a .js extension because some servers don't send a JavaScript
         // content type for .mjs, which module workers require
         { test: /maplibre-gl-worker\.mjs$/, type: 'asset/resource', generator: { filename: 'im-maplibre-worker.js' } },
+        // The BNG projection script MapLibre loads into its workers. The same file is also imported
+        // on the main thread, so only its new URL() reference is emitted as a file.
+        { test: /bngTransform\.mjs$/, dependency: 'url', type: 'asset/resource', generator: { filename: 'im-maplibre-bng-worker.js' } },
         { test: /\.css$/i, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
         { test: /\.s[ac]ss$/i, use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'] }
       ]
