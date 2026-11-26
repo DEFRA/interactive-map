@@ -54,3 +54,4 @@ build
 
 # Copied into the engine packages when they are built
 packages/*/assets
+packages/*/LICENSE

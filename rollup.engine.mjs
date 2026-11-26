@@ -17,6 +17,15 @@ const copyFoldersPlugin = (engineName, folders) => ({
   }
 })
 
+// Copies the repo licence into the engine's package, so that the published package includes
+// the licence text that its "license": "MIT" field refers to
+const copyLicencePlugin = (engineName) => ({
+  name: 'engine-copy-licence',
+  buildStart () {
+    fs.copyFileSync('LICENSE', `packages/${engineName}/LICENSE`)
+  }
+})
+
 // Resolves each runtime adapter lookup to the engine's own version
 const engineAdapterPlugin = (replacements) => ({
   name: 'engine-adapter',
@@ -35,7 +44,7 @@ export default enginesToBuild().flatMap(([engineName, engine]) => {
     const config = createESMConfig(b.entryPath, packageOutDir(engineName, engine, b.outDir), b.isCore || false, b.manualChunks || null, chunkNames)
     if (b.isCore) {
       config.external = [...config.external, ...MAP_ENGINE_EXTERNALS]
-      config.plugins.push(copyFoldersPlugin(engineName, engine.copy))
+      config.plugins.push(copyFoldersPlugin(engineName, engine.copy), copyLicencePlugin(engineName))
     }
     config.plugins.unshift(engineAdapterPlugin(replacements))
     return config
