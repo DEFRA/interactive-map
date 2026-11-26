@@ -54,6 +54,16 @@ const installPackage = (engine) => {
   return projectDir
 }
 
+// The files npm shows on a package's page. Every package in packages/ is checked for them,
+// including the ones without bundler checks, so that no published package goes without them
+const REQUIRED_PACKAGE_FILES = ['README.md', 'LICENSE']
+
+const missingPackageFiles = (name) => {
+  const packOutput = JSON.parse(run('npm', ['pack', '--dry-run', '--json'], path.join(ROOT, 'packages', name)))
+  const packed = new Set(packOutput[0].files.map(file => file.path))
+  return REQUIRED_PACKAGE_FILES.filter(file => !packed.has(file))
+}
+
 // Lists the package's scripts that contain another engine's provider name
 const findOtherEngines = (engine, packageDir) => {
   const otherNames = Object.entries(PROVIDER_NAMES).filter(([name]) => name !== engine.name).map(([, providerName]) => providerName)
@@ -260,8 +270,18 @@ const main = async () => { // NOSONAR - runs the checks in order, splitting it w
     run('npm', ['run', 'build:engines'], ROOT)
   }
 
-  const browser = await launchBrowser()
   const results = []
+  const packageNames = fs.readdirSync(path.join(ROOT, 'packages'))
+    .filter(name => fs.existsSync(path.join(ROOT, 'packages', name, 'package.json')))
+    .filter(name => !args.engine || name === args.engine)
+  for (const name of packageNames) {
+    const missing = missingPackageFiles(name)
+    const failures = missing.length ? [`missing from the packed package: ${missing.join(', ')}`] : []
+    results.push({ name: `${name} package files`, failures })
+    console.log(`  ${failures.length ? 'FAIL' : 'pass'}  ${name} package has ${REQUIRED_PACKAGE_FILES.join(' and ')}${failures.map(f => `\n    - ${f}`).join('')}`) // NOSONAR - builds one log line
+  }
+
+  const browser = await launchBrowser()
   try {
     for (const engine of engines) {
       console.log(`\n${engine.name}: installing the packed package…`)
