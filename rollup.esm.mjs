@@ -177,6 +177,18 @@ export const createESMConfig = (entryPath, outDir, isCore = false, manualChunks 
     ? [cssDir, esmDir]
     : [esmDir]
 
+  // The core build's entry module, recorded once the build ends so chunkFileNames can tell
+  // the shell chunk (which holds it) from other shared chunks
+  const entryModuleIds = new Set()
+  const recordEntryModulesPlugin = () => ({
+    name: 'record-entry-modules',
+    buildEnd () {
+      for (const id of this.getModuleIds()) {
+        if (this.getModuleInfo(id).isEntry) { entryModuleIds.add(id) }
+      }
+    }
+  })
+
   return {
     input: entryPath,
 
@@ -235,7 +247,7 @@ export const createESMConfig = (entryPath, outDir, isCore = false, manualChunks 
       // webpackChunkNamesPlugin must come after terser so comments survive
       webpackChunkNamesPlugin(),
 
-      ...(isCore ? [removeFullCssPlugin(cssDir)] : []),
+      ...(isCore ? [removeFullCssPlugin(cssDir), recordEntryModulesPlugin()] : []),
 
       // Only runs when ANALYZE=1 is set; writes stats to dist/stats/<name>.html
       ...(process.env.ANALYZE ? [visualizer({
@@ -254,11 +266,13 @@ export const createESMConfig = (entryPath, outDir, isCore = false, manualChunks 
       // Core: give auto-generated chunks meaningful names.
       // - initialiseApp → im-core.js  (the lazy Preact app chunk)
       // - names in chunkNames → their given name (an engine package's lazy provider)
-      // - anything else → im-shell.js (the sync InteractiveMap + shared utils chunk)
+      // - the chunk holding the entry module → im-shell.js (the sync InteractiveMap + shared utils)
+      // - anything else → im-shared.js (code shared only by lazy chunks, loaded when the map opens)
       chunkFileNames: isCore
         ? (chunk) => {
             if (chunk.name === 'initialiseApp') { return 'esm/im-core.js' }
-            return chunkNames[chunk.name] ? `esm/${chunkNames[chunk.name]}.js` : 'esm/im-shell.js'
+            if (chunkNames[chunk.name]) { return `esm/${chunkNames[chunk.name]}.js` }
+            return chunk.moduleIds.some(id => entryModuleIds.has(id)) ? 'esm/im-shell.js' : 'esm/im-shared.js'
           }
         : (chunk) => `esm/${chunkNames[chunk.name] || chunk.name}.js`,
       // Rollup ignores webpack magic comments; manualChunks is how we assign
