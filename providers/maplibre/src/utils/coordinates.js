@@ -35,9 +35,9 @@ const mapGeoJSON = (geojson, convert) => {
 
 // [minX, minY, maxX, maxY] enclosing all four converted corners
 const mapBbox = ([minX, minY, maxX, maxY], convert) => {
-  const corners = [[minX, minY], [minX, maxY], [maxX, minY], [maxX, maxY]].map(convert)
-  const xs = corners.map(([x]) => x)
-  const ys = corners.map(([, y]) => y)
+  const corners = [[minX, minY], [minX, maxY], [maxX, minY], [maxX, maxY]].map(corner => convert(corner))
+  const xs = corners.map(([cornerX]) => cornerX)
+  const ys = corners.map(([, cornerY]) => cornerY)
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]
 }
 

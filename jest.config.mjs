@@ -4,7 +4,9 @@ export default {
   coverageDirectory: 'coverage',
   cacheDirectory: '.jest-cache',
   collectCoverageFrom: [
-    '**/*.{js,jsx}'
+    '**/*.{js,jsx}',
+    // Source modules written as .mjs, such as the MapLibre provider's bngTransform.mjs
+    '{src,plugins,providers}/**/*.mjs'
   ],
   projects: [{
     displayName: 'unit-tests',
@@ -40,7 +42,7 @@ export default {
       '<rootDir>/plugins/scale-bar',
       '<rootDir>/plugins/use-location',
       '<rootDir>/.docusaurus',
-      '<rootDir>/build/assets/js',
+      '<rootDir>/build/',
       '/dist/'
     ],
     // maplibre-gl only exports an `import` condition, which Jest's resolver does not use
