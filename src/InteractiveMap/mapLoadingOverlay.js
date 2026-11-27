@@ -6,6 +6,22 @@ const FULLSCREEN_CLASS = 'im-c-map-loading--fullscreen'
 // Fast loads finish inside this, so the spinner never flashes
 const SHOW_DELAY = 200
 
+function createOverlayElements (text) {
+  const overlay = document.createElement('div')
+  overlay.className = OVERLAY_CLASS
+  overlay.setAttribute('aria-hidden', 'true')
+
+  const spinner = document.createElement('span')
+  spinner.className = `${OVERLAY_CLASS}__spinner`
+
+  const label = document.createElement('span')
+  label.className = `${OVERLAY_CLASS}__text`
+  label.textContent = text
+
+  overlay.append(spinner, label)
+  return { overlay, spinner }
+}
+
 /**
  * Create the loading overlay shown while the map app loads (`enableMapLoading`).
  *
@@ -25,18 +41,7 @@ const SHOW_DELAY = 200
  * @returns {{ show: Function, attachTo: Function, dismiss: Function, isLoading: Function, hasTimedOut: Function, onDismiss: Function }}
  */
 export function createLoadingOverlay ({ text, timeout }) {
-  const overlay = document.createElement('div')
-  overlay.className = OVERLAY_CLASS
-  overlay.setAttribute('aria-hidden', 'true')
-
-  const spinner = document.createElement('span')
-  spinner.className = `${OVERLAY_CLASS}__spinner`
-
-  const label = document.createElement('span')
-  label.className = `${OVERLAY_CLASS}__text`
-  label.textContent = text
-
-  overlay.append(spinner, label)
+  const { overlay, spinner } = createOverlayElements(text)
 
   let parentEl = null
   let shownAt = null
