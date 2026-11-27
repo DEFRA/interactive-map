@@ -252,6 +252,27 @@ zoom control buttons (`enableZoomControls`) are hidden to avoid duplication.
 
 ---
 
+### `enableMapLoading`
+**Type:** `boolean`
+**Default:** `false`
+
+Whether a loading spinner and message are shown over the map until it has loaded. The spinner only appears if loading takes longer than 200ms. The map's controls can't be reached until it has loaded, or until [`mapLoadingTimeout`](#maploadingtimeout) has passed.
+
+The message is set with [`mapLoadingText`](#maploadingtext). Change the colours and sizes with these custom properties on `:root`, `body` or `.im-c-map-loading`:
+
+| Custom property | Default | Description |
+|---|---|---|
+| `--im-map-loading-background` | `rgba(255, 255, 255, 0.85)` | Overlay background |
+| `--im-map-loading-color` | `--foreground-color` | Text colour |
+| `--im-map-loading-gap` | `16px` | Space between spinner and text |
+| `--im-map-loading-font-size` | `1.5rem` | Message size |
+| `--im-map-loading-spinner-size` | `96px` | Spinner diameter |
+| `--im-map-loading-spinner-width` | `12px` | Spinner ring thickness |
+| `--im-map-loading-spinner-color` | `#1d70b8` | Spinner highlight colour |
+| `--im-map-loading-spinner-track-color` | `#f3f2f1` | Spinner ring colour |
+
+---
+
 ### `enableResetView`
 **Type:** `boolean`
 **Default:** `false`
@@ -335,6 +356,38 @@ new InteractiveMap('map', {
   mapLabel: 'Flood risk areas map'
 })
 ```
+
+---
+
+### `mapLoadedText`
+**Type:** `string`
+**Default:** `'Map loaded'`
+
+Announced to screen reader users in the map when it finishes loading, when [`enableMapLoading`](#enablemaploading) is `true`.
+
+---
+
+### `mapLoadingText`
+**Type:** `string`
+**Default:** `'Loading map'`
+
+Message shown under the loading spinner when [`enableMapLoading`](#enablemaploading) is `true`. It's also added to the map's accessible name while the map loads, so screen readers hear it when the map is focused.
+
+---
+
+### `mapLoadingTimeout`
+**Type:** `number`
+**Default:** `30000`
+
+Milliseconds after which the loading spinner is removed and the map's controls can be used, even if the map hasn't finished loading, when [`enableMapLoading`](#enablemaploading) is `true`. `0` turns the timeout off, so the spinner stays until the map has loaded.
+
+---
+
+### `mapLoadingTimeoutText`
+**Type:** `string`
+**Default:** `'Map may not have loaded fully'`
+
+Announced to screen reader users in the map instead of [`mapLoadedText`](#maploadedtext) when [`mapLoadingTimeout`](#maploadingtimeout) has passed before the map finished loading.
 
 ---
 

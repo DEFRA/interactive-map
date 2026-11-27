@@ -7,6 +7,7 @@ import { useMap } from '../../store/mapContext.js'
 import { useService } from '../../store/serviceContext.js'
 import { useKeyboardHint } from '../../hooks/useKeyboardHint.js'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts.js'
+import { getInterfaceType } from '../../../utils/detectInterfaceType.js'
 import { useMapEvents } from '../../hooks/useMapEvents.js'
 
 jest.mock('../../store/configContext.js', () => ({ useConfig: jest.fn() }))
@@ -16,6 +17,7 @@ jest.mock('../../store/serviceContext.js', () => ({ useService: jest.fn() }))
 jest.mock('../../hooks/useKeyboardShortcuts.js', () => ({ useKeyboardShortcuts: jest.fn() }))
 jest.mock('../../hooks/useKeyboardHint.js', () => ({ useKeyboardHint: jest.fn() }))
 jest.mock('../../hooks/useMapEvents.js', () => ({ useMapEvents: jest.fn() }))
+jest.mock('../../../utils/detectInterfaceType.js', () => ({ getInterfaceType: jest.fn(() => 'keyboard') }))
 jest.mock('../CrossHair/CrossHair', () => ({ CrossHair: jest.fn(() => <div data-testid='cross-hair' />) }))
 jest.mock('../Markers/Markers', () => ({ Markers: jest.fn(() => <div data-testid='markers' />) }))
 
@@ -47,7 +49,7 @@ function setupHookMocks (mainEl, viewportEl) {
     announce: jest.fn(),
     hints: { show: jest.fn(), dismiss: jest.fn(), subscribe: jest.fn(() => jest.fn()) },
     eventBus: { on: jest.fn(), off: jest.fn(), emit: jest.fn() },
-    mapFocus: { clear: jest.fn(), releaseAnnouncements: jest.fn() }
+    mapFocus: { clear: jest.fn(), releaseAnnouncements: jest.fn(), setLabel: jest.fn() }
   })
   useKeyboardHint.mockImplementation(({ onViewportFocusChange }) => ({
     handleFocus: () => onViewportFocusChange(true),
@@ -57,8 +59,8 @@ function setupHookMocks (mainEl, viewportEl) {
   useMapEvents.mockImplementation(() => {})
 }
 
-function renderViewport () {
-  const { container, rerender } = render(<Viewport />)
+function renderViewport (props = {}) {
+  const { container, rerender } = render(<Viewport {...props} />)
   const viewport = container.querySelector('.im-c-viewport')
   const mapContainer = container.querySelector('.im-c-viewport__map-container')
   const safeZone = container.querySelector('.im-c-viewport__safezone')
@@ -115,6 +117,16 @@ describe('Viewport rendering', () => {
     expect(viewport).toHaveAttribute('aria-describedby', 'test-map-keyboard-desc')
   })
 
+  it('sets its name through mapFocus, with the loading message while the map is loading', () => {
+    useConfig.mockReturnValue({ ...useConfig(), mapLoadingText: 'Loading map' })
+    const { mapFocus } = useService()
+    const { rerender } = renderViewport({ isMapLoading: true })
+    expect(mapFocus.setLabel).toHaveBeenLastCalledWith('Test Map. Loading map')
+
+    rerender(<Viewport isMapLoading={false} />)
+    expect(mapFocus.setLabel).toHaveBeenLastCalledWith('Test Map')
+  })
+
   it('restores the map label via mapFocus when the viewport loses focus', () => {
     const { mapFocus } = useService()
     const { viewport } = renderViewport()
@@ -137,6 +149,62 @@ describe('Viewport rendering', () => {
     const { onViewportFocusChange } = useKeyboardHint.mock.calls[0][0]
     onViewportFocusChange(true)
     expect(hints.show).toHaveBeenCalledWith(KEYBOARD_HINT_TEXT, { duration: 0 })
+  })
+
+  it('holds back the hint and shortcuts while the map is loading', () => {
+    const { hints } = useService()
+    renderViewport({ isMapLoading: true })
+    const { onViewportFocusChange } = useKeyboardHint.mock.calls[0][0]
+    onViewportFocusChange(true)
+    expect(hints.show).not.toHaveBeenCalled()
+    expect(useKeyboardShortcuts).toHaveBeenLastCalledWith(expect.anything(), { isEnabled: false })
+  })
+
+  it.each([
+    ['keyboard', 'shows the hint with the loaded message', true],
+    ['mouse', 'announces the loaded message', false]
+  ])('when the map loads with %s focus on the viewport, %s', (interfaceType, _, showsHint) => {
+    getInterfaceType.mockReturnValue(interfaceType)
+    useConfig.mockReturnValue({ ...useConfig(), mapLoadedText: 'Map loaded', keyboardHintText: '<kbd>?</kbd> for shortcuts' })
+    const { hints, announce } = useService()
+    const { viewport, rerender } = renderViewport({ isMapLoading: true })
+    viewport.focus()
+
+    rerender(<Viewport isMapLoading={false} />)
+
+    if (showsHint) {
+      expect(hints.show).toHaveBeenCalledWith('<kbd>?</kbd> for shortcuts', { duration: 0, announce: 'Map loaded. ? for shortcuts' })
+      expect(announce).not.toHaveBeenCalled()
+    } else {
+      expect(announce).toHaveBeenCalledWith('Map loaded')
+      expect(hints.show).not.toHaveBeenCalled()
+    }
+  })
+
+  it('says the map may not have loaded fully when loading timed out', () => {
+    getInterfaceType.mockReturnValue('mouse')
+    useConfig.mockReturnValue({
+      ...useConfig(),
+      mapLoading: { hasTimedOut: () => true },
+      mapLoadingTimeoutText: 'Map may not have loaded fully'
+    })
+    const { announce } = useService()
+    const { viewport, rerender } = renderViewport({ isMapLoading: true })
+    viewport.focus()
+
+    rerender(<Viewport isMapLoading={false} />)
+
+    expect(announce).toHaveBeenCalledWith('Map may not have loaded fully')
+  })
+
+  it('says nothing when the map loads with focus elsewhere', () => {
+    const { hints, announce } = useService()
+    const { rerender } = renderViewport({ isMapLoading: true })
+
+    rerender(<Viewport isMapLoading={false} />)
+
+    expect(announce).not.toHaveBeenCalled()
+    expect(hints.show).not.toHaveBeenCalled()
   })
 
   it('calls hints.dismiss() when viewport loses focus', () => {
@@ -204,6 +272,15 @@ describe('Viewport interactions', () => {
     const { container } = renderViewport()
     fireEvent.focus(container.querySelector('[role="listbox"]'))
     expect(hints.show).toHaveBeenCalledWith(KEYBOARD_HINT_TEXT, { duration: 0 })
+  })
+
+  it('makes the features listbox inert while the map is loading', () => {
+    const { container, rerender } = renderViewport({ isMapLoading: true })
+    const listbox = container.querySelector('[role="listbox"]')
+    expect(listbox).toHaveAttribute('inert')
+
+    rerender(<Viewport isMapLoading={false} />)
+    expect(listbox).not.toHaveAttribute('inert')
   })
 
   it('calls hints.dismiss() when the features listbox loses focus', () => {

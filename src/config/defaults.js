@@ -17,6 +17,7 @@ const defaults = {
   deviceNotSupportedText: 'Your device is not supported. A map is available with a more up-to-date browser or device.',
   enableFullscreen: false,
   enableMapControls: true,
+  enableMapLoading: false,
   enableResetView: false,
   enableZoomControls: true,
   genericErrorText: 'There was a problem loading the map. Please try again later.',
@@ -26,6 +27,10 @@ const defaults = {
   keyboardHintText: '<span class="im-u-visually-hidden">Press </span><kbd>Shift</kbd> + <span class="im-u-visually-hidden">Question mark</span><kbd aria-hidden="true">?</kbd> <span class="im-u-visually-hidden">to view </span>keyboard shortcuts',
   mapHintText: 'Press Tab to focus it. Keyboard commands are only available once it has focus.', // Visually hidden text for assitive technology
   mapLabel: 'Interactive map application',
+  mapLoadedText: 'Map loaded',
+  mapLoadingText: 'Loading map',
+  mapLoadingTimeout: 30000,
+  mapLoadingTimeoutText: 'Map may not have loaded fully',
   mapProvider: null,
   mapSize: 'small',
   manageHistoryState: true,

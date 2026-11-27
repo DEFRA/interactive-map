@@ -5,7 +5,7 @@ import { useConfig } from '../../store/configContext.js'
 // the map, navigable both sequentially (Arrow/Home/End) and spatially (Alt+Arrow — see
 // useSpatialListFocus.js). Content is whatever the current spatialListRegistry provider
 // contributes; `label` names it for aria-label accordingly.
-export const SpatialList = forwardRef(({ activeItemId, tabbableId, selectedIds = [], multiselectable = false, items = [], label = 'Map features', focusable = true, onFocus, onBlur, onSelectItem }, ref) => {
+export const SpatialList = forwardRef(({ activeItemId, tabbableId, selectedIds = [], multiselectable = false, items = [], label = 'Map features', focusable = true, isInert = false, onFocus, onBlur, onSelectItem }, ref) => {
   const { id } = useConfig()
   const hasItems = items.length > 0
   // Roving tabindex: exactly one option is a Tab stop at a time — see useSpatialListFocus.js.
@@ -20,6 +20,7 @@ export const SpatialList = forwardRef(({ activeItemId, tabbableId, selectedIds =
       aria-describedby={`${id}-keyboard-desc`}
       aria-multiselectable={multiselectable || undefined}
       className='im-c-spatial-list'
+      inert={isInert}
       onFocus={onFocus}
       onBlur={onBlur}
     >
