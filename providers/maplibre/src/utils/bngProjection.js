@@ -16,7 +16,7 @@ const OS_ORIGIN_NORTHING = 1376256
 const OS_EXTENT_AT_ZOOM_0 = 1835008
 
 const MISSING_SCRIPT_MESSAGE = "The British National Grid projection script wasn't included in the build, so the map can't load. " +
-  "Some bundlers, such as Rollup and esbuild, don't copy it: copy bngTransform.mjs from the MapLibre provider's dist/esm folder " +
+  "Some bundlers, such as Rollup and esbuild, don't copy it: copy node_modules/@defra/interactive-map/dist/esm/bngTransform.mjs " +
   "to your assets and set the MapLibre provider's crsWorkerUrl option. See https://defra.github.io/interactive-map/api#crsworkerurl"
 
 let registration = null
