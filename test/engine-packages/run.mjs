@@ -88,11 +88,13 @@ const copyCss = (packageDir, outDir) => {
   })
 }
 
-const writePage = ({ outDir, packageDir, engine, scripts, mapProviderOptions = {} }) => {
+// A check's view (centre, zoom, test area and provider options) replaces the engine's
+const writePage = ({ outDir, packageDir, engine, check, scripts, mapProviderOptions = {} }) => {
   const stylesheets = copyCss(packageDir, outDir)
   fs.copyFileSync(path.join(FIXTURE, 'style.json'), path.join(outDir, 'style.json'))
   fs.copyFileSync(path.join(FIXTURE, 'page.css'), path.join(outDir, 'page.css'))
-  const config = { mapStyle: engine.mapStyle, center: engine.center, zoom: engine.zoom, mapProviderOptions }
+  const { center, zoom, testArea, mapProviderOptions: viewOptions } = { ...engine, ...check.view }
+  const config = { mapStyle: engine.mapStyle, center, zoom, testArea, mapProviderOptions: { ...viewOptions, ...mapProviderOptions } }
 
   fs.writeFileSync(path.join(outDir, 'index.html'), `<!doctype html>
 <html lang="en">
@@ -112,7 +114,7 @@ ${scripts.map(({ src, module }) => `  <script nonce="__NONCE__" ${module ? 'type
 }
 
 // Copies the UMD scripts as a service would, renaming each entry script with a content hash
-const buildUMD = async ({ engine, packageDir, outDir }) => {
+const buildUMD = async ({ engine, check, packageDir, outDir }) => {
   const entries = [['core', 'dist/umd'], ['datasets', 'plugins/datasets/dist/umd'], ['draw', 'plugins/draw/dist/umd']]
   const scripts = entries.map(([name, dir]) => {
     const to = path.join(outDir, name)
@@ -133,21 +135,25 @@ const buildUMD = async ({ engine, packageDir, outDir }) => {
   scripts.push({ src: `app.${contentHash(path.join(outDir, 'app.js'))}.js` })
   fs.renameSync(path.join(outDir, 'app.js'), path.join(outDir, scripts.at(-1).src))
 
-  writePage({ outDir, packageDir, engine, scripts })
+  writePage({ outDir, packageDir, engine, check, scripts })
+}
+
+// Copies a file into the build with a content hash in its name, as a service would, and returns its URL
+const copyFingerprinted = (file, outDir) => {
+  const name = `${path.basename(file, '.mjs')}.${contentHash(file)}.mjs`
+  fs.copyFileSync(file, path.join(outDir, name))
+  return `/${name}`
 }
 
 const buildWithBundler = async ({ engine, check, projectDir, packageDir, outDir }) => {
   fs.writeFileSync(path.join(projectDir, 'src/main.js'), engine.entry)
   const { scripts } = await bundlers[check.bundler]({ projectDir, entry: path.join(projectDir, 'src/main.js'), outDir })
 
-  let mapProviderOptions
-  if (check.copyWorker) {
-    const worker = path.join(projectDir, 'node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs')
-    const name = `maplibre-gl-worker.${contentHash(worker)}.mjs`
-    fs.copyFileSync(worker, path.join(outDir, name))
-    mapProviderOptions = { workerUrl: `/${name}` }
+  const mapProviderOptions = {
+    ...(check.copyWorker && { workerUrl: copyFingerprinted(path.join(projectDir, 'node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs'), outDir) }),
+    ...(check.copyBngScript && { crsWorkerUrl: copyFingerprinted(path.join(packageDir, 'dist/esm/bngTransform.mjs'), outDir) })
   }
-  writePage({ outDir, packageDir, engine, scripts, mapProviderOptions })
+  writePage({ outDir, packageDir, engine, check, scripts, mapProviderOptions })
 }
 
 // === Serving under a CSP ===
@@ -249,7 +255,7 @@ const evaluate = (check, result) => {
   const ignoredRequests = check.expectFailedRequest ? result.failedRequests.filter(url => url.includes(check.expectFailedRequest)) : []
   const lists = {
     'CSP violations': result.violations,
-    'page errors': result.pageErrors,
+    'page errors': check.expectPageError ? [] : result.pageErrors,
     'console errors': check.expectConsoleError ? [] : unexpectedErrors,
     'failed requests': result.failedRequests.filter(url => !ignoredRequests.includes(url))
   }
@@ -303,7 +309,7 @@ const main = async () => { // NOSONAR - runs the checks in order, splitting it w
         let failures
         try { // NOSONAR - each check reports its own build or run failure
           if (check.bundler === 'umd') {
-            await buildUMD({ engine, packageDir, outDir })
+            await buildUMD({ engine, check, packageDir, outDir })
           } else {
             await buildWithBundler({ engine, check, projectDir, packageDir, outDir })
           }

@@ -12,11 +12,6 @@ import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 import { shieldSymbolSvg } from './customSymbols.js'
 
-// Temporary: the outdoor style from farming-data, whose OS NGD tiles swap in the real OS features
-// at the deepest zooms, instead of OS's rounded copies. Its source is an OGC tileset, hence ogc-vt.
-const NGD_OUTDOOR_URL = 'https://farming-data-7db3d1889632.herokuapp.com/tiles/collections/ngd-base/styles/outdoor-27700'
-const mapStyles = vtsMapStyles27700.map(mapStyle => mapStyle.id === 'outdoor' ? { ...mapStyle, type: 'ogc-vt', url: NGD_OUTDOOR_URL } : mapStyle)
-
 const FARMING_TILES_URL = 'https://farming-tiles-702a60f45633.herokuapp.com'
 const FARMING_API_URL = process.env.FARMING_API_URL
 const SBI = 106325052 // Same farm as demo/js/index.js's land-covers
@@ -169,7 +164,7 @@ const datasetsPlugin = createDatasetsPlugin({
     // ground) — index.js's minZoom:10/maxZoom:24 (Mercator) become roughly minZoom:5/maxZoom:19
     // here, per the farming-tiles server's own conversion guidance. Tune to taste.
     minZoom: 5,
-    maxZoom: 23,
+    maxZoom: 19,
     showInKey: true,
     showInMenu: true,
     style: {
@@ -187,7 +182,7 @@ const datasetsPlugin = createDatasetsPlugin({
     tiles: [`${FARMING_TILES_URL}/field_parcels_with_hedges_osgb36/{z}/{x}/{y}`],
     sourceLayer: 'hedge_control',
     minZoom: 5,
-    maxZoom: 23,
+    maxZoom: 19,
     showInKey: true,
     showInMenu: true,
     style: {
@@ -244,14 +239,14 @@ const datasetsPlugin = createDatasetsPlugin({
 
 const interactiveMap = new InteractiveMap('map', {
   behaviour: 'hybrid',
-  mapProvider: openLayersProvider({ zoomAlignment: 'world' }),
+  mapProvider: openLayersProvider(),
   reverseGeocodeProvider: openNamesProvider({
     url: process.env.OS_NEAREST_URL,
     transformRequest: transformGeocodeRequest
   }),
   mapLabel: 'Field parcels and land use map (OpenLayers)',
   minZoom: 6,
-  maxZoom: 23,
+  maxZoom: 20,
   autoColorScheme: true,
   bounds: BOUNDS,
   containerHeight: '650px',
@@ -270,14 +265,14 @@ const interactiveMap = new InteractiveMap('map', {
     datasetsPlugin,
     createMapKeyPlugin(),
     mapStylesPlugin({
-      mapStyles
+      mapStyles: vtsMapStyles27700
     }),
     interactPlugin
   ]
 })
 
 interactiveMap.on('app:ready', function (e) {
-  // interactiveMap.showHint('My hint', { duration: 0 })
+  interactiveMap.showHint('My hint', { duration: 0 })
 })
 
 interactiveMap.on('map:ready', function (e) {
