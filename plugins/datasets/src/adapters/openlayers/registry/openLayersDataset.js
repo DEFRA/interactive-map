@@ -34,6 +34,7 @@ export class OpenLayersDataset extends MapboxStyleDataset {
       return {
         type: 'vector',
         tiles: this.tiles,
+        tileMatrixSet: this.tileMatrixSet,
         minzoom: this.minZoom || 0,
         maxzoom: this.maxZoom || MAX_TILE_ZOOM
       }

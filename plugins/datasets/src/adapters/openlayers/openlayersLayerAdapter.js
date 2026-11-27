@@ -177,18 +177,45 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
   }
 
   setData (datasetId, geojson) {
-    const registryDataset = this._datasetRegistry.getDataset(datasetId)
-    const olSource = registryDataset && this._sourcesById.get(registryDataset.sourceId)
+    const { olSource, idStrategy } = this._getGeoJSONSource(datasetId) ?? {}
     if (!olSource) {
       return
     }
     olSource.clear()
     if (geojson?.features?.length) {
-      olSource.addFeatures(readGeoJSONFeatures(geojson, registryDataset.idStrategy))
+      olSource.addFeatures(readGeoJSONFeatures(geojson, idStrategy))
+    }
+  }
+
+  /**
+   * Add and remove features by id, leaving the rest of the dataset's features in place.
+   * @param {string} datasetId
+   * @param {{ add: Object[], remove: Array }} changes - Features to add, and IDs of features to remove
+   */
+  updateData (datasetId, { add, remove }) {
+    const { olSource, idStrategy } = this._getGeoJSONSource(datasetId) ?? {}
+    if (!olSource) {
+      return
+    }
+    remove.forEach(featureId => {
+      const feature = olSource.getFeatureById(featureId)
+      if (feature) {
+        olSource.removeFeature(feature)
+      }
+    })
+    if (add.length) {
+      olSource.addFeatures(readGeoJSONFeatures({ type: 'FeatureCollection', features: add }, idStrategy))
     }
   }
 
   // ─── Private ─────────────────────────────────────────────────────────────────
+
+  // The dataset's OL source, and how its GeoJSON features get their ids
+  _getGeoJSONSource (datasetId) {
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
+    const olSource = registryDataset && this._sourcesById.get(registryDataset.sourceId)
+    return olSource ? { olSource, idStrategy: registryDataset.idStrategy } : null
+  }
 
   // Registers each pattern's fill with the OL provider ahead of time, at the map's current
   // pixelRatio, so resolveLayerStyle (synchronous) can find it already resolved — mirrors

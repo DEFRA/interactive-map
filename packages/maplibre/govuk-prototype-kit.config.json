@@ -1,4 +1,19 @@
 {
+  "assets": [
+    "/assets/images",
+    "/dist",
+    "/providers/open-names/dist",
+    "/plugins/datasets/dist",
+    "/plugins/draw/dist",
+    "/plugins/frame/dist",
+    "/plugins/interact/dist",
+    "/plugins/map-key/dist",
+    "/plugins/map-styles/dist",
+    "/plugins/menu/dist",
+    "/plugins/scale-bar/dist",
+    "/plugins/search/dist",
+    "/plugins/use-location/dist"
+  ],
   "templates": [
     {
       "name": "Basic map",
@@ -55,23 +70,5 @@
       "path": "/assets/templates/add-polygons.njk",
       "type": "nunjucks"
     }
-  ],
-  "assets": [
-    "/assets/",
-    "/dist/css/",
-    "/dist/umd/",
-    "/providers/maplibre/dist",
-    "/plugins/interact/dist",
-    "/plugins/search/dist",
-    "/plugins/draw/dist",
-    "/providers/open-names/dist",
-    "/providers/openlayers/dist",
-    "/plugins/datasets/dist",
-    "/plugins/map-key/dist",
-    "/plugins/menu/dist",
-    "/plugins/map-styles/dist",
-    "/plugins/scale-bar/dist",
-    "/plugins/use-location/dist",
-    "/plugins/frame/dist"
   ]
 }

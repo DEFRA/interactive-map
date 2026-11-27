@@ -608,7 +608,7 @@ const mapKeyPlugin = createMapKeyPlugin({
   groups: {
     'surface-water-depth-in-millimetres': {
       groupLabel: 'Surface water depth in millimetres',
-      groupStyle: 'horizontal-ramp'
+      groupStyle: 'ramp'
     }
   },
   manifest: {

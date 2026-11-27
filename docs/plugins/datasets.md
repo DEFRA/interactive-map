@@ -2,11 +2,8 @@
 
 The datasets plugin renders GeoJSON and vector tile datasets on the map, with support for polygon, line, and symbol (point) layer types, sublayer style rules, layer visibility toggling, and runtime style and data updates.
 
-> [!IMPORTANT]
-> **Upgrading?** This plugin no longer renders key of symbols itself — that button and panel have been removed. Add the [Map Key](./map-key.md) plugin to restore it. Your `showInKey` config is unaffected and needs no changes.
-
-> [!IMPORTANT]
-> **Using a bundler (ESM)?** This plugin includes adapters for more than one map provider, so your bundler needs to ignore the map engines you haven't installed. See [Bundler configuration](../getting-started.md#bundler-configuration-esm).
+> [!NOTE]
+> To show a key of the datasets' symbols, also add the [Map Key](./map-key.md) plugin. Datasets and sublayers with `showInKey: true` appear in the key.
 
 ## ESM usage
 
@@ -66,7 +63,6 @@ const datasetsPlugin = defra.datasetsPlugin({
 })
 
 const interactiveMap = new defra.InteractiveMap('map', {
-  mapProvider: defra.maplibreProvider(),
   plugins: [datasetsPlugin]
 })
 ```
@@ -138,12 +134,12 @@ For data that needs authentication headers or viewport-based filtering, use `dyn
 
 **Type:** `Object`
 
-Enables dynamic, bbox-aware GeoJSON fetching — the plugin calls your API as the map pans and zooms, loading features for the current viewport and evicting distant ones. Configure this instead of `geojson` when your data is too large to load all at once.
+Enables dynamic, bbox-aware GeoJSON fetching — the plugin calls your API as the map pans and zooms, loading features for the current viewport and evicting distant ones. Configure this instead of `geojson` when your data is too large to load all at once. A feature that's already held is kept as it is when a later fetch returns it again; use [`refreshDataset`](#refreshdatasetdatasetid) to reload changed data.
 
 | Property | Type | Description |
 |----------|------|-------------|
 | `url` | `string` | **Required.** Base URL for the GeoJSON API endpoint |
-| `idProperty` | `string` | **Required.** Property name that uniquely identifies each feature. Used for deduplication across viewport fetches |
+| `idProperty` | `string` | **Required.** Property name that uniquely identifies each feature. Used to deduplicate features across viewport fetches, and to add and remove individual features as the map moves. A feature without this property is identified by its own `id` |
 | `transformRequest` | `Function` | Called before each fetch. Return a URL string or `{ url, headers }` object to add auth headers or modify the URL |
 | `maxFeatures` | `number` | Optional. Cap on features held in memory across all viewport fetches. Older out-of-viewport features are evicted when exceeded |
 
@@ -191,6 +187,25 @@ Vector tile URL template or array of templates (e.g. `'https://example.com/tiles
 **Type:** `string`
 
 The layer name within the vector tile source to render. Required when using `tiles`.
+
+---
+
+### `tileMatrixSet`
+
+**Type:** `{ origin: [number, number], extentAtZoom0: number }`
+
+The tile grid the `tiles` are cut on: a square grid where zoom 0 is a single tile and each zoom level splits every tile into four. `origin` is the top-left corner of tile `0/0/0` and `extentAtZoom0` is its width, both in EPSG:27700 metres.
+
+Defaults to the OS National Grid tile grid, `{ origin: [-238375, 1376256], extentAtZoom0: 1835008 }`, where tile `z/x/y` is OS tile `(z-3)/x/y`. For tiles cut by a PostGIS function with `ST_TileEnvelope`, these are the bounds `ST_MakeEnvelope(-238375, -458752, 1596633, 1376256, 27700)`.
+
+```js
+tileMatrixSet: {
+  origin: [0, 1300000],
+  extentAtZoom0: 1300000
+}
+```
+
+> OpenLayers only. MapLibre uses the Web Mercator tile grid.
 
 ---
 
@@ -691,7 +706,7 @@ const opacity = datasetsPlugin.getOpacity({ datasetId: 'my-parcels', sublayerId:
 
 ### `setData(geojson, scope)`
 
-Replace the GeoJSON data for a dataset source. Has no effect on vector tile datasets.
+Replace the GeoJSON data for a dataset source. Has no effect on vector tile or `dynamicGeoJSON` datasets.
 
 | Argument | Type | Description |
 |----------|------|-------------|
@@ -703,6 +718,20 @@ datasetsPlugin.setData(
   { type: 'FeatureCollection', features: [...] },
   { datasetId: 'my-parcels' }
 )
+```
+
+---
+
+### `refreshDataset(datasetId)`
+
+Reload a `dynamicGeoJSON` dataset: clear the features it holds and fetch the current viewport again. Features that are already held aren't replaced by later fetches, so use this when the data behind the API has changed. Has no effect on other datasets.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `datasetId` | `string` | ID of the dataset to reload |
+
+```js
+datasetsPlugin.refreshDataset('land-parcels')
 ```
 
 ---

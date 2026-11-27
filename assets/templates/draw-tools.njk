@@ -31,7 +31,6 @@
 {% block pageScripts %}
   <!-- Defra library scripts -->
   <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
-  <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/interact/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/draw/dist/umd/index.js"></script>
 
@@ -54,7 +53,6 @@
 
     const interactiveMap = new defra.InteractiveMap('map', {
       behaviour: 'hybrid',
-      mapProvider: defra.maplibreProvider(),
       mapStyle: {
         id: 'default',
         url: 'https://tiles.openfreemap.org/styles/liberty',

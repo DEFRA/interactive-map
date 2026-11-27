@@ -42,6 +42,15 @@ describe('setData', () => {
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('tiles-dataset'))
   })
 
+  it('warns and does nothing when dataset is a dynamic GeoJSON dataset', () => {
+    datasetRegistry.getDataset.mockReturnValue({ id: 'dynamic-dataset', hasDynamicGeoJSON: true })
+
+    setData({ pluginState: { datasetRegistry }, mapProvider: { datasets: layerAdapter } }, geojson, { datasetId: 'dynamic-dataset' })
+
+    expect(layerAdapter.setData).not.toHaveBeenCalled()
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('refreshDataset'))
+  })
+
   it("doesn't throw when layerAdapter is undefined", () => {
     datasetRegistry.getDataset.mockReturnValue({ id: 'my-dataset' })
     // Should not throw even if layerAdapter is undefined
