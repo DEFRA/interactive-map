@@ -110,6 +110,13 @@ describe('splitPolygon', () => {
     expect(splitPolygon(polygon, line)).toBeNull()
   })
 
+  test('returns null when a piece is too small to be a polygon', () => {
+    polygonSplitter.mockReturnValue({
+      geometry: { type: 'MultiPolygon', coordinates: [twoPolygonResult.geometry.coordinates[0], [[[4, 0], [4, 4], [4, 0]]]] }
+    })
+    expect(splitPolygon(polygon, line)).toBeNull()
+  })
+
   test('derives the base id from properties.id then a default', () => {
     polygonSplitter.mockReturnValue(twoPolygonResult)
 

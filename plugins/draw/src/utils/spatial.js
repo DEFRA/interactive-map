@@ -49,6 +49,9 @@ function extendLine (line, fraction = 0.01) {
   return turfLineString(coords)
 }
 
+// The fewest positions a polygon ring can have: three corners, then the first again to close it
+const MIN_RING_POSITIONS = 4
+
 /**
  * Split a polygon using a line.
  * Only accepts splits that result in exactly two polygons.
@@ -72,6 +75,10 @@ const splitPolygon = (polygon, line) => {
   let polygons = []
   if (result.geometry.type === 'MultiPolygon') {
     if (result.geometry.coordinates.length !== 2) {
+      return null
+    }
+    // A line that grazes a vertex or an edge can leave a piece too small to be a polygon
+    if (result.geometry.coordinates.some(rings => rings.some(ring => ring.length < MIN_RING_POSITIONS))) {
       return null
     }
     polygons = result.geometry.coordinates.map(coords => turfPolygon(coords, polygon.properties))
