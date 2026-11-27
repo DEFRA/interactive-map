@@ -461,10 +461,111 @@ describe('live invalid stroke (edit mode)', () => {
 describe('_previewValidator accessor', () => {
   test('stores the preview validator on the map for modes to read, and reads it back', () => {
     const { adapter, map } = setup()
-    const validator = () => true
+    const validator = jest.fn(() => true)
     adapter._previewValidator = validator
-    expect(map._drawPreviewValidator).toBe(validator)
+    const feature = { type: 'Feature', geometry: { type: 'Point', coordinates: [1, 2] } }
+    expect(map._drawPreviewValidator({ feature, phase: 'place' })).toBe(true)
+    expect(validator).toHaveBeenCalledWith({ feature, phase: 'place' })
     expect(adapter._previewValidator).toBe(validator)
+  })
+
+  test('clears the map copy when the validator is cleared', () => {
+    const { adapter, map } = setup()
+    adapter._previewValidator = () => true
+    adapter._previewValidator = null
+    expect(map._drawPreviewValidator).toBeNull()
+    expect(adapter._previewValidator).toBeNull()
+  })
+})
+
+describe('map CRS conversion', () => {
+  // A map whose CRS coordinates are lng/lat × 1000
+  const setupProjected = () => {
+    const context = setup()
+    Object.assign(context.mapProvider, {
+      geojsonToLngLat: (geojson) => convertGeoJSON(geojson, ([x, y]) => [x / 1000, y / 1000]),
+      geojsonFromLngLat: (geojson) => convertGeoJSON(geojson, ([x, y]) => [x * 1000, y * 1000])
+    })
+    return context
+  }
+  const convertPositions = (coordinates, convert) => typeof coordinates[0] === 'number'
+    ? convert(coordinates)
+    : coordinates.map(child => convertPositions(child, convert))
+  const convertGeoJSON = (geojson, convert) => {
+    if (!geojson) { return geojson }
+    if (geojson.type === 'Feature') { return { ...geojson, geometry: convertGeoJSON(geojson.geometry, convert) } }
+    return { ...geojson, coordinates: convertPositions(geojson.coordinates, convert) }
+  }
+  const lngLatPoint = { id: 'a', type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [1, 2] } }
+  const mapPoint = { id: 'a', type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [1000, 2000] } }
+
+  test('add() gives mapbox-gl-draw lng/lat', () => {
+    const { adapter, draw } = setupProjected()
+    adapter.add({ ...mapPoint, properties: { sortKey: 1 } })
+    expect(draw.add).toHaveBeenCalledWith({ ...lngLatPoint, properties: { sortKey: 1 } })
+  })
+
+  test('get() returns the map CRS', () => {
+    const { adapter, draw } = setupProjected()
+    draw.get.mockReturnValue(lngLatPoint)
+    expect(adapter.get('a')).toEqual(mapPoint)
+  })
+
+  test('get() returns undefined for a missing feature', () => {
+    const { adapter, draw } = setupProjected()
+    draw.get.mockReturnValue(undefined)
+    expect(adapter.get('missing')).toBeUndefined()
+  })
+
+  test('setStyle() re-adds the stored lng/lat without converting it again', () => {
+    const { adapter, draw } = setupProjected()
+    draw.get.mockReturnValue({ ...lngLatPoint, properties: { sortKey: 1 } })
+    adapter.setStyle('a', { stroke: 'red' })
+    expect(draw.add).toHaveBeenCalledWith({ ...lngLatPoint, properties: { sortKey: 1, stroke: 'red' } })
+  })
+
+  test('setGeometry() gives the mode lng/lat', () => {
+    const { adapter, map } = setupProjected()
+    adapter.setGeometry(mapPoint.geometry)
+    expect(map.fire).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.SET_GEOMETRY, { geometry: lngLatPoint.geometry })
+  })
+
+  test('created, updated and finished features are emitted in the map CRS', () => {
+    jest.useFakeTimers()
+    const { map, draw, bus } = setupProjected()
+    draw.get.mockReturnValue(lngLatPoint)
+    onHandler(map, MAPBOX_DRAW_EVENTS.CREATE)({ features: [lngLatPoint] })
+    jest.runAllTimers()
+    onHandler(map, MAPBOX_DRAW_EVENTS.UPDATE)({ features: [lngLatPoint] })
+    onHandler(map, CUSTOM_DRAW_EVENTS.EDIT_FINISH)({ features: [lngLatPoint] })
+    expect(bus.emit).toHaveBeenCalledWith('create', mapPoint)
+    expect(bus.emit).toHaveBeenCalledWith('update', mapPoint)
+    expect(bus.emit).toHaveBeenCalledWith('editfinish', mapPoint)
+    jest.useRealTimers()
+  })
+
+  test('commit-level geometry changes and blocked placements carry the map CRS feature', () => {
+    const { map, bus } = setupProjected()
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: lngLatPoint, phase: 'change', vertexIndex: 0 })
+    onHandler(map, CUSTOM_DRAW_EVENTS.PLACEMENT_BLOCKED)({ type: 'draw.placementblocked', target: map, feature: lngLatPoint, reason: 'No', phase: 'place' })
+    expect(bus.emit).toHaveBeenCalledWith('geometrychange', { feature: mapPoint, phase: 'change', vertexIndex: 0 })
+    expect(bus.emit).toHaveBeenCalledWith('placementblocked', { feature: mapPoint, reason: 'No', phase: 'place' })
+  })
+
+  test('the preview validator the modes call gets the map CRS feature', () => {
+    const { adapter, map } = setupProjected()
+    const validator = jest.fn(() => ({ valid: true }))
+    adapter._previewValidator = validator
+    map._drawPreviewValidator({ feature: lngLatPoint, phase: 'place', mode: 'draw_point' })
+    expect(validator).toHaveBeenCalledWith({ feature: mapPoint, phase: 'place', mode: 'draw_point' })
+  })
+
+  test('getVertexItems() returns map CRS vertices and midpoints', () => {
+    const { adapter, draw } = setupProjected()
+    draw.getMode.mockReturnValue('edit_vertex')
+    adapter.changeMode('edit_vertex', { featureId: 'line' })
+    draw.get.mockReturnValue({ id: 'line', geometry: { type: 'LineString', coordinates: [[0, 0], [2, 2]] } })
+    expect(adapter.getVertexItems()).toEqual({ vertices: [[0, 0], [2000, 2000]], midpoints: [[1000, 1000]] })
   })
 })
 
@@ -968,6 +1069,20 @@ describe('cancel', () => {
     adapter.cancel()
     expect(draw.trash).not.toHaveBeenCalled()
     expect(draw.changeMode).toHaveBeenCalledWith('disabled')
+  })
+
+  test.each(['draw_polygon', 'draw_line', 'draw_point'])('cancelling %s emits cancel, as the OL adapter does', (mode) => {
+    const { adapter, draw, bus } = setup()
+    draw.getMode.mockReturnValue(mode)
+    adapter.cancel()
+    expect(bus.emit).toHaveBeenCalledWith('cancel')
+  })
+
+  test.each(['edit_vertex', 'edit_point', 'disabled'])('cancelling %s does not emit cancel', (mode) => {
+    const { adapter, draw, bus } = setup()
+    draw.getMode.mockReturnValue(mode)
+    adapter.cancel()
+    expect(bus.emit).not.toHaveBeenCalledWith('cancel')
   })
 })
 

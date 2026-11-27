@@ -3,16 +3,17 @@ export default {
   collectCoverage: true,
   coverageDirectory: 'coverage',
   cacheDirectory: '.jest-cache',
-  transform: {
-    '\\.jsx?$': 'babel-jest',
-    '\\.mjs$': 'babel-jest'
-  },
   collectCoverageFrom: [
-    '**/*.{js,jsx}'
+    '**/*.{js,jsx}',
+    // Source modules written as .mjs, such as the MapLibre provider's bngTransform.mjs
+    '{src,plugins,providers}/**/*.mjs'
   ],
   projects: [{
     displayName: 'unit-tests',
     testEnvironment: 'jsdom',
+    transform: {
+      '\\.m?jsx?$': 'babel-jest'
+    },
     setupFilesAfterEnv: ['jest-expect-message', '<rootDir>/jest.setup.js'],
     testMatch: [
       '<rootDir>/src/**/*.test.[jt]s?(x)',
@@ -41,7 +42,7 @@ export default {
       '<rootDir>/plugins/scale-bar',
       '<rootDir>/plugins/use-location',
       '<rootDir>/.docusaurus',
-      '<rootDir>/build/assets/js',
+      '<rootDir>/build/',
       '/dist/'
     ],
     // maplibre-gl only exports an `import` condition, which Jest's resolver does not use

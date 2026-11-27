@@ -285,6 +285,28 @@ describe('setData', () => {
     expect(map.getSource(ds.sourceId).setData).toHaveBeenCalledWith(geojson)
   })
 
+  describe('on a map in another CRS', () => {
+    const toLngLat = (geojson) => ({ ...geojson, lngLat: true })
+    const first = { type: 'Feature', id: 1, properties: { id: 1 } }
+    const second = { type: 'Feature', id: 2, properties: { id: 2 } }
+    const source = () => map.getSource(datasetRegistry.getDataset('land-covers').sourceId)
+    beforeEach(() => Object.assign(mapProvider, { crs: 'EPSG:27700', geojsonToLngLat: jest.fn(toLngLat) }))
+
+    it('converts each feature once, however many updates include it', () => {
+      adapter.setData('land-covers', { type: 'FeatureCollection', features: [first] })
+      adapter.updateData('land-covers', { add: [second], remove: [] })
+      adapter.setData('land-covers', { type: 'FeatureCollection', features: [first, second] })
+      expect(mapProvider.geojsonToLngLat).toHaveBeenCalledTimes(2)
+      expect(source().updateData).toHaveBeenCalledWith({ add: [toLngLat(second)], remove: [] })
+      expect(source().setData).toHaveBeenLastCalledWith({ type: 'FeatureCollection', features: [toLngLat(first), toLngLat(second)] })
+    })
+
+    it('converts GeoJSON that isn\'t a FeatureCollection as a whole', () => {
+      adapter.setData('land-covers', { type: 'Point', coordinates: [1, 2] })
+      expect(source().setData).toHaveBeenCalledWith(toLngLat({ type: 'Point', coordinates: [1, 2] }))
+    })
+  })
+
   describe('on a dynamic dataset, whose idProperty is \'id\'', () => {
     const withIdProperty = { type: 'Feature', id: 1, properties: { id: 1 } }
     const withoutIdProperty = { type: 'Feature', id: 2, properties: {} }

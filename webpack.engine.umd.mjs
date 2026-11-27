@@ -32,6 +32,8 @@ const createEngineUMDConfig = (engineName, engine, b, replacements) => {
   config.output.chunkFilename = '[name].[contenthash:8].js'
   const workerRule = config.module.rules.find(rule => String(rule.test).includes('maplibre-gl-worker'))
   workerRule.generator.filename = 'im-maplibre-worker.[contenthash:8].js'
+  const bngWorkerRule = config.module.rules.find(rule => String(rule.test).includes('bngTransform'))
+  bngWorkerRule.generator.filename = 'im-maplibre-bng-worker.[contenthash:8].js'
   config.plugins.push(engineAdapterPlugin(replacements))
 
   // Its own cache: the normal UMD build's would hand back its fixed file names

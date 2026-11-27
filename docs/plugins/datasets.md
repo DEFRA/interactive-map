@@ -205,7 +205,7 @@ tileMatrixSet: {
 }
 ```
 
-> OpenLayers only. MapLibre uses the Web Mercator tile grid.
+> OpenLayers only. MapLibre uses the map's own tile grid: Web Mercator, or the OS National Grid on an `EPSG:27700` map.
 
 ---
 

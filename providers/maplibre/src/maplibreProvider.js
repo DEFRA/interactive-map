@@ -14,6 +14,9 @@ import { queryFeatures } from './utils/queryFeatures.js'
 import { setupHoverCursor } from './utils/hoverCursor.js'
 import { SymbolImageVariants, getSymbolIconLayout } from './utils/symbolImages.js'
 import { PatternImages } from './utils/patternImages.js'
+import { BNG_CRS, BNG_RESOLUTION_AT_ZOOM_0 } from './utils/bngProjection.js'
+import { createCoordinateConverter } from './utils/coordinates.js'
+import { getZoomOffset } from './utils/zoom.js'
 
 /**
  * MapLibre GL JS implementation of the MapProvider interface.
@@ -39,6 +42,10 @@ export default class MapLibreProvider extends MapProvider {
     }
     // Spread all config properties onto the instance
     Object.assign(this, mapProviderConfig)
+    // Converts between the map's CRS and the lng/lat MapLibre's own API uses
+    this.coordinates = createCoordinateConverter(this.crsProjection)
+    // Added to API zooms to get MapLibre's own, so EPSG:27700 zooms match the other providers'
+    this.zoomOffset = getZoomOffset(this.crs, this.zoomAlignment)
   }
 
   get name () {
@@ -52,7 +59,7 @@ export default class MapLibreProvider extends MapProvider {
    * @returns {Promise<void>}
    */
   async initMap (config) {
-    const { container, padding, mapStyle, mapSize, center, zoom, bounds, pixelRatio, ...initConfig } = config
+    const { container, padding, mapStyle, mapSize, center, zoom, bounds, pixelRatio, minZoom, maxZoom, ...initConfig } = config
     this.mapStyleId = mapStyle?.id
     this.mapSize = mapSize
     const { Map: MaplibreMap } = this.maplibreModule
@@ -62,10 +69,16 @@ export default class MapLibreProvider extends MapProvider {
       ...initConfig,
       container,
       style: mapStyle?.url,
+      // Kept by MapLibre for later setStyle calls, so switched styles render in the same projection
+      ...(this.crs === BNG_CRS && {
+        transformStyle: (_previousStyle, nextStyle) => ({ ...nextStyle, projection: { type: 'EPSG:27700' } })
+      }),
       pixelRatio,
       padding,
-      center,
-      zoom,
+      center: center && this.coordinates.toLngLat(center),
+      zoom: this.toMapLibreZoom(zoom),
+      ...(minZoom !== undefined && { minZoom: this.toMapLibreZoom(minZoom) }),
+      ...(maxZoom !== undefined && { maxZoom: this.toMapLibreZoom(maxZoom) }),
       fadeDuration: 0,
       attributionControl: false,
       dragRotate: false,
@@ -83,9 +96,15 @@ export default class MapLibreProvider extends MapProvider {
     // Set padding before bounds
     this.map.setPadding(padding)
 
-    // Set bounds after padding
+    // Set bounds after padding. A registered projection only applies once the style has loaded, so
+    // fitting the bounds before then would choose a Web Mercator zoom.
     if (bounds) {
-      map.fitBounds(bounds, { duration: 0 })
+      const fitInitialBounds = () => map.fitBounds(this.coordinates.bboxToLngLat(bounds), { duration: 0 })
+      if (this.crs === BNG_CRS) {
+        map.once('style.load', fitInitialBounds)
+      } else {
+        fitInitialBounds()
+      }
     }
 
     applyPreventDefaultFix(map)
@@ -98,7 +117,9 @@ export default class MapLibreProvider extends MapProvider {
       getCenter: this.getCenter.bind(this),
       getZoom: this.getZoom.bind(this),
       getBounds: this.getBounds.bind(this),
-      getResolution: this.getResolution.bind(this)
+      getResolution: this.getResolution.bind(this),
+      fromLngLat: this.coordinates.fromLngLat,
+      zoomOffset: this.zoomOffset
     })
 
     attachAppEvents({
@@ -158,13 +179,13 @@ export default class MapLibreProvider extends MapProvider {
    * Set map view with optional center and zoom.
    *
    * @param {Object} options - View options.
-   * @param {[number, number]} [options.center] - Center coordinates [lng, lat].
+   * @param {[number, number]} [options.center] - Center coordinates in the map's CRS.
    * @param {number} [options.zoom] - Zoom level.
    */
   setView ({ center, zoom }) {
     this.map.flyTo({
-      center: center || this.getCenter(),
-      zoom: zoom || this.getZoom(),
+      center: this.coordinates.toLngLat(center || this.getCenter()),
+      zoom: this.toMapLibreZoom(zoom || this.getZoom()),
       duration: this.map.isStyleLoaded() ? DEFAULTS.animationDuration : 0
     })
   }
@@ -176,7 +197,7 @@ export default class MapLibreProvider extends MapProvider {
    */
   zoomIn (zoomDelta) {
     this.map.easeTo({
-      zoom: this.getZoom() + zoomDelta,
+      zoom: this.toMapLibreZoom(this.getZoom() + zoomDelta),
       duration: DEFAULTS.animationDuration
     })
   }
@@ -188,7 +209,7 @@ export default class MapLibreProvider extends MapProvider {
    */
   zoomOut (zoomDelta) {
     this.map.easeTo({
-      zoom: this.getZoom() - zoomDelta,
+      zoom: this.toMapLibreZoom(this.getZoom() - zoomDelta),
       duration: DEFAULTS.animationDuration
     })
   }
@@ -210,7 +231,9 @@ export default class MapLibreProvider extends MapProvider {
    * @param {{ top: number, right: number, bottom: number, left: number }} [options.padding] - Extra space in pixels kept around the bounds, inside the map's padding.
    */
   fitToBounds (bounds, { padding } = {}) {
-    const bbox = Array.isArray(bounds) ? bounds : getBboxFromGeoJSON(bounds)
+    const bbox = Array.isArray(bounds)
+      ? this.coordinates.bboxToLngLat(bounds)
+      : getBboxFromGeoJSON(this.coordinates.geojsonToLngLat(bounds))
     const duration = this.map.isStyleLoaded() ? DEFAULTS.animationDuration : 0
     this.map.fitBounds(bbox, { duration, ...(padding && { padding }) })
   }
@@ -237,7 +260,8 @@ export default class MapLibreProvider extends MapProvider {
    */
   updateHighlightedFeatures (selectedFeatures, activeFeatures, stylesMap) {
     const { LngLatBounds } = this.maplibreModule
-    return updateHighlightedFeatures({ LngLatBounds, map: this.map, selectedFeatures, activeFeatures, stylesMap, symbolImages: this.symbolImages })
+    const bounds = updateHighlightedFeatures({ LngLatBounds, map: this.map, selectedFeatures, activeFeatures, stylesMap, symbolImages: this.symbolImages })
+    return bounds && this.coordinates.bboxFromLngLat(bounds)
   }
 
   // ==========================
@@ -275,13 +299,13 @@ export default class MapLibreProvider extends MapProvider {
   // ==========================
 
   /**
-   * Get current center coordinates [lng, lat].
+   * Get current center coordinates in the map's CRS.
    *
    * @returns {[number, number]}
    */
   getCenter () {
-    const coord = this.map.getCenter()
-    return [Number(coord.lng.toFixed(DEFAULTS.coordinatePrecision)), Number(coord.lat.toFixed(DEFAULTS.coordinatePrecision))]
+    const { lng, lat } = this.map.getCenter()
+    return this.coordinates.fromLngLat([lng, lat]).map(value => Number(value.toFixed(DEFAULTS.coordinatePrecision)))
   }
 
   /**
@@ -290,15 +314,33 @@ export default class MapLibreProvider extends MapProvider {
    * @returns {number}
    */
   getZoom () {
-    return Number(this.map.getZoom().toFixed(DEFAULTS.coordinatePrecision))
+    return Number((this.map.getZoom() - this.zoomOffset).toFixed(DEFAULTS.coordinatePrecision))
   }
 
   /**
-   * Get current bounds as [west, south, east, north].
+   * Convert an API zoom to MapLibre's own zoom. They differ in EPSG:27700, where API zooms follow
+   * the zoomAlignment levels. An undefined zoom stays undefined.
+   *
+   * @param {number} [zoom]
+   * @returns {number|undefined}
+   */
+  toMapLibreZoom (zoom) {
+    return zoom === undefined || zoom === null ? zoom : zoom + this.zoomOffset
+  }
+
+  /**
+   * Get current bounds as [west, south, east, north] in the map's CRS.
    *
    * @returns {[number, number, number, number]}
    */
   getBounds () {
+    if (this.crs === BNG_CRS) {
+      // The view is a rectangle of eastings and northings, so its corners are exact
+      const { clientWidth, clientHeight } = this.map.getCanvas()
+      const [minX, minY] = this.screenToMap({ x: 0, y: clientHeight })
+      const [maxX, maxY] = this.screenToMap({ x: clientWidth, y: 0 })
+      return [minX, minY, maxX, maxY]
+    }
     return this.map.getBounds().toArray().flat(1)
   }
 
@@ -311,7 +353,7 @@ export default class MapLibreProvider extends MapProvider {
    * @returns {any[]}
    */
   getFeaturesAtPoint (point, options) {
-    return queryFeatures(this.map, point, options)
+    return this._toMapCrsFeatures(queryFeatures(this.map, point, options))
   }
 
   getVisibleFeatures (layerIds) {
@@ -319,7 +361,20 @@ export default class MapLibreProvider extends MapProvider {
     if (!presentLayers.length) {
       return []
     }
-    return this.map.queryRenderedFeatures(undefined, { layers: presentLayers })
+    return this._toMapCrsFeatures(this.map.queryRenderedFeatures(undefined, { layers: presentLayers }))
+  }
+
+  // MapLibre returns feature geometry in lng/lat; callers get it in the map's CRS. Each query
+  // returns new feature objects, so their geometry is replaced in place, which keeps MapLibre's
+  // own feature properties (layer, source, state). A lng/lat map's geometry isn't touched.
+  _toMapCrsFeatures (features) {
+    if (!this.crsProjection) {
+      return features
+    }
+    features.forEach(feature => {
+      feature.geometry = this.coordinates.geojsonFromLngLat(feature.geometry)
+    })
+    return features
   }
 
   /**
@@ -401,14 +456,14 @@ export default class MapLibreProvider extends MapProvider {
   }
 
   /**
-   * Get cardinal direction and distance between two coordinates [lng, lat]. Returns a formatted string (e.g., 'north 400m' or 'south 400m, west 750m').
+   * Get cardinal direction and distance between two coordinates in the map's CRS. Returns a formatted string (e.g., 'north 400m' or 'south 400m, west 750m').
    *
-   * @param {[number, number]} from - Start coordinates [lng, lat].
-   * @param {[number, number]} to - End coordinates [lng, lat].
+   * @param {[number, number]} from - Start coordinates in the map's CRS.
+   * @param {[number, number]} to - End coordinates in the map's CRS.
    * @returns {string}
    */
   getCardinalMove (from, to) {
-    return getCardinalMove(from, to)
+    return getCardinalMove(this.coordinates.toLngLat(from), this.coordinates.toLngLat(to))
   }
 
   /**
@@ -417,27 +472,50 @@ export default class MapLibreProvider extends MapProvider {
    * @returns {number}
    */
   getResolution () {
+    if (this.crs === BNG_CRS) {
+      return BNG_RESOLUTION_AT_ZOOM_0 / 2 ** this.map.getZoom()
+    }
     return getResolution(this.map.getCenter(), this.map.getZoom())
   }
 
   /**
-   * Convert map coordinates [lng, lat] to screen pixel position (x from left edge, y from top edge of viewport).
+   * Convert map coordinates in the map's CRS to screen pixel position (x from left edge, y from top edge of viewport).
    *
-   * @param {[number, number]} coords - Map coordinates [lng, lat].
+   * @param {[number, number]} coords - Map coordinates in the map's CRS.
    * @returns {{ x: number, y: number }} Screen pixel position.
    */
   mapToScreen (coords) {
-    return this.map.project(coords)
+    return this.map.project(this.coordinates.toLngLat(coords))
   }
 
   /**
-   * Convert screen pixel position (x from left edge, y from top edge of viewport) to map coordinates [lng, lat].
+   * Convert screen pixel position (x from left edge, y from top edge of viewport) to map coordinates in the map's CRS.
    *
    * @param {{ x: number, y: number }} point - Screen pixel position.
-   * @returns {[number, number]} Map coordinates [lng, lat].
+   * @returns {[number, number]} Map coordinates in the map's CRS.
    */
   screenToMap (point) {
     const { lng, lat } = this.map.unproject([point.x, point.y])
-    return [lng, lat]
+    return this.coordinates.fromLngLat([lng, lat])
+  }
+
+  /**
+   * Convert GeoJSON in the map's CRS to the lng/lat MapLibre's sources take. Returns it unchanged in EPSG:4326.
+   *
+   * @param {object} geojson - A GeoJSON FeatureCollection, Feature or geometry.
+   * @returns {object}
+   */
+  geojsonToLngLat (geojson) {
+    return this.coordinates.geojsonToLngLat(geojson)
+  }
+
+  /**
+   * Convert GeoJSON in MapLibre's lng/lat to the map's CRS. Returns it unchanged in EPSG:4326.
+   *
+   * @param {object} geojson - A GeoJSON FeatureCollection, Feature or geometry.
+   * @returns {object}
+   */
+  geojsonFromLngLat (geojson) {
+    return this.coordinates.geojsonFromLngLat(geojson)
   }
 }

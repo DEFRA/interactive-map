@@ -19,7 +19,7 @@ const DRAW_ADAPTER = 'plugins/draw/src/adapters/loadDrawAdapter.js'
  *   InteractiveMap creates the engine's provider, bundling the provider into the core build. The
  *   runtime adapter lookups become versions that import the engine's adapter directly, so it's
  *   bundled with its plugin and no other engine is referenced.
- * - providerChunk: the name of the provider's lazy file in the core build
+ * - providerChunk: the names of the provider's lazy files in the core build
  * - umd: whether the package has UMD scripts
  * - copy: folders copied into the package as they are, such as the GOV.UK Prototype Kit templates
  */
@@ -32,7 +32,11 @@ export const ENGINES = {
       [DATASETS_ADAPTER]: 'plugins/datasets/src/adapters/maplibre/importLayerAdapter.js',
       [DRAW_ADAPTER]: 'plugins/draw/src/adapters/maplibre/loadDrawAdapter.js'
     },
-    providerChunk: { maplibreProvider: 'im-maplibre-provider' },
+    providerChunk: {
+      maplibreProvider: 'im-maplibre-provider',
+      bngProjection: 'im-maplibre-bng-projection',
+      bngTransform: 'im-maplibre-bng'
+    },
     umd: true,
     copy: ['assets']
   },

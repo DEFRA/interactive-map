@@ -81,12 +81,18 @@ export default function createMapLibreProvider (config = {}) {
       }
       mapFramework.setWorkerUrl(workerUrl)
 
+      const crs = config.crs || 'EPSG:4326'
+      const crsProjection = crs === 'EPSG:27700'
+        ? await import(/* webpackChunkName: "im-maplibre-provider" */ './utils/bngProjection.js').then(({ registerBngProjection }) => registerBngProjection(mapFramework, config.crsWorkerUrl))
+        : null
+
       const MapProvider = (await import(/* webpackChunkName: "im-maplibre-provider" */ './maplibreProvider.js')).default
 
       /** @type {MapProviderConfig} */
       const mapProviderConfig = {
         ...config,
-        crs: 'EPSG:4326'
+        crs,
+        crsProjection
       }
 
       return {

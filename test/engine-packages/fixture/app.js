@@ -2,21 +2,13 @@
 // plugins, so their engine adapters load too. Reads its settings from the page's
 // #engine-config JSON and records progress on window.engineChecks for the check to read.
 
-const testArea = {
-  type: 'FeatureCollection',
-  features: [{
-    type: 'Feature',
-    properties: { name: 'Test area' },
-    geometry: {
-      type: 'Polygon',
-      coordinates: [[[-1.52, 52.99], [-1.48, 52.99], [-1.48, 53.01], [-1.52, 53.01], [-1.52, 52.99]]]
-    }
-  }]
-}
-
 export const startMap = ({ InteractiveMap, createDatasetsPlugin, createDrawPlugin }) => {
   const config = JSON.parse(document.getElementById('engine-config').textContent)
   const checks = window.engineChecks
+  const testArea = {
+    type: 'FeatureCollection',
+    features: [{ type: 'Feature', properties: { name: 'Test area' }, geometry: { type: 'Polygon', coordinates: [config.testArea] } }]
+  }
 
   const map = new InteractiveMap('map', {
     behaviour: 'inline',

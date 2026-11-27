@@ -409,6 +409,53 @@ With Rollup or esbuild, copy `node_modules/maplibre-gl/dist/maplibre-gl-worker.m
 mapProviderOptions: { workerUrl: '/your-assets-path/maplibre-gl-worker.mjs' }
 ```
 
+##### `crs`
+**Type:** `string`
+**Default:** `'EPSG:4326'`
+
+The coordinate system the map uses. Coordinates you give the map, and coordinates it gives back, are in this system.
+
+| Possible values | Description |
+| :--- | :--- |
+| `'EPSG:4326'` | Longitude and latitude. |
+| `'EPSG:27700'` | British National Grid eastings and northings. |
+
+On an `'EPSG:27700'` map, data from another coordinate system must be converted to eastings and northings before you add it, and vector tiles must be cut on the OS National Grid tile grid.
+
+> [!CAUTION]
+> `crs` is experimental. Setting it to `'EPSG:27700'` relies on MapLibre's experimental support for other projections. Do **not** use it in production unless fully tested.
+
+```js
+mapProviderOptions: { crs: 'EPSG:27700' }
+```
+
+##### `crsWorkerUrl`
+**Type:** `string`
+**Default:** `undefined`
+
+URL of the projection file an `'EPSG:27700'` map needs. This is set for you with webpack, Vite and the UMD scripts.
+
+With Rollup or esbuild, copy `node_modules/@defra/interactive-map/dist/esm/bngTransform.mjs` to your assets and set its URL here. If it's missing, the console explains this.
+
+```js
+mapProviderOptions: { crs: 'EPSG:27700', crsWorkerUrl: '/your-assets-path/bngTransform.mjs' }
+```
+
+##### `zoomAlignment`
+**Type:** `string`
+**Default:** `'uk'`
+
+Which zoom levels an `'EPSG:27700'` map uses. The values match the OpenLayers package's, so a zoom level shows the same scale with either package. Has no effect on an `'EPSG:4326'` map.
+
+| Possible values | Description |
+| :--- | :--- |
+| `'uk'` | OS tile grid zoom levels (0–13). Zoom 0 shows all of Great Britain. |
+| `'world'` | The same zoom levels as the ArcGIS SDK. All of the UK shows at about zoom 7. |
+
+```js
+mapProviderOptions: { crs: 'EPSG:27700', zoomAlignment: 'world' }
+```
+
 #### OpenLayers (`@defra/interactive-map-openlayers`)
 
 The map is always in British National Grid (EPSG:27700).

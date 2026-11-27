@@ -87,6 +87,20 @@ const webpackChunkNamesPlugin = () => ({
 })
 
 /**
+ * Copies modules referenced as `new URL('./name.mjs', import.meta.url)`, such as worker scripts,
+ * next to the chunks. Rollup leaves those URLs for the host's bundler, which emits the files.
+ */
+const copyUrlModulesPlugin = () => ({
+  name: 'copy-url-modules',
+  transform (code, id) {
+    for (const [, fileName] of code.matchAll(/new URL\('\.\/([^/']+\.mjs)', import\.meta\.url\)/g)) {
+      this.emitFile({ type: 'asset', fileName: `esm/${fileName}`, source: fs.readFileSync(path.resolve(path.dirname(id), fileName), 'utf8') })
+    }
+    return null
+  }
+})
+
+/**
  * Removes any *-full.css artefacts after the core build.
  * Mirrors the RemoveFilesPlugin (after) behaviour from webpack.esm.mjs.
  */
@@ -187,6 +201,8 @@ export const createESMConfig = (entryPath, outDir, isCore = false, manualChunks 
     plugins: [
       cleanPlugin(dirsToClean),
 
+      copyUrlModulesPlugin(),
+
       replace({
         'process.env.NODE_ENV': JSON.stringify('production'),
         preventAssignment: true
@@ -281,7 +297,8 @@ export const ALL_BUILDS = [
     entryPath: './providers/maplibre/src/index.js',
     outDir: 'providers/maplibre/dist/esm',
     // maplibre-gl is external; only the provider class itself becomes a chunk
-    manualChunks: (id) => id.includes('/maplibreProvider') ? 'im-maplibre-provider' : undefined
+    manualChunks: (id) => id.includes('/maplibreProvider') ? 'im-maplibre-provider' : undefined,
+    chunkNames: { bngTransform: 'im-maplibre-bng' }
   },
   {
     entryPath: './providers/open-names/src/index.js',

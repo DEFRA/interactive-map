@@ -1,6 +1,14 @@
 // OS Maps API WMTS tile grid for EPSG:27700 — used by the tile source only
 export const TILE_GRID_RESOLUTIONS = [896, 448, 224, 112, 56, 28, 14, 7, 3.5, 1.75, 0.875, 0.4375, 0.21875, 0.109375]
 
+// View resolutions for 'uk' zoom levels: the OS tile grid's, then on past its finest level, where
+// the map zooms further by stretching the finest tiles. Zoom 22 matches the MapLibre provider's limit.
+const UK_VIEW_ZOOM_LEVELS = 23
+export const UK_VIEW_RESOLUTIONS = Array.from({ length: UK_VIEW_ZOOM_LEVELS }, (_, zoom) => TILE_GRID_RESOLUTIONS[0] / 2 ** zoom)
+
+// The OS tile grid's finest level, the default maximum zoom for 'uk'
+export const UK_DEFAULT_MAX_ZOOM = TILE_GRID_RESOLUTIONS.length - 1
+
 // World (ESRI-derived) LOD resolutions for EPSG:27700. When used in the OL View,
 // view.zoom matches ESRI SDK zoom levels exactly. OL maps between view resolution
 // and the nearest OS tile grid level automatically when loading tiles.
