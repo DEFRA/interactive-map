@@ -47,6 +47,14 @@ describe('useKeyboardShortcuts', () => {
     expect(createKeyboardActions).not.toHaveBeenCalled()
   })
 
+  test('registers no shortcuts while turned off', () => {
+    const { containerRef } = setup()
+    const addSpy = jest.spyOn(containerRef.current, 'addEventListener')
+    renderHook(() => useKeyboardShortcuts(containerRef, { isEnabled: false }))
+    expect(createKeyboardActions).not.toHaveBeenCalled()
+    expect(addSpy).not.toHaveBeenCalled()
+  })
+
   test('registers shortcuts regardless of interface type', () => {
     const { containerRef } = setup()
     renderHook(() => useKeyboardShortcuts(containerRef))

@@ -41,8 +41,11 @@ export function toggleInertElements ({ containerEl, isFullscreen, boundaryEl = d
     return
   }
 
-  // Entering fullscreen: blur active element and inert all sibling branches
-  document.activeElement?.blur()
+  // Entering fullscreen: blur focus left on the page (focus already in the map
+  // stays put) and inert all sibling branches
+  if (!containerEl?.contains(document.activeElement)) {
+    document.activeElement?.blur()
+  }
 
   let el = containerEl
   while (el?.parentNode && el !== boundaryEl && el !== document.body) {

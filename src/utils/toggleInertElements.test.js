@@ -54,6 +54,15 @@ describe('toggleInertElements', () => {
     expect(document.activeElement).not.toBe(input)
   })
 
+  it('keeps focus that is already inside the container when fullscreen is true', () => {
+    const button = document.createElement('button')
+    container.appendChild(button)
+    button.focus()
+
+    toggleInertElements({ containerEl: container, isFullscreen: true, boundaryEl: boundary })
+    expect(document.activeElement).toBe(button)
+  })
+
   it('does nothing if containerEl is null', () => {
     toggleInertElements({ containerEl: null, isFullscreen: false, boundaryEl: boundary })
     expect(sibling1.hasAttribute('data-fm-inert')).toBe(false)

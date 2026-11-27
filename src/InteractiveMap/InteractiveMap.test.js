@@ -7,7 +7,7 @@ import historyManager from './historyManager.js'
 import { parseDataProperties } from './parseDataProperties.js'
 import { checkDeviceSupport } from './deviceChecker.js'
 import { setupBehavior, shouldLoadComponent } from './behaviourController.js'
-import { updateDOMState, removeLoadingState, showPageIfMapInline } from './domStateManager.js'
+import { getIsFullscreen, updateDOMState, removeLoadingState, showPageIfMapInline } from './domStateManager.js'
 import { renderError } from './renderError.js'
 import { createBreakpointDetector } from '../utils/detectBreakpoint.js'
 import { createInterfaceDetector } from '../utils/detectInterfaceType.js'
@@ -23,7 +23,7 @@ jest.mock('./behaviourController.js', () => ({
   setupBehavior: jest.fn(),
   shouldLoadComponent: jest.fn(() => true)
 }))
-jest.mock('./domStateManager.js', () => ({ updateDOMState: jest.fn().mockReturnValue({ isFullscreen: false }), removeLoadingState: jest.fn(), showPageIfMapInline: jest.fn() }))
+jest.mock('./domStateManager.js', () => ({ getIsFullscreen: jest.fn(() => false), updateDOMState: jest.fn().mockReturnValue({ isFullscreen: false }), removeLoadingState: jest.fn(), showPageIfMapInline: jest.fn() }))
 jest.mock('./renderError.js', () => ({ renderError: jest.fn() }))
 jest.mock('../config/mergeConfig.js', () => ({ mergeConfig: jest.fn(cfg => cfg) }))
 const mockBreakpointDetector = {
@@ -43,8 +43,12 @@ jest.mock('../services/eventBus.js', () => ({
   default: { on: jest.fn(), off: jest.fn(), emit: jest.fn(), emitWhenReady: jest.fn(), destroy: jest.fn() }
 }))
 jest.mock('../App/initialiseApp.js', () => ({ initialiseApp: jest.fn() }))
+jest.mock('./mapLoadingOverlay.js', () => ({
+  createLoadingOverlay: jest.fn(() => ({ show: jest.fn(), attachTo: jest.fn(), dismiss: jest.fn(), isLoading: jest.fn(), onDismiss: jest.fn() }))
+}))
 
 const { initialiseApp } = require('../App/initialiseApp.js')
+const { createLoadingOverlay } = require('./mapLoadingOverlay.js')
 const createButtonMock = require('./buttonManager.js').createButton
 const mapProviderMock = {
   load: jest.fn().mockResolvedValue({
@@ -651,5 +655,69 @@ describe('InteractiveMap — Public API Methods', () => {
     map.dismissHint()
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:showhint', { text: 'Press <kbd>Enter</kbd> to select', options: { duration: 2000 } })
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:dismisshint')
+  })
+})
+
+// --- map loading overlay ---
+
+describe('InteractiveMap — map loading', () => {
+  beforeEach(setupBeforeEach)
+  afterEach(() => jest.restoreAllMocks())
+
+  const handlerFor = (bus, event) => bus.on.mock.calls.find(([name]) => name === event)?.[1]
+  const lastOverlay = () => createLoadingOverlay.mock.results.at(-1).value
+
+  it('does not create a loading overlay when enableMapLoading is off', () => {
+    const map = new InteractiveMap('map', { behaviour: 'inline', mapProvider: mapProviderMock })
+    expect(map._mapLoading).toBeUndefined()
+    expect(createLoadingOverlay).not.toHaveBeenCalled()
+  })
+
+  it('shows the overlay in the container when the app starts loading', async () => {
+    shouldLoadComponent.mockReturnValue(false)
+    getIsFullscreen.mockReturnValueOnce(true)
+    const map = new InteractiveMap('map', {
+      behaviour: 'mapOnly',
+      enableMapLoading: true,
+      mapLoadingText: 'Loading flood map',
+      mapLoadingTimeout: 10000,
+      mapProvider: mapProviderMock
+    })
+    await map.loadApp()
+
+    expect(createLoadingOverlay).toHaveBeenCalledWith({ text: 'Loading flood map', timeout: 10000 })
+    expect(lastOverlay().show).toHaveBeenCalledWith({ container: map.rootEl, isFullscreen: true })
+  })
+
+  it('passes the overlay to the app so it can move it into its layout', async () => {
+    const map = new InteractiveMap('map', { behaviour: 'inline', enableMapLoading: true, mapProvider: mapProviderMock })
+    await map.loadApp()
+
+    expect(initialiseApp).toHaveBeenCalledWith(map.rootEl, expect.objectContaining({ mapLoading: lastOverlay() }))
+  })
+
+  it('dismisses the overlay when the map first finishes loading', () => {
+    const map = new InteractiveMap('map', { behaviour: 'inline', enableMapLoading: true, mapProvider: mapProviderMock })
+
+    handlerFor(map.eventBus, 'map:firstidle')()
+    expect(lastOverlay().dismiss).toHaveBeenCalled()
+  })
+
+  it('dismisses the overlay when the app fails to load', async () => {
+    shouldLoadComponent.mockReturnValue(false)
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+    const map = new InteractiveMap('map', { behaviour: 'inline', enableMapLoading: true, mapProvider: mapProviderMock })
+    initialiseApp.mockRejectedValueOnce(new Error('fail'))
+
+    await expect(map.loadApp()).rejects.toThrow('fail')
+    expect(lastOverlay().dismiss).toHaveBeenCalled()
+  })
+
+  it('dismisses the overlay when the app is removed', () => {
+    shouldLoadComponent.mockReturnValue(false)
+    const map = new InteractiveMap('map', { behaviour: 'buttonFirst', enableMapLoading: true, mapProvider: mapProviderMock })
+
+    map.removeApp()
+    expect(lastOverlay().dismiss).toHaveBeenCalled()
   })
 })
