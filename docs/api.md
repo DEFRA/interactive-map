@@ -338,32 +338,22 @@ new InteractiveMap('map', {
 
 ---
 
-### `mapProvider`
-**Type:** `function`
-**Required**
+### `mapProviderOptions`
+**Type:** `Object`
 
-A function that returns a map provider — the abstraction layer that interfaces with the underlying map engine. It is called only when the map is opened so the provider code is not sent to the user unless needed.
+Settings for the map engine. Which settings apply depends on the package.
 
-```js
-new InteractiveMap('map', {
-  mapProvider: maplibreProvider()
-})
-```
-
-#### MapLibre provider options
-
-`maplibreProvider()` accepts an optional config object.
+#### MapLibre (`@defra/interactive-map`)
 
 ##### `workerUrl`
 **Type:** `string`
-**Default:** `undefined`
 
-URL of the MapLibre worker file. This is set automatically with webpack, Vite and the UMD build.
+URL of the MapLibre worker file. This is set for you with webpack, Vite and the UMD scripts.
 
-With other bundlers (such as Rollup and esbuild), copy `node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs` to your assets and set its URL here. If it's missing, the console explains this.
+With Rollup or esbuild, copy `node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs` to your assets and set its URL here. If it's missing, the console explains this.
 
 ```js
-maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-worker.mjs' })
+mapProviderOptions: { workerUrl: '/your-assets-path/maplibre-gl-worker.mjs' }
 ```
 
 ##### `crs`
@@ -383,53 +373,66 @@ On an `'EPSG:27700'` map, data from another coordinate system must be converted 
 > `crs` is experimental. Setting it to `'EPSG:27700'` relies on MapLibre's experimental support for other projections. Do **not** use it in production unless fully tested.
 
 ```js
-maplibreProvider({ crs: 'EPSG:27700' })
+mapProviderOptions: { crs: 'EPSG:27700' }
 ```
 
 ##### `crsWorkerUrl`
 **Type:** `string`
 **Default:** `undefined`
 
-URL of the projection file an `'EPSG:27700'` map needs. This is set automatically with webpack, Vite and the UMD build.
+URL of the projection file an `'EPSG:27700'` map needs. This is set for you with webpack, Vite and the UMD scripts.
 
-With other bundlers (such as Rollup and esbuild), copy `node_modules/@defra/interactive-map/providers/maplibre/dist/esm/bngTransform.mjs` to your assets and set its URL here. If it's missing, the console explains this.
+With Rollup or esbuild, copy `node_modules/@defra/interactive-map/dist/esm/bngTransform.mjs` to your assets and set its URL here. If it's missing, the console explains this.
 
 ```js
-maplibreProvider({ crs: 'EPSG:27700', crsWorkerUrl: '/your-assets-path/bngTransform.mjs' })
+mapProviderOptions: { crs: 'EPSG:27700', crsWorkerUrl: '/your-assets-path/bngTransform.mjs' }
 ```
 
 ##### `zoomAlignment`
 **Type:** `string`
 **Default:** `'uk'`
 
-Which zoom levels an `'EPSG:27700'` map uses. The values match the OpenLayers provider's, so a zoom level shows the same scale with either provider. Has no effect on an `'EPSG:4326'` map.
+Which zoom levels an `'EPSG:27700'` map uses. The values match the OpenLayers package's, so a zoom level shows the same scale with either package. Has no effect on an `'EPSG:4326'` map.
 
 | Possible values | Description |
 | :--- | :--- |
-| `'uk'` | OS tile grid zoom levels; zoom 0 shows all of Great Britain. |
-| `'world'` | ESRI zoom levels, matching the ESRI SDK; all of the UK is visible at around zoom 7. |
+| `'uk'` | OS tile grid zoom levels (0–13). Zoom 0 shows all of Great Britain. |
+| `'world'` | The same zoom levels as the ArcGIS SDK. All of the UK shows at about zoom 7. |
 
 ```js
-maplibreProvider({ crs: 'EPSG:27700', zoomAlignment: 'world' })
+mapProviderOptions: { crs: 'EPSG:27700', zoomAlignment: 'world' }
 ```
 
-#### OpenLayers provider options
+#### OpenLayers (`@defra/interactive-map-openlayers`)
 
-`openLayersProvider()` accepts an optional config object. The provider renders in British National Grid (EPSG:27700) — this isn't configurable.
+The map is always in British National Grid (EPSG:27700).
 
 ##### `zoomAlignment`
 **Type:** `string`
 **Default:** `'uk'`
 
-Which zoom-level sequence the map's view resolutions follow.
+Which zoom levels the map uses.
 
 | Possible values | Description |
 | :--- | :--- |
-| `'uk'` | OS tile grid zoom levels (0–13); zoom 0 shows all of Great Britain. |
-| `'world'` | ESRI LOD sequence, for zoom levels that match the ESRI SDK; full UK visible around zoom 7. |
+| `'uk'` | OS tile grid zoom levels (0–13). Zoom 0 shows all of Great Britain. |
+| `'world'` | The same zoom levels as the ArcGIS SDK. All of the UK shows at about zoom 7. |
 
 ```js
-openLayersProvider({ zoomAlignment: 'world' })
+mapProviderOptions: { zoomAlignment: 'world' }
+```
+
+#### Esri (`@defra/interactive-map-esri`)
+
+##### `setupConfig`
+**Type:** `function`
+
+Called with the ArcGIS SDK's `esriConfig` before the map is created, for example to set an API key.
+
+```js
+mapProviderOptions: {
+  setupConfig: (esriConfig) => { esriConfig.apiKey = 'YOUR_API_KEY' }
+}
 ```
 
 ---

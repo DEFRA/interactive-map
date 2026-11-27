@@ -38,7 +38,6 @@
 {% block pageScripts %}
   <!-- Defra library scripts -->
   <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
-  <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/map-styles/dist/umd/index.js"></script>
 
   <script>
@@ -76,7 +75,6 @@
 
     new defra.InteractiveMap('map', {
       behaviour: 'inline',
-      mapProvider: defra.maplibreProvider(),
       mapStyle: mapStyles[0],
       center: [-0.1276, 51.5074],
       zoom: 12,

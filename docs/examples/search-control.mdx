@@ -17,7 +17,6 @@ This requires an OS Data Hub API key. Embedding the key in the URL is the simple
     language: 'js',
     code: `
       import InteractiveMap from '@defra/interactive-map'
-      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
       import createSearchPlugin from '@defra/interactive-map/plugins/search'
 
       const searchPlugin = createSearchPlugin({
@@ -27,7 +26,6 @@ This requires an OS Data Hub API key. Embedding the key in the URL is the simple
 
       new InteractiveMap('my-map', {
         behaviour: 'inline',
-        mapProvider: maplibreProvider(),
         mapStyle: {
           url: 'https://your-tile-url/style.json',
           logo: '/path/to/logo.svg',
@@ -46,7 +44,6 @@ This requires an OS Data Hub API key. Embedding the key in the URL is the simple
     language: 'html',
     code: `
       <script defer src="/your-assets-path/interactive-map/index.js"></script>
-      <script defer src="/your-assets-path/maplibre-provider/index.js"></script>
       <script defer src="/your-assets-path/search-plugin/index.js"></script>
 
       <script>
@@ -58,7 +55,6 @@ This requires an OS Data Hub API key. Embedding the key in the URL is the simple
 
         new defra.InteractiveMap('my-map', {
           behaviour: 'inline',
-          mapProvider: defra.maplibreProvider(),
           mapStyle: {
             url: 'https://your-tile-url/style.json',
             logo: '/path/to/logo.svg',

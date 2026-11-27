@@ -135,6 +135,16 @@ const PREACT_EXTERNALS = [
 // dependency so it auto-installs for consumers and is resolved transparently.
 const BABEL_RUNTIME_EXTERNAL = /@babel\/runtime/
 
+// Map engines (optional peers) are externalised so consumers share one copy from their own
+// node_modules; they ignore the engines they don't install (see docs/getting-started.md).
+// UMD keeps them bundled.
+export const MAP_ENGINE_EXTERNALS = [
+  'maplibre-gl',
+  /^ol\//,
+  'proj4',
+  /^@arcgis\/core/
+]
+
 const babelPlugin = () => babel({
   // 'runtime' mode imports helpers from @babel/runtime rather than
   // inlining them.  This prevents Rollup from deduplicating helpers across
@@ -155,7 +165,7 @@ const babelPlugin = () => babel({
   ]
 })
 
-const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null, chunkNames = {}) => {
+export const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null, chunkNames = {}) => {
   const esmDir = path.resolve(__dirname, outDir)
   // Use the parent dir as output.dir so CSS can be emitted to css/index.css
   // (a sibling subdir) without Rollup 4's ban on ".." in emitted file names.
@@ -164,7 +174,7 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
 
   // Core build also cleans the shared dist/css before rebuilding
   const dirsToClean = isCore
-    ? [path.resolve(__dirname, 'dist/css'), esmDir]
+    ? [cssDir, esmDir]
     : [esmDir]
 
   return {
@@ -174,17 +184,7 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
     // to preact/* before Rollup's external check, so only the preact IDs appear.
     external: isCore
       ? [...PREACT_EXTERNALS, BABEL_RUNTIME_EXTERNAL]
-      : [
-          ...PREACT_EXTERNALS,
-          BABEL_RUNTIME_EXTERNAL,
-          // Map engines (optional peers) are externalised so consumers share one copy
-          // from their own node_modules; they ignore the engines they don't install
-          // (see docs/getting-started.md).  UMD keeps them bundled.
-          'maplibre-gl',
-          /^ol\//,
-          'proj4',
-          /^@arcgis\/core/
-        ],
+      : [...PREACT_EXTERNALS, BABEL_RUNTIME_EXTERNAL, ...MAP_ENGINE_EXTERNALS],
 
     plugins: [
       cleanPlugin(dirsToClean),
@@ -253,9 +253,13 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
       entryFileNames: 'esm/index.js',
       // Core: give auto-generated chunks meaningful names.
       // - initialiseApp → im-core.js  (the lazy Preact app chunk)
+      // - names in chunkNames → their given name (an engine package's lazy provider)
       // - anything else → im-shell.js (the sync InteractiveMap + shared utils chunk)
       chunkFileNames: isCore
-        ? (chunk) => chunk.name === 'initialiseApp' ? 'esm/im-core.js' : 'esm/im-shell.js'
+        ? (chunk) => {
+            if (chunk.name === 'initialiseApp') { return 'esm/im-core.js' }
+            return chunkNames[chunk.name] ? `esm/${chunkNames[chunk.name]}.js` : 'esm/im-shell.js'
+          }
         : (chunk) => `esm/${chunkNames[chunk.name] || chunk.name}.js`,
       // Rollup ignores webpack magic comments; manualChunks is how we assign
       // meaningful names to lazy-loaded splits.
@@ -270,7 +274,7 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
 }
 
 // === All builds ===
-const ALL_BUILDS = [
+export const ALL_BUILDS = [
   // Core
   { entryPath: './src/index.js', outDir: 'dist/esm', isCore: true },
 
