@@ -875,6 +875,9 @@
  * trigger a button click but not a drag. When enabled, enableZoomControls' buttons
  * are hidden to avoid duplication.
  *
+ * @property {boolean} [enableMapLoading=false]
+ * Whether a loading spinner and message are shown over the map until it has loaded.
+ *
  * @property {boolean} [enableResetView=false]
  * Whether a reset view button is displayed. It moves the map to the configured bounds
  * or extent, or to center and zoom if no bounds are set. Disabled until the map is
@@ -913,6 +916,18 @@
  *
  * @property {string} [mapLabel='Interactive map application']
  * Accessible label for the map, announced by screen readers. Also prefixed onto mapHintText, so give each map on a page a distinct label.
+ *
+ * @property {string} [mapLoadedText='Map loaded']
+ * Announced to screen reader users in the map when it finishes loading, when enableMapLoading is true.
+ *
+ * @property {string} [mapLoadingText='Loading map']
+ * Message shown under the loading spinner, and added to the map's accessible name while it loads, when enableMapLoading is true.
+ *
+ * @property {number} [mapLoadingTimeout=30000]
+ * Milliseconds after which the loading spinner is removed and the map's controls can be used, even if the map hasn't finished loading, when enableMapLoading is true. `0` turns the timeout off.
+ *
+ * @property {string} [mapLoadingTimeoutText='Map may not have loaded fully']
+ * Announced to screen reader users in the map instead of mapLoadedText when mapLoadingTimeout has passed before the map finished loading.
  *
  * @property {string} [mapControlsHintText]
  * Visually hidden text describing the map controls button, appended to keyboardHintText when enableMapControls is true.

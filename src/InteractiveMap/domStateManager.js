@@ -12,6 +12,16 @@ function updatePageTitle ({ pageTitle, isFullscreen }) {
   document.title = isFullscreen ? `${pageTitle}: ${title}` : title
 }
 
+// -----------------------------------------------------------------------------
+// Public
+// -----------------------------------------------------------------------------
+
+/**
+ * Whether the app is fullscreen when loaded, given the behaviour and current URL.
+ *
+ * @param {Object} config - App configuration.
+ * @returns {boolean} True if the app opens fullscreen.
+ */
 function getIsFullscreen (config) {
   const { id, behaviour, manageHistoryState } = config
 
@@ -29,10 +39,6 @@ function getIsFullscreen (config) {
 
   return isHybridFullscreen(config) && getQueryParam(config.mapViewQueryParam) === id
 }
-
-// -----------------------------------------------------------------------------
-// Public
-// -----------------------------------------------------------------------------
 
 /**
  * Update the DOM state based on configuration and fullscreen mode.
@@ -109,6 +115,7 @@ function showPageIfMapInline (mapInstance) {
 // -----------------------------------------------------------------------------
 
 export {
+  getIsFullscreen,
   updateDOMState,
   removeLoadingState,
   showPageIfMapInline
