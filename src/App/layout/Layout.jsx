@@ -6,6 +6,7 @@ import { useMap } from '../store/mapContext'
 import { useLayoutMeasurements } from '../hooks/useLayoutMeasurements'
 import { useFocusVisible } from '../hooks/useFocusVisible'
 import { useApplicationModeFocus } from '../hooks/useApplicationModeFocus.js'
+import { useMapLoading } from '../hooks/useMapLoading.js'
 import { Logo } from '../components/Logo/Logo'
 import { Attributions } from '../components/Attributions/Attributions'
 import { layoutSlots } from '../renderer/slots'
@@ -31,6 +32,7 @@ export const Layout = () => {
   useLayoutMeasurements()
   useFocusVisible()
   useApplicationModeFocus()
+  const isMapLoading = useMapLoading()
 
   return (
     <div
@@ -48,8 +50,9 @@ export const Layout = () => {
     >
       {/* Leads with mapLabel so screen reader users can tell multiple maps on a page apart. */}
       <div className='im-u-visually-hidden'>{mapLabel}. {mapHintText}</div>
-      <Viewport />
-      <div className={`im-o-app__overlay${isLayoutReady ? '' : ' im-o-app__overlay--not-ready'}`}>
+      <Viewport isMapLoading={isMapLoading} />
+      {/* Controls can't be reached until the map has loaded */}
+      <div className={`im-o-app__overlay${isLayoutReady ? '' : ' im-o-app__overlay--not-ready'}`} inert={isMapLoading}>
         <div className='im-o-app__side' ref={layoutRefs.sideRef}>
           <SlotRenderer slot={layoutSlots.SIDE} />
         </div>

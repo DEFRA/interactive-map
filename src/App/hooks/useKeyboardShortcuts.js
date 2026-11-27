@@ -70,7 +70,7 @@ const createKeyEventHandlers = (actions) => {
   return { handleKeyDown, handleKeyUp }
 }
 
-export function useKeyboardShortcuts (containerRef) {
+export function useKeyboardShortcuts (containerRef, { isEnabled = true } = {}) {
   const { mapProvider, panDelta, nudgePanDelta, zoomDelta, nudgeZoomDelta, readMapText } = useConfig()
   const { dispatch, layoutRefs } = useApp()
   const { announce } = useService()
@@ -78,7 +78,7 @@ export function useKeyboardShortcuts (containerRef) {
   useEffect(() => {
     const el = containerRef.current
     const appEl = layoutRefs.appContainerRef?.current
-    if (!el || !appEl) {
+    if (!isEnabled || !el || !appEl) {
       return undefined
     }
 
@@ -102,6 +102,7 @@ export function useKeyboardShortcuts (containerRef) {
       appEl.removeEventListener('keyup', handleKeyUp)
     }
   }, [
+    isEnabled,
     containerRef,
     mapProvider,
     panDelta,
