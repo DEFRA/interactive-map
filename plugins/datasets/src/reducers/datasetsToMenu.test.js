@@ -115,6 +115,48 @@ describe('addDatasetToMenu', () => {
     expect(result).toHaveLength(1)
     expect(result[0].items[0].id).toBe('parks')
   })
+  it('returns the menu unchanged when the dataset is not in the menu', () => {
+    const state = {
+      menu: [{ id: 'roads', type: 'checkbox', visibleWhen: true, items: [{ id: 'roads', label: 'Roads' }] }]
+    }
+    const dataset = { id: 'highlights', label: 'Highlights' }
+    expect(addDatasetToMenu(state, dataset)).toBe(state.menu)
+  })
+
+  it('adds an ungrouped dataset next to the existing ungrouped items', () => {
+    const state = {
+      menu: [
+        { id: 'roads', type: 'checkbox', visibleWhen: true, items: [{ id: 'roads', label: 'Roads' }] },
+        { id: 'Layers', groupLabel: 'Layers', type: 'checkbox', visibleWhen: true, items: [{ id: 'rivers', label: 'Rivers' }] }
+      ]
+    }
+    const dataset = { id: 'parks', label: 'Parks', showInMenu: true }
+    const result = addDatasetToMenu(state, dataset)
+    expect(result).toHaveLength(2)
+    expect(result[0].items.map(item => item.id)).toEqual(['roads', 'parks'])
+  })
+
+  it('does not change the existing menu or its groups', () => {
+    const roads = { id: 'roads', label: 'Roads' }
+    const group = { id: 'Layers', groupLabel: 'Layers', type: 'checkbox', visibleWhen: true, items: [roads] }
+    const state = { menu: [group] }
+    const dataset = { id: 'rivers', label: 'Rivers', showInMenu: true, groupLabel: 'Layers' }
+    const result = addDatasetToMenu(state, dataset)
+    expect(state.menu).toEqual([group])
+    expect(group.items).toEqual([roads])
+    expect(result[0]).not.toBe(group)
+  })
+
+  it('gives the same result when run twice on the same state', () => {
+    const state = {
+      menu: [{ id: 'Layers', groupLabel: 'Layers', type: 'checkbox', visibleWhen: true, items: [{ id: 'roads', label: 'Roads' }] }]
+    }
+    const dataset = { id: 'rivers', label: 'Rivers', showInMenu: true, groupLabel: 'Layers' }
+    const first = addDatasetToMenu(state, dataset)
+    const second = addDatasetToMenu(state, dataset)
+    expect(second).toEqual(first)
+    expect(second[0].items.map(item => item.id)).toEqual(['roads', 'rivers'])
+  })
 })
 
 describe('removeDatasetsFromMenu', () => {

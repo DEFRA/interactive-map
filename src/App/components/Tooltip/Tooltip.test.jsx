@@ -18,7 +18,7 @@ describe('Tooltip', () => {
     getTooltipPosition.mockReturnValue('bottom')
 
     const { container, unmount } = render(
-      <Tooltip content='Test tooltip' {...props}>
+      <Tooltip label='Test tooltip' {...props}>
         <Child />
       </Tooltip>
     )
@@ -36,6 +36,48 @@ describe('Tooltip', () => {
   afterEach(cleanup)
 
   // --- Standard Tooltip tests ---
+  it('names the trigger with the label', () => {
+    const { button, tooltip } = renderTooltip()
+    expect(tooltip).toHaveTextContent('Test tooltip')
+    expect(button).toHaveAccessibleName('Test tooltip')
+    expect(button).not.toHaveAttribute('aria-describedby')
+  })
+
+  it('describes the trigger with the description, without naming it', () => {
+    const { button, tooltip } = renderTooltip({ label: undefined, description: 'More detail' })
+    expect(tooltip).toHaveTextContent('More detail')
+    expect(button).toHaveAccessibleName('Test button')
+    expect(button).toHaveAccessibleDescription('More detail')
+  })
+
+  it('shows the label and description together, reading each only once', () => {
+    const { button, tooltip } = renderTooltip({ description: 'More detail' })
+    expect(tooltip).toHaveTextContent('Test tooltip: More detail')
+    expect(button).toHaveAccessibleName('Test tooltip')
+    expect(button).toHaveAccessibleDescription('More detail')
+  })
+
+  it('keeps the trigger\'s own handlers', () => {
+    const handlers = {
+      onMouseEnter: jest.fn(),
+      onMouseLeave: jest.fn(),
+      onMouseDown: jest.fn(),
+      onKeyDown: jest.fn(),
+      onFocus: jest.fn(),
+      onBlur: jest.fn()
+    }
+    useApp.mockReturnValue({ interfaceType: 'keyboard' })
+    const { container } = render(<Tooltip label='Test tooltip'><Button {...handlers} /></Tooltip>)
+    const button = container.querySelector('button')
+    fireEvent.mouseEnter(button)
+    fireEvent.mouseLeave(button)
+    fireEvent.mouseDown(button)
+    fireEvent.keyDown(button, { key: 'ArrowDown' })
+    fireEvent.focus(button)
+    fireEvent.blur(button)
+    Object.values(handlers).forEach(handler => expect(handler).toHaveBeenCalledTimes(1))
+  })
+
   it('renders with correct initial state', () => {
     const { tooltip } = renderTooltip()
     expect(tooltip).toHaveClass('im-c-tooltip--hidden')
@@ -111,7 +153,7 @@ describe('Tooltip', () => {
     const fnRef = jest.fn()
 
     render(
-      <Tooltip content='Test tooltip'>
+      <Tooltip label='Test tooltip'>
         <ChildWithFunctionRef ref={fnRef} />
       </Tooltip>
     )
@@ -131,7 +173,7 @@ describe('Tooltip', () => {
     const objRef = { current: null }
 
     render(
-      <Tooltip content='Test tooltip'>
+      <Tooltip label='Test tooltip'>
         <ChildWithObjectRef ref={objRef} />
       </Tooltip>
     )

@@ -13,7 +13,7 @@ const BW_LABEL = 'Black/White'
 
 // Real OS National Grid coverage extent [minX, minY, maxX, maxY], EPSG:27700 — captured from
 // OS's own VTS capabilities response (matches the TILE_GRID_ORIGIN corner already baked into
-// providers/beta/openlayers/src/defaults.js). Used to stop the raster styles below requesting
+// providers/openlayers/src/defaults.js). Used to stop the raster styles below requesting
 // tiles for areas OS has no coverage for.
 const OS_NATIONAL_GRID_EXTENT_27700 = [-238375, 0, 700000, 1300000]
 

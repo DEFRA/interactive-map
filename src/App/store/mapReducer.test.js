@@ -39,6 +39,7 @@ describe('mapReducer', () => {
       expect(state).toMatchObject({
         isMapReady: false,
         mapStyle: { id: 'style1' },
+        mapStyles: [{ id: 'style1' }],
         mapSize: '100x100',
         center: [0, 0],
         zoom: 5,
@@ -46,6 +47,9 @@ describe('mapReducer', () => {
         resolution: null,
         isAtMaxZoom: null,
         isAtMinZoom: null,
+        isUserMove: false,
+        resetViewTarget: null,
+        isResetViewTargetKnown: false,
         crossHair: {
           isVisible: false,
           isPinnedToMap: false,
@@ -63,6 +67,7 @@ describe('mapReducer', () => {
       const state = initialState(getConfig({ mapStyle: { id: 'custom' }, center: [10, 20], zoom: 12 }))
 
       expect(state.mapStyle).toBeNull()
+      expect(state.mapStyles).toEqual([])
       expect(state.center).toEqual([10, 20])
       expect(state.zoom).toBe(12)
     })

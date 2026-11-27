@@ -102,9 +102,9 @@ model {
   }
 
   // Available Plugins (optional, consumer chooses which to include)
-  drawMl = plugin 'Draw Plugin (MapLibre)' {
+  draw = plugin 'Draw Plugin' {
     description 'Polygon, line, point drawing tools'
-    technology '@defra/im-draw-ml-plugin'
+    technology '@defra/im-draw-plugin'
   }
 
   drawEs = plugin 'Draw Plugin (Esri)' {
@@ -157,7 +157,7 @@ model {
   interactiveMap.entryPoint -> esri 'dynamically loads'
 
   // Plugins loaded by plugin system
-  interactiveMap.pluginSystem -> drawMl 'loads'
+  interactiveMap.pluginSystem -> draw 'loads'
   interactiveMap.pluginSystem -> drawEs 'loads'
   interactiveMap.pluginSystem -> datasets 'loads'
   interactiveMap.pluginSystem -> search 'loads'
@@ -202,7 +202,7 @@ views {
     description 'Optional plugins that can be included by consumers'
 
     include interactiveMap.pluginSystem
-    include drawMl
+    include draw
     include drawEs
     include datasets
     include search

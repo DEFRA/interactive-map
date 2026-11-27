@@ -2,25 +2,26 @@ import {
   getSnapInstance, isSnapActive, isSnapEnabled, createSnappedEvent, createSnappedClickEvent
 } from '../../utils/snapHelpers.js'
 import { attemptPlacement } from '../../../../validation/validateGeometry.js'
+import { CHANGE_PHASE } from '../../../../adapterEvents.js'
 
 // The commit-level geometrychange payload for a vertex commit: the placed-only
 // geometry (trailing rubber-band point dropped so validation tests the committed shape).
-const placedDrawGeometryChange = (feature, getCoords, phase) => {
+const placedDrawGeometryChange = (feature, getCoords) => {
   const placed = getCoords(feature).slice(0, -1)
   const type = feature.toGeoJSON().geometry.type
   const geometry = type === 'Polygon'
     ? { type: 'Polygon', coordinates: [placed] }
     : { type: 'LineString', coordinates: placed }
-  return { feature: { type: 'Feature', geometry, properties: {} }, phase, vertexIndex: Math.max(0, placed.length - 1) }
+  return { feature: { type: 'Feature', geometry, properties: {} }, phase: CHANGE_PHASE, vertexIndex: Math.max(0, placed.length - 1) }
 }
 
 // Fire a commit-level geometrychange for validation, deferred a tick so it runs after
 // the current click settles.
-const scheduleDrawValidation = (map, getFeature, getCoords, state, phase) => {
+const scheduleDrawValidation = (map, getFeature, getCoords, state) => {
   setTimeout(() => {
     const feature = getFeature(state)
     if (!feature) { return }
-    map.fire('draw.geometrychange', placedDrawGeometryChange(feature, getCoords, phase))
+    map.fire('draw.geometrychange', placedDrawGeometryChange(feature, getCoords))
   }, 0)
 }
 
@@ -38,7 +39,7 @@ const createClickHelpers = ({ geometryType, getFeature, getCoords }) => ({
     return e.originalEvent.button > 0 || this.map._undoInProgress || e.originalEvent.target !== this.map.getCanvas()
   },
 
-  // Attempt a placement through the shared hard rules + user callback. On a veto
+  // Attempt a placement through the shared placement rules + user callback. On a veto
   // the vertex never appears and a draw.placementblocked event carries the
   // reason. The trailing rubber-band coord is dropped so the candidate is placed
   // vertices + the point about to be placed.
@@ -49,7 +50,7 @@ const createClickHelpers = ({ geometryType, getFeature, getCoords }) => ({
       placed: getCoords(feature).slice(0, -1),
       point,
       geometryType,
-      onGeometryChange: this.map._drawGeometryValidator
+      onGeometryPreview: this.map._drawPreviewValidator
     })
     if (!result.valid) {
       this.map.fire('draw.placementblocked', result.blocked)
@@ -66,8 +67,8 @@ const createClickHelpers = ({ geometryType, getFeature, getCoords }) => ({
 
   // Emit a commit-level geometrychange after a vertex commit (placement or undo)
   // so the validation layer can gate the Done button.
-  emitDrawValidation (state, phase = 'commit-add') {
-    scheduleDrawValidation(this.map, getFeature, getCoords, state, phase)
+  emitDrawValidation (state) {
+    scheduleDrawValidation(this.map, getFeature, getCoords, state)
   },
 
   onTap () {
@@ -107,8 +108,8 @@ const createClickActions = ({ ParentMode, getFeature, getCoords, validateClick, 
       if (this._isIgnorableClick(e)) {
         return
       }
-      // Block a finish/close gesture (clicking a placed vertex) while the shape is invalid.
-      if (this.map._drawGeometryValid === false && e.featureTarget?.properties?.meta === 'vertex') {
+      // Block a finish/close gesture (clicking a placed vertex) while the shape can't be finished.
+      if (this.map._drawCanFinish === false && e.featureTarget?.properties?.meta === 'vertex') {
         return
       }
       const snap = getSnapInstance(this.map)
@@ -146,9 +147,9 @@ const createClickActions = ({ ParentMode, getFeature, getCoords, validateClick, 
 
       if (!validateClick(feature)) {
         // For lines: clicking same spot (like double-click) should finish the line — but
-        // only when the geometry is valid, so an invalid line can't be completed.
+        // only when it can be finished, so a line whose check failed can't be completed.
         // isValidLineClick only returns false with 2+ coords, so coords.length is always > 1 here.
-        if (finishOnInvalidClick && this.map._drawGeometryValid !== false) {
+        if (finishOnInvalidClick && this.map._drawCanFinish !== false) {
           coords.pop()
           this.map.fire('draw.create', { features: [feature.toGeoJSON()] })
           this.changeMode('simple_select', { featureIds: [feature.id] })

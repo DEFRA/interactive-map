@@ -1,12 +1,11 @@
-import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
+import { ADAPTER_EVENTS, CHANGE_PHASE } from '../../../adapterEvents.js'
 
 // Deferred commit-level geometrychange emitter (feature + change phase + vertex index)
 // consumed by the validation layer — copied from edit/selectionState.js's own (identical
 // shape, no ring dependency to strip).
-const createGeometryValidationEmitter = (manager, store, olFeature) => (phase, vertexIndex) => {
-  if (!phase) { return }
+const createGeometryValidationEmitter = (manager, store, olFeature) => (vertexIndex) => {
   setTimeout(() => {
-    manager.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, { feature: store.toGeoJSON(olFeature), phase, vertexIndex })
+    manager.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, { feature: store.toGeoJSON(olFeature), phase: CHANGE_PHASE, vertexIndex })
   }, 0)
 }
 

@@ -2,10 +2,10 @@ import { createLiveDrawChecks } from './liveDrawChecks.js'
 
 const poly = (ring) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring] } })
 
-// Closed-ring self-intersect only (LIVE_RULES fails, HARD_RULES/open-path passes) —
+// Closed-ring self-intersect only (PREVIEW_RULES fails, PLACE_RULES/open-path passes) —
 // only the implicit closing edge crosses.
 const closingEdgeCrosses = poly([[0, 0], [2, 0], [0, 2], [2, 2]])
-// Open-path self-intersect (HARD_RULES fails) — also fails LIVE_RULES, since a
+// Open-path self-intersect (PLACE_RULES fails) — also fails PREVIEW_RULES, since a
 // crossing open path implies a crossing closed one too.
 const openPathCrosses = poly([[0, 0], [2, 2], [2, 0], [0, 2]])
 const square = poly([[0, 0], [10, 0], [10, 10], [0, 10]])
@@ -21,7 +21,7 @@ beforeEach(() => jest.useFakeTimers())
 afterEach(() => jest.useRealTimers())
 
 describe('built-in rules (synchronous, independently floored, flip-guarded)', () => {
-  test('LIVE_RULES (closed ring) gates the stroke; HARD_RULES (open path) gates placement — independently', () => {
+  test('PREVIEW_RULES (closed ring) gates the stroke; PLACE_RULES (open path) gates placement — independently', () => {
     const { onStrokeChange, onPlaceChange, checks } = setup()
     checks.update({ feature: closingEdgeCrosses, numVertices: 3 })
     expect(onStrokeChange).toHaveBeenCalledWith(true, expect.any(String)) // dashed
@@ -43,7 +43,7 @@ describe('built-in rules (synchronous, independently floored, flip-guarded)', ()
     expect(onPlaceChange).toHaveBeenLastCalledWith(false, null)
   })
 
-  test('LIVE_RULES stays floored below the minimum vertex count — never flips at all', () => {
+  test('PREVIEW_RULES stays floored below the minimum vertex count — never flips at all', () => {
     const { onStrokeChange, checks } = setup()
     checks.update({ feature: closingEdgeCrosses, numVertices: 1 })
     expect(onStrokeChange).not.toHaveBeenCalled()
@@ -63,7 +63,7 @@ describe('built-in rules (synchronous, independently floored, flip-guarded)', ()
     expect(onStrokeChange).not.toHaveBeenCalled() // treated as 0 — below the floor
   })
 
-  test('HARD_RULES is never floored — it must protect placing an invalid first vertex', () => {
+  test('PLACE_RULES is never floored — it must protect placing an invalid first vertex', () => {
     const { onPlaceChange, checks } = setup()
     // A single point can never self-intersect, so this stays placeable — the
     // point is that placement is EVALUATED (not skipped) even at numVertices 0,
@@ -76,18 +76,18 @@ describe('built-in rules (synchronous, independently floored, flip-guarded)', ()
 describe('user callback (throttled, single call drives both gates)', () => {
   test('runs ONCE per frame with phase preview, not once per gate', () => {
     const { checks } = setup()
-    const onGeometryChange = jest.fn(() => true)
-    checks.update({ feature: square, numVertices: 3, onGeometryChange })
-    expect(onGeometryChange).not.toHaveBeenCalled() // deferred to the frame
+    const onGeometryPreview = jest.fn(() => true)
+    checks.update({ feature: square, numVertices: 3, onGeometryPreview })
+    expect(onGeometryPreview).not.toHaveBeenCalled() // deferred to the frame
     jest.runAllTimers()
-    expect(onGeometryChange).toHaveBeenCalledTimes(1)
-    expect(onGeometryChange).toHaveBeenCalledWith(expect.objectContaining({ feature: square, numVertices: 3, phase: 'preview' }))
+    expect(onGeometryPreview).toHaveBeenCalledTimes(1)
+    expect(onGeometryPreview).toHaveBeenCalledWith(expect.objectContaining({ feature: square, numVertices: 3, phase: 'preview' }))
   })
 
   test('a veto flips BOTH the stroke and placement gates from the one call', () => {
     const { onStrokeChange, onPlaceChange, checks } = setup()
-    const onGeometryChange = () => ({ valid: false, reason: 'outside region' })
-    checks.update({ feature: square, numVertices: 3, onGeometryChange })
+    const onGeometryPreview = () => ({ valid: false, reason: 'outside region' })
+    checks.update({ feature: square, numVertices: 3, onGeometryPreview })
     jest.runAllTimers()
     expect(onStrokeChange).toHaveBeenLastCalledWith(true, 'outside region')
     expect(onPlaceChange).toHaveBeenLastCalledWith(true, 'outside region')
@@ -95,31 +95,31 @@ describe('user callback (throttled, single call drives both gates)', () => {
 
   test('runs even with zero committed vertices — a location-based rule is meaningful against the first candidate point', () => {
     const { onPlaceChange, checks } = setup()
-    const onGeometryChange = jest.fn(() => ({ valid: false, reason: 'outside region' }))
-    checks.update({ feature: poly([[0, 0]]), numVertices: 0, onGeometryChange })
+    const onGeometryPreview = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    checks.update({ feature: poly([[0, 0]]), numVertices: 0, onGeometryPreview })
     jest.runAllTimers()
-    expect(onGeometryChange).toHaveBeenCalledWith(expect.objectContaining({ numVertices: 0, phase: 'preview' }))
+    expect(onGeometryPreview).toHaveBeenCalledWith(expect.objectContaining({ numVertices: 0, phase: 'preview' }))
     expect(onPlaceChange).toHaveBeenLastCalledWith(true, 'outside region')
   })
 
-  test('a built-in HARD_RULES failure still applies even when the user callback passes', () => {
+  test('a built-in PLACE_RULES failure still applies even when the user callback passes', () => {
     const { onPlaceChange, checks } = setup()
-    const onGeometryChange = jest.fn(() => true)
-    checks.update({ feature: openPathCrosses, numVertices: 3, onGeometryChange })
+    const onGeometryPreview = jest.fn(() => true)
+    checks.update({ feature: openPathCrosses, numVertices: 3, onGeometryPreview })
     jest.runAllTimers()
     expect(onPlaceChange).toHaveBeenLastCalledWith(true, expect.any(String))
   })
 
   test('runs once per frame using the latest geometry (trailing edge)', () => {
     const { checks } = setup()
-    const onGeometryChange = jest.fn(() => true)
-    checks.update({ feature: square, numVertices: 3, onGeometryChange })
-    checks.update({ feature: square, numVertices: 4, onGeometryChange })
+    const onGeometryPreview = jest.fn(() => true)
+    checks.update({ feature: square, numVertices: 3, onGeometryPreview })
+    checks.update({ feature: square, numVertices: 4, onGeometryPreview })
     const latest = poly([[0, 0], [20, 0], [20, 20], [0, 20]])
-    checks.update({ feature: latest, numVertices: 5, onGeometryChange })
+    checks.update({ feature: latest, numVertices: 5, onGeometryPreview })
     jest.runAllTimers()
-    expect(onGeometryChange).toHaveBeenCalledTimes(1)
-    expect(onGeometryChange).toHaveBeenCalledWith(expect.objectContaining({ feature: latest, numVertices: 5 }))
+    expect(onGeometryPreview).toHaveBeenCalledTimes(1)
+    expect(onGeometryPreview).toHaveBeenCalledWith(expect.objectContaining({ feature: latest, numVertices: 5 }))
   })
 })
 
@@ -145,24 +145,24 @@ describe('flip guard', () => {
 describe('reset / destroy', () => {
   test('reset() clears the cached custom verdict and drops a pending frame', () => {
     const { onStrokeChange, checks } = setup()
-    const onGeometryChange = jest.fn(() => ({ valid: false, reason: 'outside region' }))
-    checks.update({ feature: square, numVertices: 3, onGeometryChange })
+    const onGeometryPreview = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    checks.update({ feature: square, numVertices: 3, onGeometryPreview })
     jest.runAllTimers()
     expect(onStrokeChange).toHaveBeenLastCalledWith(true, 'outside region')
 
     checks.reset()
-    onGeometryChange.mockClear()
+    onGeometryPreview.mockClear()
     checks.update({ feature: square, numVertices: 3 }) // fresh session, no callback this time
     expect(onStrokeChange).toHaveBeenLastCalledWith(false, null)
   })
 
   test('destroy() cancels a pending user-rule frame', () => {
     const { checks } = setup()
-    const onGeometryChange = jest.fn(() => true)
-    checks.update({ feature: square, numVertices: 3, onGeometryChange })
+    const onGeometryPreview = jest.fn(() => true)
+    checks.update({ feature: square, numVertices: 3, onGeometryPreview })
     checks.destroy()
     jest.runAllTimers()
-    expect(onGeometryChange).not.toHaveBeenCalled()
+    expect(onGeometryPreview).not.toHaveBeenCalled()
   })
 
   // Belt-and-braces: recompute()/runUserRule() re-check `pending` themselves rather than
@@ -175,14 +175,14 @@ describe('reset / destroy', () => {
     globalThis.cancelAnimationFrame = noopCancel
     try {
       const { onStrokeChange, onPlaceChange, checks } = setup()
-      const onGeometryChange = jest.fn(() => true)
-      checks.update({ feature: square, numVertices: 3, onGeometryChange })
+      const onGeometryPreview = jest.fn(() => true)
+      checks.update({ feature: square, numVertices: 3, onGeometryPreview })
       checks.reset() // calls our no-op cancel — the queued frame is NOT actually removed
       expect(noopCancel).toHaveBeenCalled()
       onStrokeChange.mockClear()
       onPlaceChange.mockClear()
       expect(() => jest.runAllTimers()).not.toThrow()
-      expect(onGeometryChange).not.toHaveBeenCalled() // guard returns before reading pending's fields
+      expect(onGeometryPreview).not.toHaveBeenCalled() // guard returns before reading pending's fields
       expect(onStrokeChange).not.toHaveBeenCalled()
       expect(onPlaceChange).not.toHaveBeenCalled()
     } finally {
@@ -191,20 +191,20 @@ describe('reset / destroy', () => {
   })
 
   // recompute() carries its own `if (!pending) return` guard too, distinct from
-  // runUserRule()'s — reachable when the user's own onGeometryChange callback
+  // runUserRule()'s — reachable when the user's own onGeometryPreview callback
   // reentrantly clears `pending` (e.g. via reset()) partway through the very frame that's
   // evaluating it, before runUserRule() reaches its trailing recompute() call.
   test('recompute() guards against pending being cleared reentrantly by the user callback', () => {
     const { onStrokeChange, onPlaceChange, checks } = setup()
-    const onGeometryChange = jest.fn(() => {
+    const onGeometryPreview = jest.fn(() => {
       checks.reset() // reentrant — clears `pending` mid-evaluation, frame is already null by now
       return true
     })
-    checks.update({ feature: square, numVertices: 3, onGeometryChange })
+    checks.update({ feature: square, numVertices: 3, onGeometryPreview })
     onStrokeChange.mockClear()
     onPlaceChange.mockClear()
     expect(() => jest.runAllTimers()).not.toThrow()
-    expect(onGeometryChange).toHaveBeenCalledTimes(1)
+    expect(onGeometryPreview).toHaveBeenCalledTimes(1)
     // recompute()'s trailing call (after the reentrant reset) is a safe no-op — no further
     // gate changes are reported off a pending the reentrant reset() already cleared.
     expect(onStrokeChange).not.toHaveBeenCalled()

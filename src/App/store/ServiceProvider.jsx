@@ -17,8 +17,14 @@ export const ServiceProvider = ({ eventBus, pluginRegistry, children }) => {
   const mapStatusRef = useRef(null)
   const announce = useMemo(() => createAnnouncer(mapStatusRef), [])
   const hints = useMemo(() => createHints(announce), [announce])
-  const { layoutRefs } = useApp()
-  const mapFocus = useMemo(() => createMapFocus({ viewportRef: layoutRefs.viewportRef }), [])
+  const { layoutRefs, interfaceType } = useApp()
+  // Read through a ref so the memoised mapFocus always sees the current interface type
+  const interfaceTypeRef = useRef(interfaceType)
+  interfaceTypeRef.current = interfaceType
+  const mapFocus = useMemo(() => createMapFocus({
+    viewportRef: layoutRefs.viewportRef,
+    getInterfaceType: () => interfaceTypeRef.current
+  }), [])
   // One of each per map, so maps on the same page keep their own symbols, symbolDefaults and patterns
   const symbolRegistry = useMemo(() => createSymbolRegistry(), [])
   const patternRegistry = useMemo(() => createPatternRegistry(), [])

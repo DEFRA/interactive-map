@@ -1,5 +1,5 @@
 // src/core/PluginInits.jsx
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { withPluginContexts } from './pluginWrapper.js'
 import { withPluginApiContexts, usePluginApiState } from './pluginApiWrapper.js'
 import { useInterfaceAPI } from '../hooks/useInterfaceAPI.js'
@@ -27,18 +27,19 @@ const PluginInit = ({ plugin }) => {
   }, [plugin, stateRef])
 
   const { InitComponent } = plugin
-  const { api, ...pluginConfig } = plugin?.config || {}
+  // The same object on every render, so plugins can depend on it in effects
+  const pluginConfig = useMemo(() => {
+    const { api, ...config } = plugin?.config || {}
+    return config
+  }, [plugin])
 
   if (!InitComponent) {
     return null
   }
 
-  const WrappedInit = withPluginContexts(InitComponent, {
-    pluginId: plugin.id,
-    pluginConfig
-  })
+  const WrappedInit = withPluginContexts(InitComponent)
 
-  return <WrappedInit />
+  return <WrappedInit pluginId={plugin.id} pluginConfig={pluginConfig} />
 }
 
 export const PluginInits = () => {

@@ -1,23 +1,14 @@
-import { flattenStyleProperties } from '../utils/flattenStyleProperties.js'
+import { toStyleChanges, definedOnly, mapStyleIds } from '../utils/flattenStyleProperties.js'
 import { logger } from '../../../../src/services/logger.js'
 
 const STYLE_KEYS = new Set(['stroke', 'fill', 'strokeWidth'])
 
-// A partial patch — unlike addFeature.js building a whole new feature from scratch,
-// flattenStyleProperties would otherwise write stroke/fill/strokeWidth as explicit
-// `undefined` for any of the three the caller didn't mention, blanking out whatever that
-// feature already had.
-const definedOnly = (properties) => {
-  const result = {}
-  for (const [key, value] of Object.entries(properties)) {
-    if (value !== undefined) {
-      result[key] = value
-    }
-  }
-  return result
-}
+// A removed key is reported as null, so a page that merges the payload into its saved copy
+// of the feature clears it too
+const toPayload = (changes) =>
+  Object.fromEntries(Object.entries(changes).map(([key, value]) => [key, value === undefined ? null : value]))
 
-export const setStyle = ({ mapProvider, services }, featureId, styleChanges = {}) => {
+export const setStyle = ({ mapState, mapProvider, services }, featureId, styleChanges = {}) => {
   const { draw } = mapProvider
   const { eventBus } = services
 
@@ -25,7 +16,8 @@ export const setStyle = ({ mapProvider, services }, featureId, styleChanges = {}
     return false
   }
 
-  if (!draw.get(featureId)) {
+  const feature = draw.get(featureId)
+  if (!feature) {
     logger.warn('setStyle: no feature found for id', featureId)
     return false
   }
@@ -35,9 +27,14 @@ export const setStyle = ({ mapProvider, services }, featureId, styleChanges = {}
   for (const [key, value] of Object.entries(styleChanges)) {
     (STYLE_KEYS.has(key) ? styleProps : symbolProps)[key] = value
   }
-  const properties = definedOnly({ ...flattenStyleProperties(styleProps), ...symbolProps })
+  // A partial patch: style keys left out stay as they are. Setting one replaces all of its
+  // per-style values, which reach the adapter as undefined, meaning remove.
+  const changes = {
+    ...toStyleChanges(feature.properties, styleProps, mapStyleIds(mapState)),
+    ...definedOnly(symbolProps)
+  }
 
-  draw.setStyle(featureId, properties)
-  eventBus.emit('draw:stylechange', { featureId, properties })
+  draw.setStyle(featureId, changes)
+  eventBus.emit('draw:stylechange', { featureId, properties: toPayload(changes) })
   return true
 }

@@ -8,7 +8,7 @@ const MAP_STYLE = { id: 'outdoor' }
 describe('EsriDataset', () => {
   beforeEach(() => {
     datasetRegistry.attachMapStyle(MAP_STYLE)
-    datasetRegistry.attachCreateDataset(def => new EsriDataset(def))
+    datasetRegistry.attachCreateDataset(def => new EsriDataset(def, datasetRegistry))
     datasetRegistry.mockExtend({
       // applyLayerPaintProperties
       'esri-bare': { id: 'esri-bare', style: { stroke: null } },

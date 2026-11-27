@@ -1,7 +1,6 @@
 import { logger } from '../../../../src/services/logger.js'
-import { datasetRegistry } from '../registry/datasetRegistry.js'
 
-export const setFeatureVisibility = ({ pluginState: { dispatch } }, visible, featureIds, { datasetId = null } = {}) => {
+export const setFeatureVisibility = ({ pluginState: { dispatch, datasetRegistry } }, visible, featureIds, { datasetId = null } = {}) => {
   if (datasetId) {
     const dataset = datasetRegistry.getDataset(datasetId)
     if (dataset && !dataset.idProperty && !dataset.generateIds) {

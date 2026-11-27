@@ -15,7 +15,7 @@ import { parseDataProperties } from './parseDataProperties.js'
 import { checkDeviceSupport } from './deviceChecker.js'
 import { createButton } from './buttonManager.js'
 import { setupBehavior, shouldLoadComponent } from './behaviourController.js'
-import { updateDOMState, removeLoadingState } from './domStateManager.js'
+import { updateDOMState, removeLoadingState, showPageIfMapInline } from './domStateManager.js'
 import { renderError } from './renderError.js'
 import { mergeConfig } from '../config/mergeConfig.js'
 import { createBreakpointDetector } from '../utils/detectBreakpoint.js'
@@ -99,7 +99,8 @@ export default class InteractiveMap {
     this._hybridBehaviourCleanup = setupBehavior(this)
 
     if (shouldLoadComponent(this.config)) {
-      this.loadApp()
+      showPageIfMapInline(this)
+      this.loadApp() // NOSONAR: Not changing for now as used in production
     } else {
       removeLoadingState()
     }
@@ -120,7 +121,7 @@ export default class InteractiveMap {
         history.pushState({ isBack: true }, '', e.currentTarget.getAttribute('href'))
       }
       // Only a genuine launcher click moves focus into the map — never a resize/breakpoint transition.
-      this.loadApp({ focusOnMount: true })
+      this.loadApp({ focusOnMount: true }) // NOSONAR: Not changing for now as used in production
     }
   }
 
@@ -538,9 +539,10 @@ export default class InteractiveMap {
    * Fit the map view to a bounding box or GeoJSON geometry, respecting the safe zone padding.
    *
    * @param {[number, number, number, number] | object} target - Bounds as [west, south, east, north] or [minX, minY, maxX, maxY] depending on the crs, or a GeoJSON Feature, FeatureCollection, or geometry.
+   * @param {import('../types.js').FitToBoundsOptions} [options]
    */
-  fitToBounds (target) {
-    this.eventBus.emitWhenReady(events.MAP_FIT_TO_BOUNDS, target)
+  fitToBounds (target, options) {
+    this.eventBus.emitWhenReady(events.MAP_FIT_TO_BOUNDS, target, options)
   }
 
   /**
@@ -550,6 +552,14 @@ export default class InteractiveMap {
    */
   setView (opts) {
     this.eventBus.emitWhenReady(events.MAP_SET_VIEW, opts)
+  }
+
+  /**
+   * Move the map to its configured `bounds` or `extent`, or to `center` and `zoom` if no bounds are set,
+   * respecting the safe zone padding. Ignores any view read from the URL when the map loaded.
+   */
+  resetView () {
+    this.eventBus.emitWhenReady(events.MAP_RESET_VIEW)
   }
 
   /**
@@ -564,7 +574,7 @@ export default class InteractiveMap {
     } else if (this._root) {
       // App is already open — no-op
     } else {
-      this.loadApp()
+      this.loadApp() // NOSONAR: Not changing for now as used in production
     }
   }
 

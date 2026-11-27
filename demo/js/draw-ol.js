@@ -1,12 +1,12 @@
-// InteractiveMap with OpenLayers provider and draw-ol plugin
+// InteractiveMap with OpenLayers provider and draw plugin
 import InteractiveMap from '../../src/index.js'
 import { vtsMapStyles27700, ngdMapStyles27700, apgbAerialStyle } from './mapStyles.js'
 import { transformGeocodeRequest, transformVtsRequest27700 } from './auth.js'
 // Providers
-import openLayersProvider from '/providers/beta/openlayers/src/index.js'
-import openNamesProvider from '/providers/beta/open-names/src/index.js'
+import openLayersProvider from '/providers/openlayers/src/index.js'
+import openNamesProvider from '/providers/open-names/src/index.js'
 // Plugins
-import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
+import mapStylesPlugin from '/plugins/map-styles/src/index.js'
 import createDrawPlugin from '/plugins/draw/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
@@ -47,10 +47,15 @@ const isEastOfWalesBorder = (geometry) =>
 
 const drawPlugin = createDrawPlugin({
   snapLayers: ['OS/TopographicArea_1/Agricultural Land', 'OS/TopographicLine/Building Outline'],
-  onGeometryChange: (event) => { console.log(event.phase); return {
+  snapMinZoom: 15,
+  onGeometryPreview: (event) => ({
     valid: isEastOfWalesBorder(event.feature.geometry),
     reason: 'Points must be placed east of the England/Wales border'
-  }}
+  }),
+  onGeometryChange: (event) => ({
+    valid: isEastOfWalesBorder(event.feature.geometry),
+    reason: 'Shapes must be east of the England/Wales border'
+  })
 })
 
 const interactiveMap = new InteractiveMap('map', {

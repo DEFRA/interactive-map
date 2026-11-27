@@ -3,16 +3,16 @@ import { createHarness } from './__helpers__/harness.js'
 // fireGeometryChange/emitGeometryValidation/pushUndo are the shared mixin from
 // utils/geometryValidation.js — their own behaviour is covered by
 // utils/geometryValidation.test.js. This file only tests what's specific to editPointMode:
-// pushUndo's UNDO_OP_PHASE wiring for 'move_point', handleUndo's single-op-type dispatch,
+// pushUndo's validation for 'move_point', handleUndo's single-op-type dispatch,
 // and undoMovePoint itself.
 describe('undoHandlers', () => {
-  test('pushUndo maps move_point to the commit-move phase', () => {
+  test('pushUndo maps move_point to the change phase', () => {
     jest.useFakeTimers()
     const { ctx, map } = createHarness()
     map.fire.mockClear()
     ctx.pushUndo({ type: 'move_point', featureId: 'feat-1', vertexIndex: 0 })
     jest.runAllTimers()
-    expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'commit-move' }))
+    expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'change' }))
     jest.useRealTimers()
   })
 
@@ -28,15 +28,44 @@ describe('undoHandlers', () => {
     expect(() => ctx.handleUndo(state)).not.toThrow()
   })
 
-  // handleUndo's own call to emitGeometryValidation with the inverse phase isn't
-  // re-asserted here — for a Point, UNDO_OP_PHASE and UNDO_INVERSE_PHASE are the same
-  // single-entry map, so it would just re-confirm the 'commit-move' phase already checked
-  // above via pushUndo. (editVertexMode's equivalent op/inverse maps genuinely differ —
-  // see its own undoHandlers.test.js.)
+  // handleUndo's own call to emitGeometryValidation isn't re-asserted here — it reports the
+  // same 'change' phase already checked above via pushUndo.
   test('undoMovePoint restores the previous position directly, guarding a missing feature', () => {
     const { ctx, state } = createHarness()
     ctx.undoMovePoint({ ...state, featureId: 'missing' }, { previousPosition: [0, 0], featureId: 'missing' })
     ctx.undoMovePoint(state, { previousPosition: [3, 4], featureId: 'feat-1' })
     expect(ctx.getFeature('feat-1').coordinates).toEqual([3, 4])
+  })
+
+  describe('setGeometry', () => {
+    test('moves the point on draw.setgeometry and re-validates as a change', () => {
+      jest.useFakeTimers()
+      const { ctx, map } = createHarness()
+      map.fire.mockClear()
+      map.fire('draw.setgeometry', { geometry: { type: 'Point', coordinates: [7, 8] } })
+      expect(ctx.getFeature('feat-1').coordinates).toEqual([7, 8])
+      jest.runAllTimers()
+      expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'change' }))
+      jest.useRealTimers()
+    })
+
+    test('undo moves the point back and re-validates as a change', () => {
+      jest.useFakeTimers()
+      const { ctx, state, map } = createHarness()
+      const original = [...ctx.getFeature('feat-1').coordinates]
+      map.fire('draw.setgeometry', { geometry: { type: 'Point', coordinates: [7, 8] } })
+      jest.runAllTimers()
+      map.fire.mockClear()
+      ctx.handleUndo(state)
+      expect(ctx.getFeature('feat-1').coordinates).toEqual(original)
+      jest.runAllTimers()
+      expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'change' }))
+      jest.useRealTimers()
+    })
+
+    test('guards a missing feature', () => {
+      const { ctx, state } = createHarness()
+      expect(() => ctx.onSetGeometry({ ...state, featureId: 'missing' }, { geometry: { type: 'Point', coordinates: [1, 1] } })).not.toThrow()
+    })
   })
 })

@@ -1,8 +1,7 @@
 import { mappedDatasetsReducer } from '../../reducers/mappedDatasetsReducer.js'
 import { datasets as datasetDefinitions } from '../../reducers/__data__/demoDatasets.js'
 import { datasets as esriDatasetDefinitions } from '../../reducers/__data__/esriDatasets.js'
-import { attachGlobalState } from '../globalDataset.js'
-const { datasetRegistry } = jest.requireActual('../datasetRegistry.js')
+const { createDatasetRegistry } = jest.requireActual('../datasetRegistry.js')
 const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets: datasetDefinitions })
 
 const globalState = {
@@ -12,14 +11,16 @@ const globalState = {
 }
 
 // By adding jest.mock('<path-to>/datasetRegistry.js')
-// to a test file, any import of datasetRegistry from that file will get this
-// version with the demo datasets attached for testing.
+// to a test file, datasetRegistry imported from that file will be a registry
+// with the demo datasets attached for testing, to pass to datasets and adapters.
 // If we need to test against a different set of datasets
 // we can import that config from demoDatasets.js (or roll our own)
 // and attach it in the specific test
+const datasetRegistry = createDatasetRegistry()
+
 beforeEach(() => {
   datasetRegistry.attach(mappedDatasets, orderedDatasets)
-  attachGlobalState(globalState)
+  datasetRegistry.attachGlobals(globalState)
 })
 
 datasetRegistry.mockExtend = (extraDatasets) => datasetRegistry.attach(
@@ -35,4 +36,4 @@ datasetRegistry.useEsriDatasets = (extraDatasets = {}) => {
   )
 }
 
-export { datasetRegistry }
+export { datasetRegistry, createDatasetRegistry }

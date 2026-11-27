@@ -1,6 +1,6 @@
 /**
  * Generic reducer action that shallow-merges the payload into state.
- * Shared by MAP_MOVE, MAP_MOVE_END and MAP_FIRST_IDLE.
+ * Shared by MAP_MOVE_START, MAP_MOVE, MAP_MOVE_END and MAP_FIRST_IDLE.
  */
 const mergePayload = (state, payload) => ({
   ...state,
@@ -17,12 +17,29 @@ const setMapStyle = (state, payload) => ({
   mapStyle: payload
 })
 
+const setMapStyles = (state, payload) => ({
+  ...state,
+  mapStyles: payload
+})
+
 const setMapSize = (state, payload) => {
   return {
     ...state,
     mapSize: payload
   }
 }
+
+const setResetViewTarget = (state, payload) => ({
+  ...state,
+  resetViewTarget: payload,
+  isResetViewTargetKnown: true
+})
+
+const clearResetViewTarget = (state) => ({
+  ...state,
+  resetViewTarget: null,
+  isResetViewTargetKnown: false
+})
 
 const updateCrossHair = (state, payload) => {
   return {
@@ -63,11 +80,15 @@ const removeMarker = (state, payload) => {
 
 export const actionsMap = {
   SET_MAP_READY: setMapReady,
+  MAP_MOVE_START: mergePayload,
   MAP_MOVE: mergePayload,
   MAP_MOVE_END: mergePayload,
   MAP_FIRST_IDLE: mergePayload,
   SET_MAP_STYLE: setMapStyle,
+  SET_MAP_STYLES: setMapStyles,
   SET_MAP_SIZE: setMapSize,
+  SET_RESET_VIEW_TARGET: setResetViewTarget,
+  CLEAR_RESET_VIEW_TARGET: clearResetViewTarget,
   UPDATE_CROSS_HAIR: updateCrossHair,
   UPSERT_LOCATION_MARKER: upsertMarker,
   REMOVE_LOCATION_MARKER: removeMarker

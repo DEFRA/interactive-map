@@ -49,9 +49,20 @@ describe('getValueForStyle', () => {
     expect(getValueForStyle(colorMap)).toBe('#000')
   })
 
-  // --- Case 8: fallback
+  // --- Case 8: numbers
+  it('returns a number, including zero', () => {
+    expect(getValueForStyle(42, 'anyStyle')).toBe(42)
+    expect(getValueForStyle(0, 'anyStyle')).toBe(0)
+  })
+
+  it('returns the style-specific number, including zero', () => {
+    const widths = { outdoor: 2, dark: 0 }
+    expect(getValueForStyle(widths, 'outdoor')).toBe(2)
+    expect(getValueForStyle(widths, 'dark')).toBe(0)
+  })
+
+  // --- Case 9: fallback
   it('returns null for unsupported types to hit final return null', () => {
-    expect(getValueForStyle(42, 'anyStyle')).toBeNull() // number
     expect(getValueForStyle(true, 'anyStyle')).toBeNull() // boolean
     expect(getValueForStyle([], 'anyStyle')).toBeNull() // array
     expect(getValueForStyle(() => {}, 'anyStyle')).toBeNull() // function

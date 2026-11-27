@@ -3,7 +3,8 @@ import { isActiveFeature } from '../../../../../../../node_modules/@mapbox/mapbo
 import {
   getSnapInstance, isSnapEnabled, getSnapLngLat, triggerSnapAtPoint, clearSnapState, setAutoSnapSuspended
 } from '../../utils/snapHelpers.js'
-import { validatePlacement } from '../../../../validation/validateGeometry.js'
+import { handleEditModeDrag } from '../../utils/editModeEvents.js'
+import { validatePlacement, toPlacementBlocked } from '../../../../validation/validateGeometry.js'
 
 const MODE = 'edit_point'
 
@@ -13,15 +14,12 @@ const MODE = 'edit_point'
 // Point candidate is built and validated directly instead.
 const canPlaceAt = (map, coord) => {
   const candidate = { type: 'Feature', geometry: { type: 'Point', coordinates: coord }, properties: {} }
-  const { valid, reason } = validatePlacement(
-    candidate,
-    { mode: MODE, vertexIndex: 0 },
-    { onGeometryChange: map._drawGeometryValidator }
-  )
-  if (!valid) {
-    map.fire('draw.placementblocked', { feature: candidate, reason: reason ?? null, phase: 'place', mode: MODE, vertexIndex: 0 })
+  const context = { mode: MODE, vertexIndex: 0 }
+  const result = validatePlacement(candidate, context, { onGeometryPreview: map._drawPreviewValidator })
+  if (!result.valid) {
+    map.fire('draw.placementblocked', toPlacementBlocked(candidate, result, context))
   }
-  return valid
+  return result.valid
 }
 
 /**
@@ -90,27 +88,15 @@ export const pointerHandlers = {
     return current[0] !== state._moveStartPosition[0] || current[1] !== state._moveStartPosition[1]
   },
 
+  // Without an active snap, selectedCoordPaths is [] for a point (see editPointMode.js), so
+  // DirectSelect.onDrag routes the drag to dragFeature, its built-in whole-feature delta move,
+  // which already handles a Point feature correctly.
   onDrag (state, e) {
-    if (state.interfaceType === 'touch') {
-      return
-    }
+    handleEditModeDrag(this, state, e, this._snapDrag)
+  },
 
-    this.map.fire('draw.geometrychange', state.feature)
-
-    const snap = getSnapInstance(this.map)
-    if (snap) {
-      snap.snapStatus = false
-      snap.snapCoords = null
-    }
-
-    if (!isSnapEnabled(state) || !snap?.status) {
-      // selectedCoordPaths is [] for a point (see editPointMode.js) — DirectSelect.onDrag's
-      // own selectedCoordPaths.length > 0 check routes this to dragFeature, its built-in
-      // whole-feature delta move, which already handles a Point feature correctly.
-      DirectSelect.onDrag.call(this, state, e)
-      return
-    }
-
+  // Moves the point to the snapped position
+  _snapDrag (state, e, snap) {
     if (!state.canDragMove) {
       return
     }

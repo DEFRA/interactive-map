@@ -1,6 +1,4 @@
-import { datasetRegistry } from '../../registry/datasetRegistry.js'
-
-export const LayersMenuCheckbox = ({ menuGroupItem, onChange }) => {
+export const LayersMenuCheckbox = ({ menuGroupItem, datasetRegistry, onChange }) => {
   const registryDataset = datasetRegistry.getDataset(menuGroupItem.id)
   if (!registryDataset) {
     return null

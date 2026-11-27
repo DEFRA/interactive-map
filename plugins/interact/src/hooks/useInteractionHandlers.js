@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { areAllContiguous, isContiguousWithAny } from '../utils/spatial.js'
 import { getFeaturesAtPoint, findMatchingFeature, buildLayerConfigMap } from '../utils/featureQueries.js'
-import { scaleFactor } from '../../../../src/config/appConfig.js'
 import { isStandaloneLabel } from '../../../../src/utils/symbolUtils.js'
 
 /**
@@ -13,7 +12,7 @@ import { isStandaloneLabel } from '../../../../src/utils/symbolUtils.js'
  *
  * @param {Object} markers - markers object from mapState (has .items and .markerRefs)
  * @param {{ x: number, y: number }} point - container-relative pixel coordinates
- * @param {number} scale - scaleFactor for the current mapSize (e.g. 1.5 for medium)
+ * @param {number} scale - mapState.mapSizeScale (e.g. 1.5 for medium)
  * @returns {string|null}
  */
 const findMarkerAtPoint = (markers, point, scale) => {
@@ -178,7 +177,7 @@ const logDebugFeatures = (coords, features) => {
  * marker hit-testing is never performed.
  *
  * @param {Object} deps
- * @param {Object} deps.mapState - Map state including markers and mapSize
+ * @param {Object} deps.mapState - Map state including markers and mapSizeScale
  * @param {Object} deps.pluginState - Plugin state including interactionModes, layers, etc.
  * @param {Object} deps.services - Services including eventBus
  * @param {Object} deps.mapProvider - Map provider instance for feature queries
@@ -210,7 +209,7 @@ const useHandleInteraction = ({ mapProvider, layers, interactionModes, multiSele
 }
 
 export const useInteractionHandlers = ({ mapState, pluginState, services, mapProvider }) => {
-  const { markers, mapSize } = mapState
+  const { markers, mapSizeScale: scale } = mapState
   const {
     dispatch, layers, interactionModes, multiSelect, contiguous,
     marker: markerOptions, tolerance, selectedFeatures, selectedMarkers,
@@ -218,7 +217,6 @@ export const useInteractionHandlers = ({ mapState, pluginState, services, mapPro
   } = pluginState
   const { eventBus } = services
   const layerConfigMap = buildLayerConfigMap(layers)
-  const scale = scaleFactor[mapSize] ?? 1
 
   const processFeatureMatch = useCallback(({ feature, config }) => {
     markers.remove('location')

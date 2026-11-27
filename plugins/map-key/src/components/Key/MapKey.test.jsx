@@ -1,10 +1,5 @@
 import { render, act } from '@testing-library/react'
 import { MapKey } from './MapKey'
-import { getDatasetRegistry } from '../../registry/index.js'
-
-jest.mock('../../registry/index.js', () => ({
-  getDatasetRegistry: jest.fn()
-}))
 
 // eslint-disable-next-line no-var -- jest.mock factories may only reference vars prefixed "mock"
 var mockKeyRenderCount = 0
@@ -40,9 +35,12 @@ const makeRegistry = (items = [], hasGroups = false) => ({
 })
 
 let eventBus
-const baseProps = () => ({
+// This map's datasets registry, which MapKeyInit puts in plugin state
+let datasetRegistry
+const baseProps = (pluginState = {}) => ({
   mapState: { mapStyle: { id: 'default' } },
   pluginConfig: { noKeyItemText: 'No items' },
+  pluginState: { datasetRegistry, ...pluginState },
   services: { eventBus }
 })
 
@@ -54,7 +52,7 @@ beforeEach(() => {
 
 describe('MapKey', () => {
   describe('when datasetRegistry is null', () => {
-    beforeEach(() => { getDatasetRegistry.mockReturnValue(null) })
+    beforeEach(() => { datasetRegistry = null })
 
     it('passes empty items and hasGroups false to Key', () => {
       const { getByTestId } = render(<MapKey {...baseProps()} />)
@@ -62,17 +60,17 @@ describe('MapKey', () => {
       expect(getByTestId('key').dataset.hasGroups).toBe('false')
     })
 
-    it('calls requestOnce for datasets:registry', () => {
+    it('does not request the registry itself', () => {
       render(<MapKey {...baseProps()} />)
-      expect(eventBus.requestOnce).toHaveBeenCalledWith('datasets:registry', expect.any(Function))
+      expect(eventBus.requestOnce).not.toHaveBeenCalled()
     })
 
-    it('populates key items when the registry arrives via requestOnce', () => {
-      render(<MapKey {...baseProps()} />)
-      const setReg = eventBus.requestOnce.mock.calls[0][1]
+    it('populates key items when the registry arrives in plugin state', () => {
+      const { rerender, getByTestId } = render(<MapKey {...baseProps()} />)
       const registry = makeRegistry([{ id: '1' }, { id: '2' }], true)
-      act(() => { setReg(registry) })
+      rerender(<MapKey {...baseProps({ datasetRegistry: registry })} />)
       expect(registry.keyItems).toHaveBeenCalled()
+      expect(getByTestId('key').dataset.keyGroupsLength).toBe('2')
     })
   })
 
@@ -81,7 +79,7 @@ describe('MapKey', () => {
 
     beforeEach(() => {
       registry = makeRegistry([{ id: '1' }, { id: '2' }], true)
-      getDatasetRegistry.mockReturnValue(registry)
+      datasetRegistry = registry
     })
 
     it('passes keyGroups and hasGroups from the registry to Key', () => {
@@ -129,10 +127,26 @@ describe('MapKey', () => {
       expect(registry.invalidateKeyItemsOnMenuStateChange).toHaveBeenCalledWith(menuState)
       expect(registry.keyItems).toHaveBeenCalledTimes(callsAtMount + 1)
     })
+
+    it('merges the latest key groups from plugin state when an event fires after they change', () => {
+      datasetRegistry = makeRegistry([
+        { id: '1', type: 'flat', keyDefinition: { id: '1' } },
+        { id: '2', type: 'flat', keyDefinition: { id: '2' } }
+      ])
+      const { rerender, getByTestId } = render(<MapKey {...baseProps()} />)
+      const groupState = {
+        groups: [{ id: 'manual', type: 'group', groupLabel: 'Manual' }],
+        keyDefinitions: [{ id: 'm1', groupId: 'manual' }]
+      }
+      rerender(<MapKey {...baseProps(groupState)} />)
+      const onDatasetsChanged = eventBus.on.mock.calls.find(([e]) => e === 'datasets:changed')[1]
+      act(() => { onDatasetsChanged() })
+      expect(getByTestId('key').dataset.keyGroupsLength).toBe('3')
+    })
   })
 
   describe('props forwarded to Key', () => {
-    beforeEach(() => { getDatasetRegistry.mockReturnValue(null) })
+    beforeEach(() => { datasetRegistry = null })
 
     it('passes noKeyItemText from pluginConfig', () => {
       const { getByTestId } = render(<MapKey {...baseProps()} />)

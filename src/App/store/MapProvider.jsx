@@ -2,6 +2,7 @@
 import React, { createContext, useEffect, useReducer, useMemo, useRef } from 'react'
 import { initialState, reducer } from './mapReducer.js'
 import { EVENTS as events } from '../../config/events.js'
+import { getMapSizeScale } from '../../config/mapSizeScales.js'
 
 export const MapContext = createContext(null)
 
@@ -20,6 +21,7 @@ export const MapProvider = ({ options, children }) => {
     const mapStyle = mapStyles.find(s => s.id === savedMapStyleId) || mapStyles[0]
     const savedMapSize = localStorage.getItem(`${options.id}:mapSize`)
     const mapSize = savedMapSize || options.mapSize
+    dispatch({ type: 'SET_MAP_STYLES', payload: mapStyles })
     dispatch({ type: 'SET_MAP_STYLE', payload: mapStyle })
     dispatch({ type: 'SET_MAP_SIZE', payload: mapSize })
   }
@@ -68,8 +70,10 @@ export const MapProvider = ({ options, children }) => {
     localStorage.setItem(`${options.id}:mapSize`, state.mapSize)
   }, [state.mapStyle, state.mapSize])
 
+  // mapSizeScale is worked out from mapSize here rather than stored, so the two can't drift apart
   const mapStore = useMemo(() => ({
     ...state,
+    mapSizeScale: getMapSizeScale(state.mapSize),
     dispatch
   }), [state])
 

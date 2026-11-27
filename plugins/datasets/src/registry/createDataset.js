@@ -1,5 +1,5 @@
 import { Dataset } from './dataset.js'
 
-export const createDataset = (datasetDefinition) => {
-  return new Dataset(datasetDefinition)
+export const createDataset = (datasetDefinition, datasetRegistry) => {
+  return new Dataset(datasetDefinition, datasetRegistry)
 }

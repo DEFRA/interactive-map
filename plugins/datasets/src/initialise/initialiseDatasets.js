@@ -1,11 +1,10 @@
 import { createDynamicSource } from '../fetch/createDynamicSource.js'
 import { mappedDatasetsReducer } from '../reducers/mappedDatasetsReducer.js'
-import { datasetRegistry } from '../registry/datasetRegistry.js'
-import { attachMenuStateRef } from '../registry/isVisibleWhen.js'
 import { datasetsToMenu } from '../reducers/datasetsToMenu.js'
 
 export const initialiseDatasets = ({
   adapter,
+  datasetRegistry,
   pluginConfig,
   mapStyle,
   mapProvider,
@@ -28,7 +27,7 @@ export const initialiseDatasets = ({
   datasetRegistry.attach(mappedDatasets, orderedDatasets, mapStyle)
   const menu = datasetsToMenu({ datasets })
 
-  eventBus.requestOnce('menu:state', attachMenuStateRef) // Request the menu state from the menu plugin
+  eventBus.requestOnce('menu:state', menuStateRef => datasetRegistry.attachMenuStateRef(menuStateRef)) // Request the menu state from the menu plugin
 
   dispatch({ type: 'SET_MENU', payload: { menu } })
   dispatch({ type: 'SET_DATASETS', payload: { mappedDatasets, orderedDatasets } })
@@ -42,7 +41,8 @@ export const initialiseDatasets = ({
       const dynamicSource = createDynamicSource({
         dynamicGeoJSON,
         mapProvider,
-        onUpdate: (datasetId, geojson) => adapter.setData(datasetId, geojson)
+        onUpdate: (datasetId, geojson) => adapter.setData(datasetId, geojson),
+        onChange: (datasetId, changes) => adapter.updateData(datasetId, changes)
       })
       dynamicSources.set(registryDataset.id, dynamicSource)
     })
@@ -75,31 +75,6 @@ export const initialiseDatasets = ({
       dynamicSources.forEach(source => source.destroy())
       dynamicSources.clear()
       adapter.destroy()
-    },
-
-    /**
-     * Refresh a dynamic source - clears cache and re-fetches
-     * @param {string} datasetId - Dataset ID to refresh
-     */
-    refreshDataset (datasetId) {
-      dynamicSources.get(datasetId)?.refresh()
-    },
-
-    /**
-     * Clear a dynamic source's cache
-     * @param {string} datasetId - Dataset ID to clear
-     */
-    clearDatasetCache (datasetId) {
-      dynamicSources.get(datasetId)?.clear()
-    },
-
-    /**
-     * Get feature count for a dynamic source
-     * @param {string} datasetId - Dataset ID
-     * @returns {number|null} Feature count or null if not a dynamic source
-     */
-    getFeatureCount (datasetId) {
-      return dynamicSources.get(datasetId)?.getFeatureCount() ?? null
     }
   }
 }

@@ -3,11 +3,11 @@ import { datasetRegistry } from '../../registry/datasetRegistry.js'
 import { createPatternRegistry } from '../../../../../src/services/patternRegistry.js'
 import { createSymbolRegistry } from '../../../../../src/services/symbolRegistry.js'
 import { logger } from '../../../../../src/services/logger.js'
-import { SymbolImageCache } from '../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
-import { PatternImageCache } from '../../../../../providers/beta/openlayers/src/utils/patternImages.js'
-import { buildFilterEvaluator } from '../../../../../providers/beta/openlayers/src/utils/filterEvaluator.js'
+import { SymbolImageCache } from '../../../../../providers/openlayers/src/utils/symbolImages.js'
+import { PatternImageCache } from '../../../../../providers/openlayers/src/utils/patternImages.js'
+import { buildFilterEvaluator } from '../../../../../providers/openlayers/src/utils/filterEvaluator.js'
 // The OL provider registers British National Grid when it loads
-import '../../../../../providers/beta/openlayers/src/utils/bngProjection.js'
+import '../../../../../providers/openlayers/src/utils/bngProjection.js'
 import VectorLayer from 'ol/layer/Vector.js'
 import VectorTileLayer from 'ol/layer/VectorTile.js'
 import * as layerBuilders from './layerBuilders.js'
@@ -72,7 +72,7 @@ let map, mapProvider, adapter
 beforeEach(() => {
   map = makeMap()
   mapProvider = makeMapProvider(map)
-  adapter = new OpenLayersLayerAdapter(mapProvider, symbolRegistry, patternRegistry)
+  adapter = new OpenLayersLayerAdapter(mapProvider, symbolRegistry, patternRegistry, datasetRegistry)
   datasetRegistry.attachCreateDataset(adapter.createDataset)
   datasetRegistry.mockExtend({
     'ds-fill': { id: 'ds-fill', style: { fill: '#0000ff' }, geojson: { type: 'FeatureCollection', features: [point(1, [0, 0])] } },
@@ -203,6 +203,29 @@ describe('setData', () => {
 
   it('is a no-op for a dataset with no tracked source', () => {
     expect(() => adapter.setData('does-not-exist', { type: 'FeatureCollection', features: [] })).not.toThrow()
+  })
+})
+
+describe('updateData', () => {
+  const parcel = (ref, x) => ({ type: 'Feature', properties: { ref }, geometry: { type: 'Point', coordinates: [x, x] } })
+  const featureIds = (source) => source.getFeatures().map(feature => feature.getId()).sort()
+
+  it('adds and removes features by id, leaving the rest in place', async () => {
+    await adapter.addDataset('ds-dynamic')
+    const source = getLayer('ds-dynamic').getSource()
+    adapter.setData('ds-dynamic', { type: 'FeatureCollection', features: [parcel('a', 1), parcel('b', 2)] })
+    const kept = source.getFeatureById('b')
+
+    adapter.updateData('ds-dynamic', { add: [parcel('c', 3)], remove: ['a', 'not-held'] })
+    expect(featureIds(source)).toEqual(['b', 'c'])
+    expect(source.getFeatureById('b')).toBe(kept)
+
+    adapter.updateData('ds-dynamic', { add: [], remove: ['c'] })
+    expect(featureIds(source)).toEqual(['b'])
+  })
+
+  it('is a no-op for a dataset with no tracked source', () => {
+    expect(() => adapter.updateData('does-not-exist', { add: [], remove: [] })).not.toThrow()
   })
 })
 

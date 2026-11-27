@@ -36,7 +36,7 @@ describe('newPoint', () => {
       extra: 'opt'
     })
 
-    expect(eventBus.emit).toHaveBeenCalledWith('draw:started', { mode: 'draw_point' })
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:started', { mode: 'draw_point', featureId: 'f1' })
 
     expect(draw.changeMode).toHaveBeenCalledWith('draw_point', expect.objectContaining({
       container: 'viewport',
@@ -104,7 +104,7 @@ describe('newPoint', () => {
     const { context, draw } = makeContext()
     const onGeometryChange = jest.fn()
     newPoint(context, 'f1', { onGeometryChange })
-    expect(draw._geometryValidator).toBe(onGeometryChange)
+    expect(draw._commitValidator).toBe(onGeometryChange)
     expect(draw.changeMode.mock.calls[0][1]).not.toHaveProperty('onGeometryChange')
   })
 
@@ -112,6 +112,14 @@ describe('newPoint', () => {
     const pluginOnGeometryChange = jest.fn()
     const { context, draw } = makeContext({ pluginConfig: { onGeometryChange: pluginOnGeometryChange } })
     newPoint(context, 'f1')
-    expect(draw._geometryValidator).toBe(pluginOnGeometryChange)
+    expect(draw._commitValidator).toBe(pluginOnGeometryChange)
+  })
+
+  test('stores a per-call onGeometryFinish without leaking it into mode options', () => {
+    const { context, draw } = makeContext()
+    const onGeometryFinish = jest.fn()
+    newPoint(context, 'f1', { onGeometryFinish })
+    expect(draw._finishValidator).toBe(onGeometryFinish)
+    expect(draw.changeMode.mock.calls[0][1]).not.toHaveProperty('onGeometryFinish')
   })
 })

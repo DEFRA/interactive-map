@@ -76,6 +76,13 @@ export const undoDeleteVertex = (olFeature, op) => {
   return vertexIndex
 }
 
+// Restores the whole geometry a setGeometry replaced. Vertex indices no longer refer to the
+// same points, so there is nothing to re-select.
+export const undoReplaceGeometry = (olFeature, op) => {
+  olFeature.getGeometry().setCoordinates(op.previousCoordinates)
+  return -1
+}
+
 /**
  * Dispatch the correct undo handler based on operation type.
  * @returns {number} vertex index to re-select after undo, or -1 for none
@@ -88,6 +95,8 @@ export const applyUndo = (olFeature, op) => {
       return undoInsertVertex(olFeature, op)
     case 'delete_vertex':
       return undoDeleteVertex(olFeature, op)
+    case 'replace_geometry':
+      return undoReplaceGeometry(olFeature, op)
     default:
       return -1
   }

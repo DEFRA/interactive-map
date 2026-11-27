@@ -5,13 +5,13 @@ import { parcelSearch, gridRefSearchETRS89 } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformVtsRequest3857, transformDataRequest } from './auth.js'
 // Providers
 import maplibreProvider from '/providers/maplibre/src/index.js'
-import openNamesProvider from '/providers/beta/open-names/src/index.js'
+import openNamesProvider from '/providers/open-names/src/index.js'
 // Plugins
-import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
+import mapStylesPlugin from '/plugins/map-styles/src/index.js'
 import createDatasetsPlugin from '/plugins/datasets/src/index.js'
 import createMapKeyPlugin from '/plugins/map-key/src/index.js'
 import createDrawPlugin from '/plugins/draw/src/index.js'
-import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
+import scaleBarPlugin from '/plugins/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 
@@ -43,6 +43,7 @@ const interactPlugin = createInteractPlugin({
   multiSelect: true,
   contiguous: false,
   deselectOnClickOutside: true,
+  touchTarget: false, // touch users tap features directly; opening the map controls brings the crosshair and Select back
   debug: true
 })
 
@@ -62,12 +63,27 @@ const getAllCoordinates = (coordinates) => {
 const isEastOfWalesBorder = (geometry) =>
   getAllCoordinates(geometry.coordinates).every(([lng]) => lng > WALES_BORDER_LONGITUDE)
 
+// Stands in for a server-side check: resolves after a delay, or rejects if the shape
+// changes again first
+const wait = (ms, signal) => new Promise((resolve, reject) => {
+  const timer = setTimeout(resolve, ms)
+  signal.addEventListener('abort', () => { clearTimeout(timer); reject(signal.reason) }, { once: true })
+})
+
 const drawPlugin = createDrawPlugin({
   snapLayers: ['OS/TopographicArea_1/Agricultural Land', 'OS/TopographicLine/Building Outline'],
-  onGeometryChange: (event) => ({
+  snapMinZoom: 19,
+  onGeometryPreview: (event) => ({
     valid: isEastOfWalesBorder(event.feature.geometry),
     reason: 'Points must be placed east of the England/Wales border'
-  })
+  }),
+  onGeometryChange: async (event, { signal }) => {
+    await wait(800, signal)
+    return {
+      valid: isEastOfWalesBorder(event.feature.geometry),
+      reason: 'Shapes must be east of the England/Wales border'
+    }
+  }
 })
 
 const datasetsPlugin = createDatasetsPlugin({

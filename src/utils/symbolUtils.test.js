@@ -98,6 +98,27 @@ describe('getSymbolStyleColors', () => {
     expect(result).not.toHaveProperty('foregroundColor')
   })
 
+  it('passes a custom symbol prop as the token named after it', () => {
+    const dataset = { symbol: 'pin', symbolAccentColor: { outdoor: '#ffdd00', dark: '#f47738' } }
+    expect(getSymbolStyleColors(dataset)).toEqual({ accentColor: { outdoor: '#ffdd00', dark: '#f47738' } })
+  })
+
+  it('does not use structural props as tokens', () => {
+    const dataset = {
+      symbol: 'pin',
+      symbolSvgContent: '<circle/>',
+      symbolViewBox: '0 0 10 10',
+      symbolAnchor: [0.5, 0.5],
+      symbolSize: 'large',
+      symbolDescription: 'A pin'
+    }
+    expect(getSymbolStyleColors(dataset)).toEqual({})
+  })
+
+  it('ignores props that only start with the word symbol', () => {
+    expect(getSymbolStyleColors({ symbol: 'pin', symbolic: 'yes', stroke: '#000000' })).toEqual({})
+  })
+
   it('supports style-keyed colour objects', () => {
     const dataset = {
       symbol: 'pin',

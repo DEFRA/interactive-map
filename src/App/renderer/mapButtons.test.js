@@ -165,6 +165,23 @@ describe('mapButtons module', () => {
       expect(result.props).toMatchObject({ isDisabled: true, isHidden: true, isPressed: true, isExpanded: true })
     })
 
+    it('evaluates busyWhen on render, and leaves isBusy undefined without it', () => {
+      const busyEvaluate = jest.fn((prop) => (typeof prop === 'function' ? prop() : prop))
+      const busy = SlotButton({ buttonId: 'id', config: { ...baseBtn, busyWhen: () => true }, appState, appConfig, evaluateProp: busyEvaluate })
+      expect(busy.props.isBusy).toBe(true)
+      const idle = SlotButton({ buttonId: 'id', config: { ...baseBtn, busyWhen: () => false }, appState, appConfig, evaluateProp: busyEvaluate })
+      expect(idle.props.isBusy).toBe(false)
+      expect(render(baseBtn).props.isBusy).toBeUndefined()
+    })
+
+    it('evaluates description, a string or a function of the context', () => {
+      const evaluate = jest.fn((prop) => (typeof prop === 'function' ? prop() : prop))
+      const fromFunction = SlotButton({ buttonId: 'id', config: { ...baseBtn, description: () => 'Zoom in' }, appState, appConfig, evaluateProp: evaluate })
+      expect(fromFunction.props.description).toBe('Zoom in')
+      const fromString = SlotButton({ buttonId: 'id', config: { ...baseBtn, description: 'Fixed' }, appState, appConfig, evaluateProp: evaluate })
+      expect(fromString.props.description).toBe('Fixed')
+    })
+
     it.each([
       [{ slot: 'right-top', open: false }, 'dialog'],
       [{ slot: 'right-top', open: false, dismissible: false }, 'region'],
@@ -208,6 +225,18 @@ describe('mapButtons module', () => {
       expect(viewportFocusSpy).toHaveBeenCalled()
       rafSpy.mockRestore()
       viewportFocusSpy.mockRestore()
+    })
+
+    it.each([
+      ['pointer', true],
+      ['keyboard', false]
+    ])('focuses viewport after onClick with preventScroll for %s users', (interfaceType, preventScroll) => {
+      const rafSpy = jest.spyOn(global, 'requestAnimationFrame').mockImplementation(cb => { cb(); return 1 })
+      appState.interfaceType = interfaceType
+      const onClick = jest.fn()
+      render({ ...baseBtn, onClick }).props.onClick({})
+      expect(appState.layoutRefs.viewportRef.current.focus).toHaveBeenCalledWith({ preventScroll })
+      rafSpy.mockRestore()
     })
 
     it('does not call requestAnimationFrame when keepFocus is true', () => {
@@ -257,7 +286,29 @@ describe('mapButtons module', () => {
     it('returns a flat list of buttons with type and order', () => {
       appState.buttonConfig = ({ b1: baseBtn })
       const result = map()
-      expect(result[0]).toMatchObject({ id: 'b1', type: 'button', order: 1 })
+      expect(result[0]).toMatchObject({ id: 'b1', type: 'button', slot: 'header', order: 1 })
+    })
+
+    it('maps buttons for every slot, each tagged with its slot, when no slot is given', () => {
+      appState.buttonConfig = ({ b1: baseBtn, b2: { ...baseBtn, desktop: { slot: 'sidebar' } } })
+      const result = mapButtons({ appState, appConfig, evaluateProp })
+      expect(result.map(({ id, slot }) => ({ id, slot }))).toEqual([{ id: 'b1', slot: 'header' }, { id: 'b2', slot: 'sidebar' }])
+    })
+
+    it('applies slot exclusivity within each slot when mapping every slot', () => {
+      appState.buttonConfig = {
+        drawCancel: { ...baseBtn, pluginId: 'draw', exclusiveSlot: true },
+        journeyBack: { ...baseBtn },
+        sidebarBtn: { ...baseBtn, desktop: { slot: 'sidebar' } }
+      }
+      const result = mapButtons({ appState, appConfig, evaluateProp })
+      expect(result.map(r => r.id)).toEqual(['drawCancel', 'sidebarBtn'])
+    })
+
+    it('tags a button group with its members\' slot', () => {
+      const group = { label: 'G1' }
+      appState.buttonConfig = ({ b1: { ...baseBtn, group }, b2: { ...baseBtn, group } })
+      expect(map()[0]).toMatchObject({ id: 'group-g1', type: 'group', slot: 'header' })
     })
 
     it('renders grouped buttons as a single group item with role=group, keyed by kebab-cased label', () => {

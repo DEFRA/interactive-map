@@ -36,7 +36,7 @@ describe('newLine', () => {
 
     newLine(context, 'f1', { stroke: 'red', fill: 'blue', strokeWidth: 3, properties: { name: 'x' }, extra: 'opt' })
 
-    expect(eventBus.emit).toHaveBeenCalledWith('draw:started', { mode: 'draw_line' })
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:started', { mode: 'draw_line', featureId: 'f1' })
     expect(flattenStyleProperties).toHaveBeenCalledWith({ stroke: 'red', fill: 'blue', strokeWidth: 3 })
 
     expect(draw.changeMode).toHaveBeenCalledWith('draw_line', expect.objectContaining({
@@ -80,7 +80,7 @@ describe('newLine', () => {
     const { context, draw } = makeContext()
     const onGeometryChange = jest.fn()
     newLine(context, 'f1', { onGeometryChange })
-    expect(draw._geometryValidator).toBe(onGeometryChange)
+    expect(draw._commitValidator).toBe(onGeometryChange)
     expect(draw.changeMode.mock.calls[0][1]).not.toHaveProperty('onGeometryChange')
   })
 
@@ -88,6 +88,6 @@ describe('newLine', () => {
     const pluginOnGeometryChange = jest.fn()
     const { context, draw } = makeContext({ pluginConfig: { onGeometryChange: pluginOnGeometryChange } })
     newLine(context, 'f1')
-    expect(draw._geometryValidator).toBe(pluginOnGeometryChange)
+    expect(draw._commitValidator).toBe(pluginOnGeometryChange)
   })
 })

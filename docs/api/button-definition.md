@@ -102,6 +102,17 @@ ariaControls: (context) => `${context.appConfig.id}-search-form`
 
 ---
 
+### `description`
+**Type:** `string | function`
+
+Extra information shown in the button's tooltip, after the label when the label isn't shown, and read by screen readers after the label. Can be a string or a function that receives the [Context](./context.md) and returns the text. When the function returns nothing, the button has no description.
+
+```js
+description: (context) => context.pluginState.isOutOfRange ? 'Zoom in to use this' : undefined
+```
+
+---
+
 ### `keepFocus`
 **Type:** `boolean`
 **Default:** `false`
@@ -248,6 +259,17 @@ Callback to determine if the button should appear expanded. Sets `aria-expanded`
 
 ```js
 expandedWhen: (context) => context.pluginState.isExpanded
+```
+
+---
+
+### `busyWhen`
+**Type:** `function`
+
+Callback to determine if the action behind the button is in progress, for example while a check it depends on is running. Sets `aria-busy` accordingly.
+
+```js
+busyWhen: (context) => context.pluginState.isChecking
 ```
 
 ---

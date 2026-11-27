@@ -37,7 +37,6 @@
 {% block pageScripts %}
   <!-- Defra library scripts -->
   <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
-  <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/interact/dist/umd/index.js"></script>
 
   <script>
@@ -47,7 +46,6 @@
 
     const map = new defra.InteractiveMap('map', {
       behaviour: 'inline',
-      mapProvider: defra.maplibreProvider(),
       mapStyle: {
         url: 'https://tiles.openfreemap.org/styles/liberty',
         attribution: 'OpenFreeMap © OpenMapTiles Data from OpenStreetMap',
@@ -59,7 +57,7 @@
       plugins: [interactPlugin]
     })
 
-    map.on('map:ready', () => {
+    map.on('map:ready', function () {
       map.addMarker('my-marker', [-2.96, 54.43], {
         label: 'My location',
         showLabel: false
@@ -67,8 +65,8 @@
       interactPlugin.enable()
     })
 
-    map.on('interact:selectionchange', ({ selectedMarkers }) => {
-      map.updateMarker('my-marker', { showLabel: selectedMarkers.includes('my-marker') })
+    map.on('interact:selectionchange', function (event) {
+      map.updateMarker('my-marker', { showLabel: event.selectedMarkers.includes('my-marker') })
     })
   </script>
 {% endblock %}

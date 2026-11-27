@@ -1,10 +1,7 @@
 import { setFeatureVisibility } from './setFeatureVisibility.js'
-import { datasetRegistry } from '../registry/datasetRegistry.js'
 import { logger } from '../../../../src/services/logger.js'
 
-jest.mock('../registry/datasetRegistry.js', () => ({
-  datasetRegistry: { getDataset: jest.fn() }
-}))
+const datasetRegistry = { getDataset: jest.fn() }
 
 jest.mock('../../../../src/services/logger.js')
 
@@ -19,7 +16,7 @@ describe('setFeatureVisibility', () => {
   })
 
   it('dispatches SHOW_FEATURES when visible is true', () => {
-    setFeatureVisibility({ pluginState: { dispatch } }, true, featureIds, { datasetId })
+    setFeatureVisibility({ pluginState: { dispatch, datasetRegistry } }, true, featureIds, { datasetId })
 
     expect(dispatch).toHaveBeenCalledWith({
       type: 'SHOW_FEATURES',
@@ -28,7 +25,7 @@ describe('setFeatureVisibility', () => {
   })
 
   it('dispatches HIDE_FEATURES when visible is false', () => {
-    setFeatureVisibility({ pluginState: { dispatch } }, false, featureIds, { datasetId })
+    setFeatureVisibility({ pluginState: { dispatch, datasetRegistry } }, false, featureIds, { datasetId })
 
     expect(dispatch).toHaveBeenCalledWith({
       type: 'HIDE_FEATURES',
@@ -37,7 +34,7 @@ describe('setFeatureVisibility', () => {
   })
 
   it('uses null datasetId when options are not provided', () => {
-    setFeatureVisibility({ pluginState: { dispatch } }, true, featureIds)
+    setFeatureVisibility({ pluginState: { dispatch, datasetRegistry } }, true, featureIds)
 
     expect(dispatch).toHaveBeenCalledWith({
       type: 'SHOW_FEATURES',
@@ -47,25 +44,25 @@ describe('setFeatureVisibility', () => {
 
   it('does not warn when dataset has idProperty set', () => {
     datasetRegistry.getDataset.mockReturnValue({ idProperty: 'parcel_id', generateIds: false })
-    setFeatureVisibility({ pluginState: { dispatch } }, false, featureIds, { datasetId })
+    setFeatureVisibility({ pluginState: { dispatch, datasetRegistry } }, false, featureIds, { datasetId })
     expect(logger.warn).not.toHaveBeenCalled()
   })
 
   it('does not warn when dataset has generateIds set', () => {
     datasetRegistry.getDataset.mockReturnValue({ idProperty: null, generateIds: true })
-    setFeatureVisibility({ pluginState: { dispatch } }, false, featureIds, { datasetId })
+    setFeatureVisibility({ pluginState: { dispatch, datasetRegistry } }, false, featureIds, { datasetId })
     expect(logger.warn).not.toHaveBeenCalled()
   })
 
   it('warns when dataset has neither idProperty nor generateIds', () => {
     datasetRegistry.getDataset.mockReturnValue({ idProperty: null, generateIds: false })
-    setFeatureVisibility({ pluginState: { dispatch } }, false, featureIds, { datasetId })
+    setFeatureVisibility({ pluginState: { dispatch, datasetRegistry } }, false, featureIds, { datasetId })
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining(`"${datasetId}"`))
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('idProperty'))
   })
 
   it('does not warn or look up registry when datasetId is not provided', () => {
-    setFeatureVisibility({ pluginState: { dispatch } }, false, featureIds)
+    setFeatureVisibility({ pluginState: { dispatch, datasetRegistry } }, false, featureIds)
     expect(datasetRegistry.getDataset).not.toHaveBeenCalled()
     expect(logger.warn).not.toHaveBeenCalled()
   })

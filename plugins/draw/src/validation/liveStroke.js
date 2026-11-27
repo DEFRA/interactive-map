@@ -15,7 +15,7 @@ export const cancelFrame = (id) =>
  *
  * On every rubber-band/drag move the caller passes the displayed geometry (placed
  * vertices + cursor). The default rules run synchronously for immediate feedback;
- * a user `onGeometryChange` callback — whose cost is unknown — is throttled to one
+ * a user `onGeometryPreview` callback — whose cost is unknown — is throttled to one
  * call per animation frame using the latest geometry (trailing edge), so an
  * arbitrary user rule can't jank the drag. The default-fail path short-circuits
  * (no user call) and cancels any pending frame so a stale evaluation can't flip
@@ -47,21 +47,21 @@ export const createLiveStroke = ({ onChange, validate = validateDisplayedGeometr
   const runUserRule = () => {
     frame = null
     if (!pending) { return }
-    const { feature, context, onGeometryChange } = pending
-    const { valid, reason } = validate(feature, context, { onGeometryChange })
+    const { feature, context, onGeometryPreview } = pending
+    const { valid, reason } = validate(feature, context, { onGeometryPreview })
     flip(!valid, reason)
   }
 
   return {
     // Re-evaluate the displayed geometry after a rubber-band move.
-    update ({ feature, context = {}, numVertices, onGeometryChange }) {
+    update ({ feature, context = {}, numVertices, onGeometryPreview }) {
       const ctx = { ...context, numVertices }
       // Default rules first, synchronously — immediate feedback on self-intersection / area.
       const base = validate(feature, ctx)
       if (!base.valid) { cancelPending(); flip(true, base.reason); return }
       // Default rules pass — a user rule (if any) decides, throttled to one frame.
-      if (typeof onGeometryChange !== 'function') { cancelPending(); flip(false, null); return }
-      pending = { feature, context: ctx, onGeometryChange }
+      if (typeof onGeometryPreview !== 'function') { cancelPending(); flip(false, null); return }
+      pending = { feature, context: ctx, onGeometryPreview }
       if (frame == null) { frame = requestFrame(runUserRule) }
     },
     // Authoritative external write — a committed verdict (events.js) or a mode

@@ -252,6 +252,16 @@ zoom control buttons (`enableZoomControls`) are hidden to avoid duplication.
 
 ---
 
+### `enableResetView`
+**Type:** `boolean`
+**Default:** `false`
+
+Whether a reset view button is displayed. It moves the map to the configured `bounds` or `extent`, or to `center` and `zoom` if no bounds are set, not to a view read from the URL. The safe zone padding is applied.
+
+The button is disabled until the map is moved away from that view, and isn't displayed when none of `bounds`, `extent` or `center` are configured.
+
+---
+
 ### `enableZoomControls`
 **Type:** `boolean`
 **Default:** `true`
@@ -328,61 +338,54 @@ new InteractiveMap('map', {
 
 ---
 
-### `mapProvider`
-**Type:** `function`
-**Required**
+### `mapProviderOptions`
+**Type:** `Object`
 
-A function that returns a map provider — the abstraction layer that interfaces with the underlying map engine. It is called only when the map is opened so the provider code is not sent to the user unless needed.
+Settings for the map engine. Which settings apply depends on the package.
 
-```js
-new InteractiveMap('map', {
-  mapProvider: maplibreProvider()
-})
-```
-
-#### MapLibre provider options
-
-`maplibreProvider()` accepts an optional config object.
+#### MapLibre (`@defra/interactive-map`)
 
 ##### `workerUrl`
 **Type:** `string`
-**Default:** `undefined`
 
-URL to a separately hosted MapLibre worker file (`maplibre-gl-csp-worker.js`). Required when running under a Content Security Policy that blocks `blob:` worker URLs — a common restriction on government and enterprise platforms.
+URL of the MapLibre worker file. This is set for you with webpack, Vite and the UMD scripts.
 
-When set, MapLibre loads its rendering worker from this URL instead of generating an inline blob, so your CSP only needs `worker-src 'self'` rather than `worker-src blob:`.
-
-The worker file ships with maplibre-gl and must be served from your own origin (copy from `node_modules/maplibre-gl/dist/maplibre-gl-csp-worker.js`).
-
-**ESM:**
+With Rollup or esbuild, copy `node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs` to your assets and set its URL here. If it's missing, the console explains this.
 
 ```js
-maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-csp-worker.js' })
+mapProviderOptions: { workerUrl: '/your-assets-path/maplibre-gl-worker.mjs' }
 ```
 
-**UMD:**
+#### OpenLayers (`@defra/interactive-map-openlayers`)
 
-```js
-defra.maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-csp-worker.js' })
-```
-
-#### OpenLayers provider options
-
-`openLayersProvider()` accepts an optional config object. The provider renders in British National Grid (EPSG:27700) — this isn't configurable.
+The map is always in British National Grid (EPSG:27700).
 
 ##### `zoomAlignment`
 **Type:** `string`
 **Default:** `'uk'`
 
-Which zoom-level sequence the map's view resolutions follow.
+Which zoom levels the map uses.
 
 | Possible values | Description |
 | :--- | :--- |
-| `'uk'` | OS tile grid zoom levels (0–13); zoom 0 shows all of Great Britain. |
-| `'world'` | ESRI LOD sequence, for zoom levels that match the ESRI SDK; full UK visible around zoom 7. |
+| `'uk'` | OS tile grid zoom levels (0–13). Zoom 0 shows all of Great Britain. |
+| `'world'` | The same zoom levels as the ArcGIS SDK. All of the UK shows at about zoom 7. |
 
 ```js
-openLayersProvider({ zoomAlignment: 'world' })
+mapProviderOptions: { zoomAlignment: 'world' }
+```
+
+#### Esri (`@defra/interactive-map-esri`)
+
+##### `setupConfig`
+**Type:** `function`
+
+Called with the ArcGIS SDK's `esriConfig` before the map is created, for example to set an API key.
+
+```js
+mapProviderOptions: {
+  setupConfig: (esriConfig) => { esriConfig.apiKey = 'YOUR_API_KEY' }
+}
 ```
 
 ---
@@ -787,6 +790,7 @@ Shows a panel that already exists but is hidden. Focus is moved to the panel by 
 |-----------|------|-------------|
 | `id` | `string` | Panel identifier to show |
 | `options.focus` | `boolean` | Whether to move focus to the panel. Default: `true` |
+| `options.triggeringElement` | `HTMLElement` | Element to return focus to when the panel closes. Default: the focused element |
 
 ```js
 interactiveMap.showPanel('info-panel')
@@ -800,6 +804,8 @@ interactiveMap.showPanel('info-panel', { focus: false })
 ### `hidePanel(id)`
 
 Hides a panel without removing it, preserving its content for when it is shown again.
+
+If focus is inside the panel, it moves to the element that opened the panel, or to the map if that element is no longer on the page. Otherwise focus stays where it is.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -947,14 +953,26 @@ interactiveMap.toggleButtonState('opt-a', 'pressed', true)
 
 ---
 
-### `fitToBounds(bounds)`
+### `fitToBounds(bounds, options?)`
 
 Fit the map view to a bounding box or GeoJSON geometry. Safe zone padding is automatically applied so the content remains fully visible.
+
+The safe zone is the part of the map not covered by buttons, the footer, the action bar or large open panels. A side's open panels count once together they cover more than half the map's height or width. If open panels would leave less than a quarter of the room across or down the map, the safe zone ignores panels in that direction, so the content isn't fitted into a sliver. It may then sit partly behind a panel.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `bounds` | `[number, number, number, number]` | Bounds as [west, south, east, north] or [minX, minY, maxX, maxY] depending on CRS |
 | `bounds` | `object` | A GeoJSON Feature, FeatureCollection, or geometry — bbox is computed automatically |
+| `options.preferPan` | `boolean` | Pan rather than zoom where possible. See below. Defaults to `false` |
+| `options.paddingPercent` | `number \| object` | Space kept clear inside the safe zone, as a percentage of its size. One value for every side, or `{ top, right, bottom, left }`. Limited to 0–25. Defaults to `0` |
+
+With `preferPan`:
+
+- If the bounds are already inside the safe zone and not under an open panel, the map doesn't move.
+- If they fit at the current zoom, the map pans to centre them in the safe zone.
+- If they don't fit, the map fits them, zooming out.
+
+`paddingPercent` is a percentage of the safe zone's size, not pixels, so it scales with the screen and with open panels. Left and right use the safe zone's width, top and bottom its height. With `preferPan`, the bounds must fit inside the safe zone less this space to be panned to. A fitted shape keeps this space around it.
 
 ```js
 // Flat bbox
@@ -972,6 +990,12 @@ interactiveMap.fitToBounds({
   type: 'FeatureCollection',
   features: [featureA, featureB]
 })
+
+// Pan if it fits, keeping 10% of the safe zone clear on every side
+interactiveMap.fitToBounds(feature, { preferPan: true, paddingPercent: 10 })
+
+// Set the space per side
+interactiveMap.fitToBounds(feature, { paddingPercent: { top: 5, right: 10, bottom: 5, left: 10 } })
 ```
 
 ---
@@ -988,6 +1012,16 @@ Set the map center and zoom. Safe zone padding is automatically applied.
 
 ```js
 interactiveMap.setView({ center: [-0.1276, 51.5074], zoom: 12 })
+```
+
+---
+
+### `resetView()`
+
+Move the map to the configured `bounds` or `extent`, or to `center` and `zoom` if no bounds are set. Ignores any view read from the URL when the map loaded. Safe zone padding is automatically applied.
+
+```js
+interactiveMap.resetView()
 ```
 
 ---
@@ -1066,7 +1100,9 @@ interactiveMap.on('app:continue', ({ pluginStates, mapState }) => {
 
 ### `map:ready`
 
-Emitted when the underlying map is ready and initial app state (style and size) has settled.
+Emitted when the underlying map instance has been created and initial app state (style and size) has settled. The map is created once the layout and safe zone have been calculated, and uses the safe zone as its initial padding.
+
+The base map may still be loading when `map:ready` fires. Wait for [`map:loaded`](#maploaded) before adding sources or layers to the underlying map.
 
 **Payload:**
 
@@ -1081,6 +1117,20 @@ Emitted when the underlying map is ready and initial app state (style and size) 
 ```js
 interactiveMap.on('map:ready', ({ map, mapStyleId, mapSize }) => {
   console.log('Active style:', mapStyleId, 'Size:', mapSize)
+})
+```
+
+---
+
+### `map:loaded`
+
+Emitted once, when the initial base map has loaded. Emitted after `map:ready`. Sources and layers can be added to the underlying map from this point.
+
+**Payload:** None on MapLibre and OpenLayers. ESRI passes the current map state (`center`, `bounds`, `resolution`, `zoom`, `isAtMaxZoom`, `isAtMinZoom`).
+
+```js
+interactiveMap.on('map:loaded', () => {
+  console.log('Base map loaded')
 })
 ```
 
@@ -1116,7 +1166,7 @@ interactiveMap.on('map:sizechange', ({ mapSize }) => {
 
 ### `app:panelopened`
 
-Emitted when a panel is opened.
+Emitted when a closed panel opens. Showing or adding a panel that's already open doesn't emit it again.
 
 **Payload:** `{ panelId: string }`
 

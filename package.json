@@ -1,92 +1,11 @@
 {
-  "name": "@defra/interactive-map",
+  "name": "interactive-map",
+  "private": true,
   "version": "0.0.0-development",
   "description": "An accessible map component",
   "repository": {
     "type": "git",
     "url": "https://github.com/DEFRA/interactive-map"
-  },
-  "main": "dist/umd/index.js",
-  "module": "dist/esm/index.js",
-  "exports": {
-    ".": {
-      "import": "./dist/esm/index.js",
-      "require": "./dist/umd/index.js"
-    },
-    "./providers/maplibre": {
-      "import": "./providers/maplibre/dist/esm/index.js",
-      "require": "./providers/maplibre/dist/umd/index.js"
-    },
-    "./providers/open-names": {
-      "import": "./providers/beta/open-names/dist/esm/index.js",
-      "require": "./providers/beta/open-names/dist/umd/index.js"
-    },
-    "./providers/esri": {
-      "import": "./providers/beta/esri/dist/esm/index.js"
-    },
-    "./providers/openlayers": {
-      "import": "./providers/beta/openlayers/dist/esm/index.js",
-      "require": "./providers/beta/openlayers/dist/umd/index.js"
-    },
-    "./plugins/scale-bar": {
-      "import": "./plugins/beta/scale-bar/dist/esm/index.js",
-      "require": "./plugins/beta/scale-bar/dist/umd/index.js"
-    },
-    "./plugins/use-location": {
-      "import": "./plugins/beta/use-location/dist/esm/index.js",
-      "require": "./plugins/beta/use-location/dist/umd/index.js"
-    },
-    "./plugins/search": {
-      "import": "./plugins/search/dist/esm/index.js",
-      "require": "./plugins/search/dist/umd/index.js"
-    },
-    "./plugins/interact": {
-      "import": "./plugins/interact/dist/esm/index.js",
-      "require": "./plugins/interact/dist/umd/index.js"
-    },
-    "./plugins/datasets": {
-      "import": "./plugins/datasets/dist/esm/index.js"
-    },
-    "./plugins/menu": {
-      "import": "./plugins/menu/dist/esm/index.js"
-    },
-    "./plugins/map-key": {
-      "import": "./plugins/map-key/dist/esm/index.js"
-    },
-    "./plugins/datasets/adapters/maplibre": {
-      "import": "./plugins/datasets/dist/adapters/maplibre/esm/index.js"
-    },
-    "./plugins/map-styles": {
-      "import": "./plugins/beta/map-styles/dist/esm/index.js",
-      "require": "./plugins/beta/map-styles/dist/umd/index.js"
-    },
-    "./plugins/draw-ml": {
-      "import": "./plugins/beta/draw-ml/dist/esm/index.js",
-      "require": "./plugins/beta/draw-ml/dist/umd/index.js"
-    },
-    "./plugins/draw-es": {
-      "import": "./plugins/beta/draw-es/dist/esm/index.js"
-    },
-    "./plugins/draw": {
-      "import": "./plugins/draw/dist/esm/index.js",
-      "require": "./plugins/draw/dist/umd/index.js"
-    },
-    "./plugins/frame": {
-      "import": "./plugins/beta/frame/dist/esm/index.js",
-      "require": "./plugins/beta/frame/dist/umd/index.js"
-    },
-    "./css": "./dist/css/index.css",
-    "./plugins/draw-ml/css": "./plugins/beta/draw-ml/dist/css/index.css",
-    "./plugins/draw/css": "./plugins/draw/dist/css/index.css",
-    "./plugins/scale-bar/css": "./plugins/beta/scale-bar/dist/css/index.css",
-    "./plugins/datasets/css": "./plugins/datasets/dist/css/index.css",
-    "./plugins/menu/css": "./plugins/menu/dist/css/index.css",
-    "./plugins/map-key/css": "./plugins/map-key/dist/css/index.css",
-    "./plugins/frame/css": "./plugins/beta/frame/dist/css/index.css",
-    "./plugins/map-styles/css": "./plugins/beta/map-styles/dist/css/index.css",
-    "./plugins/search/css": "./plugins/search/dist/css/index.css",
-    "./plugins/interact/css": "./plugins/interact/dist/css/index.css",
-    "./providers/esri/css": "./providers/beta/esri/dist/css/index.css"
   },
   "type": "module",
   "sideEffects": [
@@ -102,6 +21,8 @@
     "prod": "webpack serve --config webpack.prod.mjs",
     "build:umd": "webpack --config webpack.umd.mjs --mode production",
     "build:esm": "rollup --config rollup.esm.mjs",
+    "build:engines": "rollup --config rollup.engine.mjs && webpack --config webpack.engine.umd.mjs --mode production",
+    "check:engines": "node test/engine-packages/run.mjs",
     "build": "npm run clean && npm run build:umd && npm run build:esm",
     "type-check": "tsc --noEmit",
     "lint": "npm run lint:js && npm run lint:scss",
@@ -132,22 +53,6 @@
       "node_modules"
     ]
   },
-  "peerDependencies": {
-    "@arcgis/core": "^5.0.9",
-    "ol": "^10.10.0",
-    "proj4": "^2.20.8"
-  },
-  "peerDependenciesMeta": {
-    "@arcgis/core": {
-      "optional": true
-    },
-    "ol": {
-      "optional": true
-    },
-    "proj4": {
-      "optional": true
-    }
-  },
   "devDependencies": {
     "@arcgis/core": "^5.1.13",
     "@babel/core": "^7.28.0",
@@ -155,6 +60,7 @@
     "@babel/preset-env": "^7.28.0",
     "@babel/preset-react": "^7.27.1",
     "@defra/docusaurus-theme-govuk": "^0.0.22-alpha",
+    "@docusaurus/babel": "^3.10.1",
     "@docusaurus/core": "^3.10.1",
     "@docusaurus/module-type-aliases": "^3.10.1",
     "@docusaurus/plugin-content-docs": "^3.10.1",
@@ -177,6 +83,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "babel-loader": "^10.0.0",
+    "babel-plugin-transform-import-meta": "^3.0.0",
     "compression-webpack-plugin": "^12.0.0",
     "copy-webpack-plugin": "^13.0.1",
     "css-loader": "^7.1.2",
@@ -248,7 +155,7 @@
     "@turf/union": "^7.3.5",
     "accessible-autocomplete": "^3.0.1",
     "govuk-frontend": "^5.13.0",
-    "maplibre-gl": "^5.23.0",
+    "maplibre-gl": "^6.14.0",
     "polygon-splitter": "^0.0.11",
     "preact": "^10.27.2",
     "tslib": "^2.8.1"

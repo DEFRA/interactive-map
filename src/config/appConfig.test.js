@@ -20,6 +20,7 @@ describe('defaultAppConfig', () => {
   const zoomInBtn = buttons.find(b => b.id === 'zoomIn')
   const zoomOutBtn = buttons.find(b => b.id === 'zoomOut')
   const mapControlsBtn = buttons.find(b => b.id === 'mapControls')
+  const resetViewBtn = buttons.find(b => b.id === 'resetView')
 
   // --- UI RENDER TESTS ---
   it('renders KeyboardHelp panel', () => {
@@ -207,6 +208,33 @@ describe('defaultAppConfig', () => {
       type: 'TOGGLE_BUTTON_EXPANDED',
       payload: { id: 'mapControls', isExpanded: false }
     })
+  })
+
+  // --- RESET VIEW ---
+  it('excludes resetView unless enabled and a view is configured', () => {
+    expect(resetViewBtn.excludeWhen({ appConfig: { enableResetView: false, center: [1, 2] } })).toBe(true)
+    expect(resetViewBtn.excludeWhen({ appConfig: { enableResetView: true } })).toBe(true)
+    expect(resetViewBtn.excludeWhen({ appConfig: { enableResetView: true, center: [1, 2] } })).toBe(false)
+    expect(resetViewBtn.excludeWhen({ appConfig: { enableResetView: true, extent: [0, 0, 1, 1] } })).toBe(false)
+  })
+
+  it('resetView onClick emits the reset view event', () => {
+    const eventBus = { emit: jest.fn() }
+    resetViewBtn.onClick({}, { services: { eventBus } })
+    expect(eventBus.emit).toHaveBeenCalledWith('map:resetview')
+  })
+
+  it('disables resetView while the map is at the reset view', () => {
+    const mapProvider = { mapToScreen: ([x, y]) => ({ x, y }) }
+    const resetViewTarget = { center: [1, 2], zoom: 10 }
+    expect(resetViewBtn.enableWhen({ mapProvider, mapState: { center: [1, 2], zoom: 10, resetViewTarget, isResetViewTargetKnown: true } })).toBe(false)
+    expect(resetViewBtn.enableWhen({ mapProvider, mapState: { center: [50, 2], zoom: 10, resetViewTarget, isResetViewTargetKnown: true } })).toBe(true)
+  })
+
+  it('disables resetView until the reset view target is known, and enables it when there is none', () => {
+    const mapProvider = { mapToScreen: ([x, y]) => ({ x, y }) }
+    expect(resetViewBtn.enableWhen({ mapProvider, mapState: { center: [1, 2], zoom: 10, resetViewTarget: null, isResetViewTargetKnown: false } })).toBe(false)
+    expect(resetViewBtn.enableWhen({ mapProvider, mapState: { center: [1, 2], zoom: 10, resetViewTarget: null, isResetViewTargetKnown: true } })).toBe(true)
   })
 
   // --- MOVE CONTROLS ---

@@ -105,7 +105,7 @@ function resolveValues (symbolDef, markerValues, mapStyle, constructorDefaults) 
     merged.graphic = graphics[merged.graphic]
   }
   return Object.fromEntries(
-    Object.entries(merged).map(([token, value]) => [token, getValueForStyle(value, mapStyleId) || ''])
+    Object.entries(merged).map(([token, value]) => [token, getValueForStyle(value, mapStyleId) ?? ''])
   )
 }
 

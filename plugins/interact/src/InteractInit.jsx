@@ -6,7 +6,7 @@ import { useHighlightSync } from './hooks/useHighlightSync.js'
 import { useHoverCursor } from './hooks/useHoverCursor.js'
 import { useCrossHairVisibility } from './hooks/useCrossHairVisibility.js'
 import { useAttachEvents } from './hooks/useAttachEvents.js'
-import { isSelectMarkerOnly } from './utils/interactionModes.js'
+import { needsTarget } from './utils/needsTarget.js'
 
 function useListboxCapable ({ enabled, interactionModes, markers, layers, eventBus }) {
   useEffect(() => {
@@ -31,7 +31,7 @@ export const InteractInit = ({
   const { eventBus } = services
   const { crossHair, mapStyle, markers } = mapState
 
-  const selectMarkerOnly = isSelectMarkerOnly(interactionModes)
+  const targetNeeded = needsTarget({ appState, pluginState })
 
   useSpatialList({ mapState, pluginState, services, mapProvider, spatialListRegistry: appState.spatialListRegistry })
 
@@ -62,7 +62,7 @@ export const InteractInit = ({
 
   useHoverCursor(mapProvider, enabled, interactionModes, layers)
 
-  useCrossHairVisibility({ crossHair, enabled, selectMarkerOnly, appState })
+  useCrossHairVisibility({ crossHair, enabled, targetNeeded, appState, dispatch: pluginState.dispatch })
 
   useAttachEvents({ pluginState, appState, mapState, buttonConfig, eventBus, handleInteraction })
 

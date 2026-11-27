@@ -4,7 +4,6 @@
         .grid { fill: none; stroke: #d1d9e0; stroke-width: 1px; }
         .slot { font: 700 15px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fill: #1a1a1a; }
         .note { font: 400 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #6b7280; }
-        .plain { font: 400 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #1a1a1a; }
     </style>
 
     <!-- header: full width, above the top row, flush against it — pushes everything below it down -->
@@ -45,11 +44,12 @@
     <text class="slot" x="589" y="352" dominant-baseline="middle" text-anchor="middle">actions</text>
     <text class="note" x="589" y="370" dominant-baseline="middle" text-anchor="middle">tablet/desktop</text>
 
-    <!-- logo / bottom-right -->
+    <!-- logo and bottom-left / bottom-right -->
     <path class="grid" d="M171,438 L1007,438" />
     <path class="grid" d="M449,438 L449,498" />
     <path class="grid" d="M171,498 L1007,498" />
-    <text class="plain" x="185" y="468" dominant-baseline="middle">Logo</text>
+    <text class="slot" x="185" y="459" dominant-baseline="middle">bottom-left</text>
+    <text class="note" x="185" y="477" dominant-baseline="middle">after the logo</text>
     <text class="slot" x="993" y="468" dominant-baseline="middle" text-anchor="end">bottom-right</text>
 
     <!-- drawer (mobile only) -->

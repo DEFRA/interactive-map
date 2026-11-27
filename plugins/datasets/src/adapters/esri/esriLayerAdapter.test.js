@@ -66,10 +66,10 @@ describe('esriLayerAdapter', () => {
   beforeEach(() => {
     datasetRegistry.useEsriDatasets()
     datasetRegistry.attachMapStyle(MAP_STYLE)
-    datasetRegistry.attachCreateDataset(def => new EsriDataset(def))
+    datasetRegistry.attachCreateDataset((def, datasetRegistry) => new EsriDataset(def, datasetRegistry))
     map = makeMap()
     mapProvider = makeMapProvider(map)
-    adapter = new EsriLayerAdapter(mapProvider, null, null)
+    adapter = new EsriLayerAdapter(mapProvider, null, null, datasetRegistry)
     adapter.resolveReady()
   })
 
@@ -282,6 +282,44 @@ describe('esriLayerAdapter', () => {
 
     it('calls map.add for each top-level dataset', async () => {
       expect(map.add.mock.calls).toHaveLength(5) // 3 top-level datasets + 2 group layers
+    })
+  })
+
+  describe('ready', () => {
+    const isSettled = async (promise) => {
+      const pending = Symbol('pending')
+      return (await Promise.race([promise, Promise.resolve(pending)])) !== pending
+    }
+
+    it('is pending until init completes, then resolves', async () => {
+      const freshAdapter = new EsriLayerAdapter(mapProvider, null, null, datasetRegistry)
+      expect(await isSettled(freshAdapter.ready)).toBe(false)
+      await freshAdapter.init()
+      expect(await isSettled(freshAdapter.ready)).toBe(true)
+    })
+
+    it('resolves even when init throws unexpectedly', async () => {
+      const freshAdapter = new EsriLayerAdapter(mapProvider, null, null, datasetRegistry)
+      jest.spyOn(freshAdapter, 'onMapStyleChange').mockRejectedValue(new Error('boom'))
+      await expect(freshAdapter.init()).rejects.toThrow('boom')
+      expect(await isSettled(freshAdapter.ready)).toBe(true)
+    })
+  })
+
+  describe('init failure', () => {
+    it('skips a layer that fails to load and still loads the rest', async () => {
+      const failingAdapter = new EsriLayerAdapter(mapProvider, null, null, datasetRegistry)
+      const addLayers = failingAdapter._addLayers.bind(failingAdapter)
+      jest.spyOn(failingAdapter, '_addLayers').mockImplementation(async (dataset) => {
+        await addLayers(dataset)
+        if (dataset.id === 'flood-zones') {
+          throw new Error('404')
+        }
+      })
+      await expect(failingAdapter.init()).resolves.toBeUndefined()
+      await expect(failingAdapter.ready).resolves.toBeUndefined()
+      expect(failingAdapter._mapVisibilityLayers['flood-zones']).toBeUndefined()
+      expect(failingAdapter._mapVisibilityLayers['flood-zones-cc']).toBeDefined()
     })
   })
 

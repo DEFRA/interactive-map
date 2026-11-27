@@ -7,6 +7,7 @@
 // error/warning text, buttons, .govuk-link--inverse/--text-colour/--muted) are left untouched so
 // their built-in contrast pairing isn't broken.
 // stylelint-disable declaration-no-important -- resetting a third-party stylesheet's own colours, see comment above
+// The NOSONAR markers silence Sonar's equivalent rule (css:S9423) for the same reason.
 @mixin govuk-content-fallback-colors {
     :is(
         .govuk-body, .govuk-body-l, .govuk-body-m, .govuk-body-s, .govuk-body-xs,
@@ -14,16 +15,16 @@
         .govuk-list, .govuk-label, .govuk-fieldset__legend,
         .govuk-table, .govuk-table__cell, .govuk-table__header
     ) {
-        color: var(--foreground-color) !important;
+        color: var(--foreground-color) !important; // NOSONAR
     }
 
     // GOV.UK Frontend renders these as its muted grey, matching our --secondary-text-color.
     :is(.govuk-hint, .govuk-caption-xl, .govuk-caption-l, .govuk-caption-m, .govuk-caption-s) {
-        color: var(--secondary-text-color) !important;
+        color: var(--secondary-text-color) !important; // NOSONAR
     }
 
     .govuk-link:is(:link, :visited) {
-        color: var(--content-link-color) !important;
+        color: var(--content-link-color) !important; // NOSONAR
     }
 }
 // stylelint-enable declaration-no-important

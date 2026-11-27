@@ -1,5 +1,5 @@
 import { Dataset } from './dataset.js'
-import { datasetRegistry } from './datasetRegistry.js'
+import { datasetRegistry, createDatasetRegistry } from './datasetRegistry.js'
 import { mappedDatasetsReducer } from '../reducers/mappedDatasetsReducer.js'
 import { datasetsWithGroups } from '../reducers/__data__/demoDatasets.js'
 // Use the mock datasetRegistry with the demo datasets attached before each test.
@@ -349,6 +349,88 @@ describe('datasetRegistry', () => {
       expect(datasetRegistry.getDataset('existing-fields')).not.toBe(existingFields)
       expect(createDatasetSpy).toHaveBeenCalledTimes(3) // should have been called one more time
       expect(datasetRegistry._definitionCache.getByDefinition(existingFieldsDefinition)).toBeUndefined() // old definition should no longer be cached
+    })
+  })
+
+  describe('createDatasetRegistry', () => {
+    const createMapRegistry = (datasets, globals = { visible: true, opacity: 1, opacityMode: 'dataset' }) => {
+      const registry = createDatasetRegistry()
+      const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets })
+      registry.attach(mappedDatasets, orderedDatasets, { id: 'outdoor' })
+      registry.attachGlobals(globals)
+      return registry
+    }
+
+    it('keeps datasets with the same id separate for each registry', () => {
+      const registryA = createMapRegistry([{ id: 'features', geojson: '/map-a.geojson' }])
+      const registryB = createMapRegistry([{ id: 'features', geojson: '/map-b.geojson' }])
+
+      expect(registryA.getDataset('features').geojson).toBe('/map-a.geojson')
+      expect(registryB.getDataset('features').geojson).toBe('/map-b.geojson')
+      expect(registryA.getDataset('features').geojson).toBe('/map-a.geojson')
+    })
+
+    it('gives each registry its own state while sharing its methods', () => {
+      const registryA = createDatasetRegistry()
+      const registryB = createDatasetRegistry()
+
+      expect(registryA.getDataset).toBe(registryB.getDataset)
+      const stateKeys = ['_definitionCache', '_globals', '_menuStateRef', '_lastMenuState', '_lastKeyItems']
+      stateKeys.forEach(key => expect(registryA[key]).not.toBe(registryB[key]))
+    })
+
+    it('only iterates its own datasets', () => {
+      const registryA = createMapRegistry([{ id: 'a' }])
+      const registryB = createMapRegistry([{ id: 'b' }])
+
+      const idsA = []
+      registryA.forEachDataset(dataset => idsA.push(dataset.id))
+      expect(idsA).toEqual(['a'])
+      expect(registryB.topLevelDatasets().map(dataset => dataset.id)).toEqual(['b'])
+    })
+
+    it('applies its own globals to its datasets', () => {
+      const registryA = createMapRegistry([{ id: 'features', visible: true }])
+      const registryB = createMapRegistry([{ id: 'features', visible: true }], { visible: false, opacity: 0.5, opacityMode: 'global' })
+
+      expect(registryA.getDataset('features').visible).toBe(true)
+      expect(registryA.getDataset('features').opacity).toBe(1)
+      expect(registryB.getDataset('features').visible).toBe(false)
+      expect(registryB.getDataset('features').opacity).toBe(0.5)
+    })
+
+    it('keeps its attached map style and globals when attached again without one', () => {
+      const registry = createDatasetRegistry()
+      const mapStyle = { id: 'dark' }
+      const globals = { visible: true, opacity: 1, opacityMode: 'dataset' }
+      registry.attachMapStyle(mapStyle)
+      registry.attachGlobals(globals)
+
+      registry.attachMapStyle(undefined)
+      registry.attachGlobals(undefined)
+
+      expect(registry.mapStyle).toBe(mapStyle)
+      expect(registry.globals).toBe(globals)
+    })
+
+    it('checks visibleWhen against its own map style and menu state', () => {
+      const registry = createDatasetRegistry()
+      registry.attachMapStyle({ id: 'dark' })
+      registry.attachMenuStateRef({ current: { menuState: { timeframe: 'present' } } })
+
+      expect(registry.isVisibleWhen({ mapStyleId: 'dark', menu: { timeframe: ['present'] } })).toBe(true)
+      expect(registry.isVisibleWhen({ mapStyleId: 'outdoor' })).toBe(false)
+      expect(registry.isVisibleWhen({ menu: { timeframe: ['future'] } })).toBe(false)
+    })
+
+    it('passes itself to the dataset factory', () => {
+      const registry = createMapRegistry([{ id: 'features' }])
+      const factory = jest.fn((definition, owner) => new Dataset(definition, owner))
+      registry.attachCreateDataset(factory)
+
+      registry.getDataset('features')
+
+      expect(factory).toHaveBeenCalledWith(expect.objectContaining({ id: 'features' }), registry)
     })
   })
 })

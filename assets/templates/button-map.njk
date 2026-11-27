@@ -37,12 +37,10 @@
 {% block pageScripts %}
   <!-- Defra library scripts -->
   <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
-  <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
 
   <script>
     new defra.InteractiveMap('map', {
       behaviour: 'buttonFirst',
-      mapProvider: defra.maplibreProvider(),
       mapStyle: {
         url: 'https://tiles.openfreemap.org/styles/liberty',
         attribution: 'OpenFreeMap © OpenMapTiles Data from OpenStreetMap',

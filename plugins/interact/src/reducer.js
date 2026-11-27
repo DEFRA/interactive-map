@@ -5,10 +5,12 @@ const initialState = {
   interactionModes: null,
   multiSelect: false,
   deselectOnClickOutside: false,
+  touchTarget: true,
   selectedFeatures: [],
   selectedMarkers: [],
   closeOnAction: true, // Done or Cancel
-  listboxActiveItem: null // { featureId, layerId, idProperty, geometry } | null — ring shown but no selectionchange
+  listboxActiveItem: null, // { featureId, layerId, idProperty, geometry } | null — ring shown but no selectionchange
+  listboxFocused: false
 }
 
 const enable = (state, payload) => {
@@ -95,6 +97,8 @@ const clearSelectedFeatures = (state) => {
 
 const setListboxActive = (state, payload) => ({ ...state, listboxActiveItem: payload ?? null })
 
+const setListboxFocused = (state, payload) => ({ ...state, listboxFocused: !!payload })
+
 /**
  * Explicitly select a marker. Has no effect if already selected.
  * In single-select mode, clears selectedFeatures and replaces the selection.
@@ -141,7 +145,8 @@ const actions = {
   SET_SELECTED_FEATURES: setSelectedFeatures,
   SELECT_MARKER: selectMarker,
   UNSELECT_MARKER: unselectMarker,
-  SET_LISTBOX_ACTIVE: setListboxActive
+  SET_LISTBOX_ACTIVE: setListboxActive,
+  SET_LISTBOX_FOCUSED: setListboxFocused
 }
 
 export {

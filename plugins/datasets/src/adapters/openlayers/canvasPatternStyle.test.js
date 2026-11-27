@@ -2,8 +2,8 @@ import Style from 'ol/style/Style.js'
 import Feature from 'ol/Feature.js'
 import Point from 'ol/geom/Point.js'
 import { buildCanvasPatternStyle } from './canvasPatternStyle.js'
-import { buildFilterEvaluator } from '../../../../../providers/beta/openlayers/src/utils/filterEvaluator.js'
-import { PatternImageCache } from '../../../../../providers/beta/openlayers/src/utils/patternImages.js'
+import { buildFilterEvaluator } from '../../../../../providers/openlayers/src/utils/filterEvaluator.js'
+import { PatternImageCache } from '../../../../../providers/openlayers/src/utils/patternImages.js'
 
 const OUTDOOR = 'outdoor'
 

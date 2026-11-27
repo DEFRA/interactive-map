@@ -33,8 +33,8 @@ if (needsThrowIfAborted) {
 
 // Inject polyfills into web workers — workers have their own global scope so
 // main thread polyfills don't apply. Two cases:
-//   1. Blob URL workers (MapLibre default): intercept URL.createObjectURL
-//   2. String URL workers (MapLibre workerUrl, used in CSP environments): intercept Worker constructor
+//   1. Blob URL workers (MapLibre, when its worker is cross-origin): intercept URL.createObjectURL
+//   2. String URL classic workers: intercept Worker constructor
 const needsWorkerPolyfills = (needsThrowIfAborted || needsHasOwn) && typeof URL !== 'undefined' && URL.createObjectURL
 
 if (needsWorkerPolyfills) {
@@ -59,7 +59,8 @@ if (needsWorkerPolyfills) {
     const NativeWorker = Worker
     // eslint-disable-next-line no-global-assign
     Worker = function (url, options) {
-      if (typeof url === 'string' && !url.startsWith('blob:')) {
+      // Module workers can't call importScripts, so they are left unwrapped
+      if (typeof url === 'string' && !url.startsWith('blob:') && options?.type !== 'module') {
         const blob = new Blob([`${workerPolyfillCode}importScripts(${JSON.stringify(url)})`], { type: JS_MIME })
         url = _createObjectURL(blob)
       }

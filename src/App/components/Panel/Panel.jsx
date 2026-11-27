@@ -3,6 +3,7 @@ import { useConfig } from '../../store/configContext'
 import { useApp } from '../../store/appContext'
 import { stringToKebab } from '../../../utils/stringToKebab.js'
 import { getPanelElementId } from '../../../utils/getPanelElementId.js'
+import { focusAfterPanelClose } from '../../../utils/focusAfterPanelClose.js'
 import { useModalPanelBehaviour } from '../../hooks/useModalPanelBehaviour.js'
 import { useIsScrollable } from '../../hooks/useIsScrollable.js'
 import { classifyPanel, getPanelRole } from '../../../utils/getPanelRole.js'
@@ -14,6 +15,21 @@ const computePanelState = (bpConfig, triggeringElement, focus, focusOnOpen) => {
   const shouldFocus = isModal || focusOnOpen === true || (focusOnOpen !== false && focus !== false && (focus === true || Boolean(triggeringElement)))
   const buttonContainerEl = bpConfig.slot.endsWith('button') ? triggeringElement?.parentNode : undefined
   return { isAside, isDialog, isModal, isDismissible, shouldFocus, buttonContainerEl }
+}
+
+// Keyboard users get the browser's own scroll to the focused panel. Others are only scrolled when
+// the top of the panel is off screen, and only as far as needed, so a click never moves a panel
+// they can already see, but never opens one they can't
+const focusOpenedPanel = (panel, interfaceType) => {
+  if (interfaceType === 'keyboard') {
+    panel.focus()
+    return
+  }
+  panel.focus({ preventScroll: true })
+  const { top } = panel.getBoundingClientRect()
+  if (top < 0 || top >= window.innerHeight) {
+    panel.scrollIntoView({ block: 'nearest' })
+  }
 }
 
 const buildPanelClassNames = (slot, showLabel) => [
@@ -121,15 +137,7 @@ export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, 
   const panelRef = rootRef || internalPanelRef
 
   const handleClose = () => {
-    requestAnimationFrame(() => {
-      // Re-checked here, not at handleClose-call time — the triggering element (a button, a
-      // Features-list item, ...) may have been removed from the DOM while the panel was open
-      // (e.g. the map panned and the feature it came from dropped out of the current list).
-      // document.contains() on a detached node is false, not a throw, so this is a plain check.
-      const triggeringElement = props?.triggeringElement
-      const focusTarget = triggeringElement && document.contains(triggeringElement) ? triggeringElement : layoutRefs.viewportRef.current
-      focusTarget?.focus?.({ preventScroll: interfaceType !== 'keyboard' })
-    })
+    focusAfterPanelClose({ triggeringElement: props?.triggeringElement, viewportRef: layoutRefs.viewportRef, interfaceType })
     dispatch({ type: 'CLOSE_PANEL', payload: panelId })
   }
 
@@ -141,7 +149,7 @@ export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, 
     prevIsOpenRef.current = isOpen
 
     if (shouldFocus && (justOpened || isOpen)) {
-      panelRef.current?.focus()
+      focusOpenedPanel(panelRef.current, interfaceType)
     }
   }, [isOpen])
 

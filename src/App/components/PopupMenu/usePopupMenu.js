@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { stringToKebab } from '../../../utils/stringToKebab.js'
 import { findTabStop } from '../../../utils/findNextTabStop.js'
 import { useApp } from '../../store/appContext.js'
+import { getFocusOptions } from '../../../utils/getFocusOptions.js'
 
 /**
  * Computes the position and alignment style for the popup menu based on the
@@ -95,12 +96,13 @@ const resolveItemFocus = (item, buttonConfig) => ({
  *
  * @param {HTMLElement|null} instigator - DOM node of the trigger button, may no longer exist.
  * @param {object}           viewportRef - Ref to the map viewport element, used as fallback.
+ * @param {object}           [focusOptions] - Options passed to focus(), e.g. preventScroll.
  */
-const focusInstigatorOrViewport = (instigator, viewportRef) => {
+const focusInstigatorOrViewport = (instigator, viewportRef, focusOptions) => {
   if (instigator) {
-    instigator.focus()
+    instigator.focus(focusOptions)
   } else {
-    viewportRef.current?.focus()
+    viewportRef.current?.focus(focusOptions)
   }
 }
 
@@ -284,7 +286,7 @@ export const usePopupMenu = ({
   items, hiddenButtons, startIndex, startPos, instigator, instigatorKey,
   buttonRefs, buttonConfig, disabledButtons, pluginId, evaluateProp, id, menuRef, setIsOpen, buttonRect, isOpen
 }) => {
-  const { dispatch, layoutRefs } = useApp()
+  const { dispatch, layoutRefs, interfaceType } = useApp()
   const viewportRef = layoutRefs.viewportRef
 
   const visibleIndices = useMemo(() => {
@@ -324,10 +326,11 @@ export const usePopupMenu = ({
     }
     setIsOpen(false)
     activateItem(event, item, activateCtx)
+    const focusOptions = getFocusOptions(interfaceType)
     if (keepFocus) {
-      focusInstigatorOrViewport(instigator, viewportRef)
+      focusInstigatorOrViewport(instigator, viewportRef, focusOptions)
     } else {
-      viewportRef.current?.focus()
+      viewportRef.current?.focus(focusOptions)
     }
   }
 

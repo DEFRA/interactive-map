@@ -202,6 +202,16 @@ describe('mapControls', () => {
     expect(result).toEqual([])
   })
 
+  it('maps controls for every slot, each tagged with its slot, when no slot is given', () => {
+    defaultAppState.controlConfig = ({
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'header' } },
+      ctrl2: { id: 'ctrl2', desktop: { slot: 'map-styles-panel' } },
+      ctrl3: { id: 'ctrl3', desktop: { slot: 'not-a-slot' } }
+    })
+    const result = mapControls({ appState: defaultAppState, evaluateProp: (p) => p })
+    expect(result.map(({ id, slot }) => ({ id, slot }))).toEqual([{ id: 'ctrl1', slot: 'header' }, { id: 'ctrl2', slot: 'map-styles-panel' }])
+  })
+
   it('passes through the tab field from the breakpoint config', () => {
     defaultAppState.controlConfig = ({
       ctrl1: { id: 'ctrl1', desktop: { slot: 'map-styles-panel', tab: 'Styles' } }

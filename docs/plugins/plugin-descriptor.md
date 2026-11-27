@@ -24,7 +24,7 @@ Any properties passed to the factory (except `id` and `load`) are available as [
 
 ```js
 // Registering the plugin with configuration
-import createScaleBarPlugin from '@defra/interactive-map-plugin-scale-bar'
+import createScaleBarPlugin from '@defra/interactive-map/plugins/scale-bar'
 
 const interactiveMap = new InteractiveMap({
   plugins: [

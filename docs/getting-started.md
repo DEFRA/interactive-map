@@ -2,131 +2,53 @@
 
 ## Installation
 
-```shell
-npm install @defra/interactive-map@x.y.z-alpha
-```
-
-> [!NOTE]
-Install using a fixed version (e.g. `npm install @defra/interactive-map@x.y.z-alpha`) as this package is currently in alpha and may introduce breaking changes. Check the GitHub releases page for the latest available [version](https://github.com/DEFRA/interactive-map/tags).
-
-## GOV.UK Prototype kit
-
-The quickest way to get started is via the GOV.UK Prototype Kit. Once installed, the map component is available immediately — no build step or manual asset setup required.
-
-The plugin automatically serves the required scripts and styles, and provides a ready-made map page template to build from.
-
-See [GOV.UK Prototype Kit - Install and use plugins](https://prototype-kit.service.gov.uk/docs/install-and-use-plugins) for how to install plugins.
-
-## Manual setup
-
-The package is distributed in two formats:
-
-- **ESM** (ECMAScript Modules) — for projects using a bundler such as Webpack or Rollup. Import directly from the package in your JavaScript.
-- **UMD** (Universal Module Definition) — for projects without a bundler. Copy the built files to your assets and load them via `<script>` tags.
-
-The map component also requires a **map provider** — a separate library that handles the underlying tile rendering engine. The provider is passed in at initialisation, which keeps the core package lean and lets you choose the engine that fits your needs.
-
-### MapLibre provider (recommended)
-
-`maplibre-gl` is installed with this package (ESM) or bundled (UMD) — no separate install needed.
-
-### ESRI provider (optional)
-
-The ESRI provider is available for ESM projects only. Install `@arcgis/core` separately:
+:::note
+v1 isn't released yet. Until it is, install the pre-release by adding `@pre-release` to the package name:
 
 ```shell
-npm install @arcgis/core
+npm install @defra/interactive-map@pre-release
 ```
 
-### OpenLayers provider (optional)
-
-An alternative to MapLibre with native support for British National Grid (EPSG:27700) coordinates. Install `ol` and `proj4` separately:
+This works the same way for `@defra/interactive-map-openlayers` and `@defra/interactive-map-esri`.
+:::
 
 ```shell
-npm install ol proj4
+npm install @defra/interactive-map
 ```
 
-**UMD:** `ol` and `proj4` are bundled — no separate install needed.
+This uses [MapLibre](https://maplibre.org) to draw the map, and installs it for you.
 
-### Bundler configuration (ESM)
+For a different map engine, install one of the alternatives instead. They work the same way and have the same imports, so only the package name changes.
 
-Some plugins work with more than one map provider. They load an adapter for your provider at runtime, and each adapter imports its own map engine. Only the adapter for your provider is ever loaded in the browser, but your bundler still builds every adapter, so it fails to resolve the engines you haven't installed:
-
-```
-Module not found: Error: Can't resolve 'ol/layer/Vector.js'
-```
-
-Tell your bundler to ignore the engines for the providers you don't use. Plugins that need this say so at the top of their documentation.
-
-| Provider | Ignore | Pattern |
+| Package | Map engine | Use it for |
 |---|---|---|
-| MapLibre | `ol`, `proj4`, `@arcgis/core` | `/^(ol\|proj4\|@arcgis\/core)(\/\|$)/` |
-| OpenLayers | `@arcgis/core` | `/^@arcgis\/core(\/\|$)/` |
-| ESRI | `ol`, `proj4` | `/^(ol\|proj4)(\/\|$)/` |
+| `@defra/interactive-map` | MapLibre | Most services |
+| `@defra/interactive-map-openlayers` | OpenLayers | Maps in British National Grid (EPSG:27700) |
+| `@defra/interactive-map-esri` | Esri (ArcGIS) | Services that need the ArcGIS SDK. It has fewer features, needs a bundler, and doesn't support a strict Content Security Policy |
 
-The examples below are for the MapLibre provider. For another provider, swap in its pattern.
+## GOV.UK Prototype Kit
 
-**Webpack**
+The quickest way to get started is with the GOV.UK Prototype Kit. Install `@defra/interactive-map` as a plugin, and the map is ready to use, with its scripts, styles and map page templates. `@defra/interactive-map-openlayers` also works as a plugin, without the templates.
 
-```js
-import webpack from 'webpack'
+See [GOV.UK Prototype Kit - Install and use plugins](https://prototype-kit.service.gov.uk/docs/install-and-use-plugins).
 
-export default {
-  // ...
-  plugins: [
-    new webpack.IgnorePlugin({ resourceRegExp: /^(ol|proj4|@arcgis\/core)(\/|$)/ })
-  ]
-}
-```
+## Setting up a map with a bundler
 
-**Vite** (production builds; the dev server only warns)
+For bundlers, such as webpack or Vite, the package is provided as ES modules (ESM).
 
-```js
-export default {
-  build: {
-    rollupOptions: { // rolldownOptions in Vite 8+
-      external: [/^(ol|proj4|@arcgis\/core)(\/|$)/]
-    }
-  }
-}
-```
-
-**Rollup**
-
-```js
-export default {
-  // ...
-  external: [/^(ol|proj4|@arcgis\/core)(\/|$)/]
-}
-```
-
-**esbuild**
-
-```js
-await esbuild.build({
-  // ...
-  external: ['ol', 'ol/*', 'proj4', '@arcgis/core', '@arcgis/core/*']
-})
-```
-
-The ignored engines are only used by adapters for other providers, which are never loaded, so nothing is missing at runtime. If you switch provider, update the pattern to match.
-
-## Basic usage
-
-**ESM** — add a container element to your HTML and initialise the map in your JavaScript:
+Add a container for the map to your HTML:
 
 ```html
 <div id="map"></div>
 ```
 
+Then create the map in your JavaScript:
+
 ```js
 import InteractiveMap from '@defra/interactive-map'
-import maplibreProvider from '@defra/interactive-map/providers/maplibre'
-
 import '@defra/interactive-map/css'
 
 const interactiveMap = new InteractiveMap('map', {
-  mapProvider: maplibreProvider(),
   behaviour: 'hybrid',
   mapLabel: 'Ambleside',
   zoom: 14,
@@ -140,72 +62,151 @@ const interactiveMap = new InteractiveMap('map', {
 })
 ```
 
-**UMD** — copy the `dist/umd/` folders to your assets, then use this page skeleton as a starting point:
+webpack and Vite need no extra setup.
+
+With the Esri package, your bundler needs to handle CSS imports, as the ArcGIS SDK imports its own CSS. Most webpack and Vite setups already do. With Rollup, add a CSS plugin such as `rollup-plugin-postcss`.
+
+### Rollup and esbuild
+
+Rollup and esbuild don't bundle MapLibre's worker, so copy `node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs` to your assets and set its URL in [`mapProviderOptions`](./api.md#mapprovideroptions):
+
+```js
+mapProviderOptions: { workerUrl: '/your-assets-path/maplibre-gl-worker.mjs' }
+```
+
+## Setting up a map without a bundler
+
+Without a bundler, the package is provided as Universal Module Definition (UMD) scripts, which you add to your page with `<script>` tags.
+
+Copy these folders from the package to your assets:
+
+- `dist/umd`, the map's scripts
+- `dist/css`, the map's styles
+
+Keep each folder's files together, as the map loads the rest of its scripts when it opens.
+
+Then add the map to your page:
 
 ```html
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <title>Map</title>
-    <link rel="stylesheet" href="/your-assets-path/interactive-map.css">
-    <script defer src="/your-assets-path/interactive-map/index.js"></script>
-    <script defer src="/your-assets-path/maplibre-provider/index.js"></script>
-    <script defer>
-      document.addEventListener('DOMContentLoaded', function () {
-        const interactiveMap = new defra.InteractiveMap('map', {
-          mapProvider: defra.maplibreProvider(),
-          behaviour: 'hybrid',
-          mapLabel: 'Ambleside',
-          zoom: 14,
-          center: [-2.968, 54.425],
-          containerHeight: '650px',
-          mapStyle: {
-            url: 'https://tiles.openfreemap.org/styles/liberty',
-            attribution: 'OpenFreeMap © OpenMapTiles Data from OpenStreetMap',
-            backgroundColor: '#f5f5f0'
-          }
-        })
-      })
-    </script>
-  </head>
-  <body>
-    <div id="map"></div>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <title>My map</title>
+  <link rel="stylesheet" href="/your-assets-path/interactive-map/css/index.css">
+</head>
+<body>
+  <div id="map"></div>
+
+  <script src="/your-assets-path/interactive-map/umd/index.js"></script>
+  <script>
+    const interactiveMap = new defra.InteractiveMap('map', {
+      behaviour: 'hybrid',
+      mapLabel: 'Ambleside',
+      zoom: 14,
+      center: [-2.968, 54.425],
+      containerHeight: '650px',
+      mapStyle: {
+        url: 'https://tiles.openfreemap.org/styles/liberty',
+        attribution: 'OpenFreeMap © OpenMapTiles Data from OpenStreetMap',
+        backgroundColor: '#f5f5f0'
+      }
+    })
+  </script>
+</body>
 </html>
 ```
 
-> [!NOTE]
-> Scripts are loaded dynamically — all files in each `umd/` folder must be served from the same directory as their `index.js`.
+The Esri package can only be used with a bundler.
+
+## Content Security Policy
+
+`@defra/interactive-map` and `@defra/interactive-map-openlayers` work under a strict Content Security Policy (CSP). The Esri package doesn't.
+
+Serve the map's files from your own site. For scripts, use either:
+
+- `script-src 'self'`
+- a nonce on each of the map's `<script>` tags. With a bundler, also add `'self'` or `'strict-dynamic'`, as the nonce can't be added to the files your bundle loads later. Without a bundler, the nonce is enough, as the map adds it to the files it loads.
+
+With `script-src 'self'`, inline scripts are blocked, so move the code that creates the map, such as the inline script in [Setting up a map without a bundler](#setting-up-a-map-without-a-bundler), into its own file. With a nonce, add it to the inline script too.
+
+The map also needs:
+
+| Directive | Value |
+|---|---|
+| `worker-src` | `'self'`, for MapLibre's worker. Serve the worker from your own site |
+| `style-src` | `'self'`. No inline styles are needed |
+| `img-src` | `'self' data:`. `data:` is for symbols and fill patterns. With OpenLayers, also add the hosts of raster and WMS basemaps, and `blob:` if you use a `transformRequest` |
+| `connect-src` | `'self'` and the hosts of your map styles, tiles and any services the map calls, such as search |
+
+For example, for a MapLibre map using Ordnance Survey basemaps:
+
+```
+default-src 'self'; script-src 'self'; worker-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.os.uk
+```
 
 ## Using plugins
 
-**ESM** — add the plugin import and its CSS alongside your existing core imports, then pass it to `plugins`:
+Plugins add features to the map, such as datasets, drawing and search. They come with the package.
+
+Some plugins have their own CSS. Each plugin's docs say if it does. The examples below add the datasets plugin, which has CSS.
+
+### With a bundler
+
+Import the plugin and its CSS, then pass the plugin in `plugins`:
 
 ```js
-import createInteractPlugin from '@defra/interactive-map/plugins/interact'
-import '@defra/interactive-map/plugins/interact/css'
+import InteractiveMap from '@defra/interactive-map'
+import createDatasetsPlugin from '@defra/interactive-map/plugins/datasets'
+import '@defra/interactive-map/css'
+import '@defra/interactive-map/plugins/datasets/css'
 
 const interactiveMap = new InteractiveMap('map', {
-  // ...your existing options
-  plugins: [createInteractPlugin()]
+  // ...your other options
+  plugins: [
+    createDatasetsPlugin({
+      datasets: [{
+        id: 'my-parcels',
+        label: 'My parcels',
+        geojson: 'https://example.com/api/parcels'
+      }]
+    })
+  ]
 })
 ```
 
-**UMD** — copy the plugin's `dist/umd/` folder to your assets if you haven't already, then add its script and CSS to your page skeleton:
+### Without a bundler
+
+Copy the plugin's `plugins/datasets/dist/umd` and `plugins/datasets/dist/css` folders to your assets. Then add its stylesheet after the map's, and its script after the map's script:
 
 ```html
-<link rel="stylesheet" href="/your-assets-path/interact-plugin.css">
-<script defer src="/your-assets-path/interact-plugin/index.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>My map</title>
+  <link rel="stylesheet" href="/your-assets-path/interactive-map/css/index.css">
+  <link rel="stylesheet" href="/your-assets-path/plugins/datasets/css/index.css">
+</head>
+<body>
+  <div id="map"></div>
+
+  <script src="/your-assets-path/interactive-map/umd/index.js"></script>
+  <script src="/your-assets-path/plugins/datasets/umd/index.js"></script>
+  <script>
+    const interactiveMap = new defra.InteractiveMap('map', {
+      // ...your other options
+      plugins: [
+        defra.datasetsPlugin({
+          datasets: [{
+            id: 'my-parcels',
+            label: 'My parcels',
+            geojson: 'https://example.com/api/parcels'
+          }]
+        })
+      ]
+    })
+  </script>
+</body>
+</html>
 ```
-
-Then pass the plugin in your initialisation:
-
-```js
-const interactiveMap = new defra.InteractiveMap('map', {
-  // ...your existing options
-  plugins: [defra.interactPlugin()]
-})
-```
-
-Each plugin distributes its own CSS. Import or copy only the CSS for the plugins you use. See [Plugins](./plugins.md) for the full list including their CSS paths.

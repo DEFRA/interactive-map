@@ -1,6 +1,6 @@
 // /plugins/interact/manifest.js
 import { InteractInit } from './InteractInit.jsx'
-import { isSelectMarkerOnly } from './utils/interactionModes.js'
+import { needsTarget } from './utils/needsTarget.js'
 import { initialState, actions } from './reducer.js'
 import { enable } from './api/enable.js'
 import { disable } from './api/disable.js'
@@ -28,10 +28,10 @@ export const manifest = {
     id: 'selectAtTarget',
     label: 'Select',
     variant: 'primary',
-    // Hidden for touch when selectMarker is the only mode — markers have a sufficient tap target
-    // and the Select button is only needed alongside the crosshair. Mirrors the crosshair logic in InteractInit.
+    // Shown with the crosshair, using the same needsTarget rule. Not shown for keyboard focus in
+    // the map (Enter selects, and the button would hide as focus moved to it) or while the listbox has focus.
     hiddenWhen: ({ appState, pluginState }) =>
-      !pluginState.enabled || appState.interfaceType !== 'touch' || isSelectMarkerOnly(pluginState.interactionModes),
+      !pluginState.enabled || pluginState.listboxFocused || !needsTarget({ appState, pluginState }),
     mobile: {
       slot: 'actions'
     },

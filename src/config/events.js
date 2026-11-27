@@ -116,7 +116,7 @@ export const EVENTS = {
   APP_FULLSCREEN_CHANGE: 'app:fullscreenchange',
 
   /**
-   * Emitted when a panel is opened.
+   * Emitted when a closed panel opens. Showing or adding a panel that's already open doesn't emit it again.
    * Payload: { panelId: string }
    *
    * @example
@@ -159,6 +159,8 @@ export const EVENTS = {
   MAP_FIT_TO_BOUNDS: 'map:fittobounds',
   /** @internal Set the map center and zoom. Payload: { center: [number, number], zoom?: number } */
   MAP_SET_VIEW: 'map:setview',
+  /** @internal Move the map to its configured bounds, or center and zoom. Payload: none */
+  MAP_RESET_VIEW: 'map:resetview',
 
   // ============================================
   // Map responses (advanced / subscribe)
@@ -178,11 +180,13 @@ export const EVENTS = {
    */
   MAP_STYLE_CHANGE: 'map:stylechange',
 
-  /** Emitted when the map has fully loaded. */
+  /** Emitted once, when the initial base map has loaded. */
   MAP_LOADED: 'map:loaded',
 
   /**
-   * Emitted when the map is ready for interaction and initial app state is settled.
+   * Emitted when the map instance has been created and initial app state (style and size) is settled.
+   * The base map may still be loading; wait for `MAP_LOADED` before adding sources or layers
+   * to the underlying map.
    *
    * Payload:
    * - `map` — the underlying map instance

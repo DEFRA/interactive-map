@@ -1,10 +1,11 @@
+import DirectSelect from '../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js' // NOSONAR
 import { CUSTOM_DRAW_EVENTS } from '../drawEvents.js'
-import { getSnapInstance, clearSnapIndicator } from './snapHelpers.js'
+import { getSnapInstance, clearSnapIndicator, isSnapEnabled } from './snapHelpers.js'
 
 // Builds the `handlers` map both modes' setupEventListeners bind to bindEditModeListeners —
 // the base set of window/container/scale/move/interface-type-change handlers is identical
 // in both, bound to whichever mode instance is passed in; `extra` supplies the handlers that
-// differ per mode (nudge, plus edit_vertex's own selectionchange/update).
+// differ per mode (nudge and setgeometry, plus edit_vertex's own selectionchange/update).
 export const buildEditModeHandlers = (mode, state, extra = {}) => {
   const bind = (handler) => (event) => handler.call(mode, state, event)
   const handlers = {
@@ -48,6 +49,7 @@ export const bindEditModeListeners = (state, map, handlers) => {
   map.on('move', handlers.move)
   map.on(CUSTOM_DRAW_EVENTS.INTERFACE_TYPE_CHANGE, handlers.interfacetypechange)
   map.on(CUSTOM_DRAW_EVENTS.NUDGE_VERTEX, handlers.nudge)
+  map.on(CUSTOM_DRAW_EVENTS.SET_GEOMETRY, handlers.setgeometry)
 }
 
 // Mirrors bindEditModeListeners, plus the dragPan re-enable both modes' onStop does right
@@ -63,6 +65,7 @@ export const unbindEditModeListeners = (state, map, handlers) => {
   map.off('move', handlers.move)
   map.off(CUSTOM_DRAW_EVENTS.INTERFACE_TYPE_CHANGE, handlers.interfacetypechange)
   map.off(CUSTOM_DRAW_EVENTS.NUDGE_VERTEX, handlers.nudge)
+  map.off(CUSTOM_DRAW_EVENTS.SET_GEOMETRY, handlers.setgeometry)
   map.dragPan.enable()
   window.removeEventListener('click', handlers.click)
   window.removeEventListener('keydown', handlers.keydown, { capture: true })
@@ -75,5 +78,32 @@ export const clearActiveSnapIndicator = (map) => {
   const snap = getSnapInstance(map)
   if (snap) {
     clearSnapIndicator(snap, map)
+  }
+}
+
+// Shared mouse drag for edit_point and edit_vertex (touch drags go through each mode's
+// own onTouchmove). Without an active snap, DirectSelect moves the vertex or the whole
+// feature; with one, the mode's `snapDrag` moves it to the snapped position.
+// geometrychange fires only once something moved — a map pan never sets dragMoving, so it
+// never reaches the live checks or onGeometryPreview.
+export const handleEditModeDrag = (mode, state, e, snapDrag) => {
+  if (state.interfaceType === 'touch') {
+    return
+  }
+
+  const snap = getSnapInstance(mode.map)
+  if (snap) {
+    snap.snapStatus = false
+    snap.snapCoords = null
+  }
+
+  if (isSnapEnabled(state) && snap?.status) {
+    snapDrag.call(mode, state, e, snap)
+  } else {
+    DirectSelect.onDrag.call(mode, state, e)
+  }
+
+  if (state.dragMoving) {
+    mode.map.fire(CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE, state.feature)
   }
 }

@@ -2,7 +2,13 @@ import { actions, initialState } from './pluginState.js'
 
 describe('pluginState reducer helpers', () => {
   it('returns the initial state', () => {
-    expect(initialState).toEqual({ keyDefinitions: [], groups: [] })
+    expect(initialState).toEqual({ keyDefinitions: [], groups: [], datasetRegistry: null })
+  })
+
+  it('stores this map\'s datasets registry', () => {
+    const datasetRegistry = { keyItems: jest.fn() }
+
+    expect(actions.SET_DATASET_REGISTRY(initialState, datasetRegistry)).toEqual({ ...initialState, datasetRegistry })
   })
 
   it('adds a flat key item and creates a flat group when needed', () => {
@@ -10,7 +16,8 @@ describe('pluginState reducer helpers', () => {
 
     expect(nextState).toEqual({
       keyDefinitions: [{ id: 'flat-key', label: 'Flat key', type: 'manual' }],
-      groups: [{ id: 'flat-key', type: 'flat' }]
+      groups: [{ id: 'flat-key', type: 'flat' }],
+      datasetRegistry: null
     })
   })
 
@@ -25,7 +32,8 @@ describe('pluginState reducer helpers', () => {
         label: 'Group key',
         type: 'manual'
       }],
-      groups: [{ id: 'group-label', type: 'group', groupLabel: 'Group Label' }]
+      groups: [{ id: 'group-label', type: 'group', groupLabel: 'Group Label' }],
+      datasetRegistry: null
     })
   })
 
@@ -76,7 +84,8 @@ describe('pluginState reducer helpers', () => {
 
     expect(actions.ADD_KEY_GROUPS(initialState, groups)).toEqual({
       keyDefinitions: [],
-      groups: [{ id: 'g1', type: 'group', groupLabel: 'G1' }]
+      groups: [{ id: 'g1', type: 'group', groupLabel: 'G1' }],
+      datasetRegistry: null
     })
   })
 })

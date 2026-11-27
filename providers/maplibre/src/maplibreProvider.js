@@ -7,7 +7,7 @@ import { DEFAULTS, supportedShortcuts } from './defaults.js'
 import { cleanCanvas, applyPreventDefaultFix } from './utils/maplibreFixes.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents } from './appEvents.js'
-import { getAreaDimensions, getCardinalMove, getBboxFromGeoJSON, isGeometryObscured, getResolution, getPaddedBounds } from './utils/spatial.js'
+import { getAreaDimensions, getCardinalMove, getBboxFromGeoJSON, getResolution, getPaddedBounds } from './utils/spatial.js'
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
@@ -206,11 +206,13 @@ export default class MapLibreProvider extends MapProvider {
    * Fit map view to the specified bounds or GeoJSON geometry.
    *
    * @param {[number, number, number, number] | object} bounds - Bounds as [west, south, east, north], or a GeoJSON Feature, FeatureCollection, or geometry. Bbox is computed from GeoJSON using @turf/bbox.
+   * @param {Object} [options]
+   * @param {{ top: number, right: number, bottom: number, left: number }} [options.padding] - Extra space in pixels kept around the bounds, inside the map's padding.
    */
-  fitToBounds (bounds) {
+  fitToBounds (bounds, { padding } = {}) {
     const bbox = Array.isArray(bounds) ? bounds : getBboxFromGeoJSON(bounds)
     const duration = this.map.isStyleLoaded() ? DEFAULTS.animationDuration : 0
-    this.map.fitBounds(bbox, { duration })
+    this.map.fitBounds(bbox, { duration, ...(padding && { padding }) })
   }
 
   /**
@@ -437,16 +439,5 @@ export default class MapLibreProvider extends MapProvider {
   screenToMap (point) {
     const { lng, lat } = this.map.unproject([point.x, point.y])
     return [lng, lat]
-  }
-
-  /**
-   * Returns true if the geometry's screen bounding box overlaps the given panel rectangle.
-   *
-   * @param {object} geojson - GeoJSON Feature, FeatureCollection, or geometry.
-   * @param {DOMRect} panelRect - Bounding rect of the panel element (viewport coordinates).
-   * @returns {boolean}
-   */
-  isGeometryObscured (geojson, panelRect) {
-    return isGeometryObscured(geojson, panelRect, this.map)
   }
 }

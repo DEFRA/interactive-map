@@ -44,41 +44,41 @@ describe('default rules (synchronous)', () => {
 
   test('a default-rule failure never invokes the user callback', () => {
     const { stroke } = setup()
-    const onGeometryChange = jest.fn()
-    stroke.update({ feature: bowtie, numVertices: 3, onGeometryChange })
+    const onGeometryPreview = jest.fn()
+    stroke.update({ feature: bowtie, numVertices: 3, onGeometryPreview })
     jest.runAllTimers()
-    expect(onGeometryChange).not.toHaveBeenCalled()
+    expect(onGeometryPreview).not.toHaveBeenCalled()
   })
 })
 
 describe('user callback (throttled)', () => {
   test('runs once per frame with the latest geometry (trailing edge)', () => {
     const { stroke } = setup()
-    const onGeometryChange = jest.fn(() => true)
-    stroke.update({ feature: square, numVertices: 3, onGeometryChange })
-    stroke.update({ feature: square, numVertices: 4, onGeometryChange })
+    const onGeometryPreview = jest.fn(() => true)
+    stroke.update({ feature: square, numVertices: 3, onGeometryPreview })
+    stroke.update({ feature: square, numVertices: 4, onGeometryPreview })
     const latest = poly([[0, 0], [20, 0], [20, 20], [0, 20]])
-    stroke.update({ feature: latest, numVertices: 5, onGeometryChange })
-    expect(onGeometryChange).not.toHaveBeenCalled() // nothing synchronous
+    stroke.update({ feature: latest, numVertices: 5, onGeometryPreview })
+    expect(onGeometryPreview).not.toHaveBeenCalled() // nothing synchronous
     jest.runAllTimers()
-    expect(onGeometryChange).toHaveBeenCalledTimes(1)
-    expect(onGeometryChange).toHaveBeenCalledWith(expect.objectContaining({ feature: latest, numVertices: 5 }))
+    expect(onGeometryPreview).toHaveBeenCalledTimes(1)
+    expect(onGeometryPreview).toHaveBeenCalledWith(expect.objectContaining({ feature: latest, numVertices: 5 }))
   })
 
   test('a user-callback veto flips dashed with its reason', () => {
     const { onChange, stroke } = setup()
-    stroke.update({ feature: square, numVertices: 3, onGeometryChange: () => ({ valid: false, reason: 'outside region' }) })
+    stroke.update({ feature: square, numVertices: 3, onGeometryPreview: () => ({ valid: false, reason: 'outside region' }) })
     jest.runAllTimers()
     expect(onChange).toHaveBeenCalledWith(true, 'outside region')
   })
 
   test('a synchronous default failure cancels a pending user-rule frame', () => {
     const { onChange, stroke } = setup()
-    const onGeometryChange = jest.fn(() => true)
-    stroke.update({ feature: square, numVertices: 3, onGeometryChange })
-    stroke.update({ feature: bowtie, numVertices: 3, onGeometryChange }) // sync dashed
+    const onGeometryPreview = jest.fn(() => true)
+    stroke.update({ feature: square, numVertices: 3, onGeometryPreview })
+    stroke.update({ feature: bowtie, numVertices: 3, onGeometryPreview }) // sync dashed
     jest.runAllTimers()
-    expect(onGeometryChange).not.toHaveBeenCalled() // stale frame dropped
+    expect(onGeometryPreview).not.toHaveBeenCalled() // stale frame dropped
     expect(onChange).toHaveBeenLastCalledWith(true, expect.any(String))
   })
 
@@ -95,10 +95,10 @@ describe('custom validate function', () => {
   test('drives both the synchronous default pass and the throttled user pass', () => {
     const onChange = jest.fn()
     const validate = jest.fn((feature, context, config) =>
-      config?.onGeometryChange ? config.onGeometryChange(feature, context) : { valid: true })
+      config?.onGeometryPreview ? config.onGeometryPreview(feature, context) : { valid: true })
     const stroke = createLiveStroke({ onChange, validate })
-    const onGeometryChange = jest.fn(() => ({ valid: false, reason: 'vetoed' }))
-    stroke.update({ feature: square, numVertices: 3, onGeometryChange })
+    const onGeometryPreview = jest.fn(() => ({ valid: false, reason: 'vetoed' }))
+    stroke.update({ feature: square, numVertices: 3, onGeometryPreview })
     expect(validate).toHaveBeenCalledWith(square, expect.objectContaining({ numVertices: 3 }))
     jest.runAllTimers()
     expect(onChange).toHaveBeenCalledWith(true, 'vetoed')
@@ -147,12 +147,12 @@ describe('requestFrame / cancelFrame (engine-agnostic frame scheduling)', () => 
 describe('set / reset / destroy', () => {
   test('set() applies through the flip guard and drops any pending frame', () => {
     const { onChange, stroke } = setup()
-    const onGeometryChange = jest.fn(() => true)
-    stroke.update({ feature: square, numVertices: 3, onGeometryChange })
+    const onGeometryPreview = jest.fn(() => true)
+    stroke.update({ feature: square, numVertices: 3, onGeometryPreview })
     stroke.set(true, 'committed invalid')
     expect(onChange).toHaveBeenCalledWith(true, 'committed invalid')
     jest.runAllTimers()
-    expect(onGeometryChange).not.toHaveBeenCalled() // stale live frame dropped
+    expect(onGeometryPreview).not.toHaveBeenCalled() // stale live frame dropped
     onChange.mockClear()
     stroke.set(true) // same state — guarded no-op
     expect(onChange).not.toHaveBeenCalled()
@@ -180,11 +180,11 @@ describe('set / reset / destroy', () => {
 
   test('destroy() cancels a pending user-rule frame', () => {
     const { stroke } = setup()
-    const onGeometryChange = jest.fn(() => true)
-    stroke.update({ feature: square, numVertices: 3, onGeometryChange })
+    const onGeometryPreview = jest.fn(() => true)
+    stroke.update({ feature: square, numVertices: 3, onGeometryPreview })
     stroke.destroy()
     jest.runAllTimers()
-    expect(onGeometryChange).not.toHaveBeenCalled()
+    expect(onGeometryPreview).not.toHaveBeenCalled()
   })
 
   // Belt-and-braces: runUserRule() re-checks `pending` itself rather than trusting that
@@ -198,13 +198,13 @@ describe('set / reset / destroy', () => {
     globalThis.cancelAnimationFrame = noopCancel
     try {
       const { onChange, stroke } = setup()
-      const onGeometryChange = jest.fn(() => true)
-      stroke.update({ feature: square, numVertices: 3, onGeometryChange })
+      const onGeometryPreview = jest.fn(() => true)
+      stroke.update({ feature: square, numVertices: 3, onGeometryPreview })
       stroke.destroy() // calls our no-op cancel — the queued frame is NOT actually removed
       expect(noopCancel).toHaveBeenCalled()
       onChange.mockClear()
       expect(() => jest.runAllTimers()).not.toThrow()
-      expect(onGeometryChange).not.toHaveBeenCalled() // guard returns before reading pending's fields
+      expect(onGeometryPreview).not.toHaveBeenCalled() // guard returns before reading pending's fields
       expect(onChange).not.toHaveBeenCalled()
     } finally {
       globalThis.cancelAnimationFrame = originalCaf

@@ -1,6 +1,8 @@
 const initialState = {
   keyDefinitions: [],
-  groups: []
+  groups: [],
+  // This map's datasets registry, if the datasets plugin is in use
+  datasetRegistry: null
 }
 
 const labelToId = (label) => label ? label.toLowerCase().replace(/\s+/g, '-') : null
@@ -56,7 +58,10 @@ const addKeyGroups = (state, groups) => {
   }
 }
 
+const setDatasetRegistry = (state, datasetRegistry) => ({ ...state, datasetRegistry })
+
 const actions = {
+  SET_DATASET_REGISTRY: setDatasetRegistry,
   ADD_KEY_SYMBOL: addSymbol,
   REMOVE_KEY_SYMBOL: removeSymbol,
   ADD_KEY_GROUPS: addKeyGroups

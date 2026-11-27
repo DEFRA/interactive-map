@@ -3,12 +3,11 @@ import './datasets.scss'
 
 export default function createPlugin (options = { }) {
   const plugin = {
-    noKeyItemText: 'No features displayed',
     ...options,
     id: 'datasets',
     load: async () => {
-      const module = (await import(/* webpackChunkName: "im-datasets-plugin" */ './manifest.js')).manifest
-      return module
+      const { createManifest } = await import(/* webpackChunkName: "im-datasets-plugin" */ './manifest.js')
+      return createManifest(options)
     }
   }
 

@@ -81,6 +81,17 @@ describe('getKeySymbol', () => {
     expect(svg).toBe(symbolRegistry.getKeySymbol(style, { ...mapStyle, mapColorScheme: 'light', appColorScheme: 'light' }).svg)
   })
 
+  it('fills number tokens, including zero', () => {
+    const style = { symbolSvgContent: '<path stroke-width="{{ringWidth}}" opacity="{{bandOpacity}}"/>', symbolRingWidth: 3, symbolBandOpacity: { [mapStyle.id]: 0 } }
+    expect(symbolRegistry.getKeySymbol(style, mapStyle).svg).toContain('stroke-width="3" opacity="0"')
+  })
+
+  it('fills custom tokens from the style', () => {
+    const style = { symbolSvgContent: '<path fill="{{accentColor}}"/>', symbolAccentColor: { outdoor: '#ffdd00', dark: '#f47738' } }
+    const { svg } = symbolRegistry.getKeySymbol(style, { ...mapStyle, id: 'dark' })
+    expect(svg).toContain('fill="#f47738"')
+  })
+
   it('is null for a style with no known symbol', () => {
     expect(symbolRegistry.getKeySymbol({ symbol: 'does-not-exist' }, mapStyle)).toBeNull()
   })
@@ -267,6 +278,14 @@ describe('symbolRegistry — image ids and rasterising', () => {
     const small = symbolRegistry.getSymbolImageId({ ...style, symbolViewBox: '0 0 10 10' }, mapStyle, 'normal', 2)
     const big = symbolRegistry.getSymbolImageId({ ...style, symbolViewBox: '0 0 20 20' }, mapStyle, 'normal', 2)
     expect(small).not.toBe(big)
+  })
+
+  it('gives a different image id when a custom token changes, or differs by map style', () => {
+    const style = { symbolSvgContent: '<circle r="4" fill="{{accentColor}}"/>' }
+    const imageIdFor = (symbolAccentColor, id) => symbolRegistry.getSymbolImageId({ ...style, symbolAccentColor }, { ...mapStyle, id }, 'normal', 2)
+    const perStyle = { outdoor: '#ffdd00', dark: '#f47738' }
+    expect(imageIdFor('#ffdd00', 'outdoor')).not.toBe(imageIdFor('#f47738', 'outdoor'))
+    expect(imageIdFor(perStyle, 'outdoor')).not.toBe(imageIdFor(perStyle, 'dark'))
   })
 
   it('rasterises at the sized viewBox × pixelRatio, under the same id getSymbolImageId gives', async () => {

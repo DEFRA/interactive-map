@@ -15,14 +15,14 @@ beforeEach(() => {
 describe('useCrossHairVisibility', () => {
   it('skips listbox focus listeners when appContainerRef is null', () => {
     appState.layoutRefs.appContainerRef = { current: null }
-    renderHook(() => useCrossHairVisibility({ crossHair, enabled: true, selectMarkerOnly: false, appState }))
+    renderHook(() => useCrossHairVisibility({ crossHair, enabled: true, targetNeeded: false, appState }))
     expect(crossHair.hide).toHaveBeenCalled()
   })
 
   it('shows crosshair on touch and hides when listbox has focus', () => {
     const container = appState.layoutRefs.appContainerRef.current
     appState.interfaceType = 'touch'
-    renderHook(() => useCrossHairVisibility({ crossHair, enabled: true, selectMarkerOnly: false, appState }))
+    renderHook(() => useCrossHairVisibility({ crossHair, enabled: true, targetNeeded: true, appState }))
 
     expect(crossHair.fixAtCenter).toHaveBeenCalled()
 
@@ -47,6 +47,71 @@ describe('useCrossHairVisibility', () => {
     expect(crossHair.fixAtCenter).toHaveBeenCalledTimes(2)
   })
 
+  it('hides crosshair on touch when the target is not needed, and shows it once it is (e.g. map controls opened)', () => {
+    appState.interfaceType = 'touch'
+    const { rerender } = renderHook(
+      (props) => useCrossHairVisibility(props),
+      { initialProps: { crossHair, enabled: true, targetNeeded: false, appState } }
+    )
+    expect(crossHair.hide).toHaveBeenCalled()
+    expect(crossHair.fixAtCenter).not.toHaveBeenCalled()
+
+    rerender({ crossHair, enabled: true, targetNeeded: true, appState })
+    expect(crossHair.fixAtCenter).toHaveBeenCalledTimes(1)
+  })
+
+  it('applies the touch rule straight away when interact is re-enabled after another owner (e.g. draw)', () => {
+    appState.interfaceType = 'touch'
+    const { rerender } = renderHook(
+      (props) => useCrossHairVisibility(props),
+      { initialProps: { crossHair, enabled: false, targetNeeded: false, appState } }
+    )
+    crossHair.hide.mockClear()
+
+    rerender({ crossHair, enabled: true, targetNeeded: false, appState })
+    expect(crossHair.hide).toHaveBeenCalledTimes(1)
+    expect(crossHair.fixAtCenter).not.toHaveBeenCalled()
+  })
+
+  it('dispatches listbox focus changes, only when the value changes', () => {
+    const container = appState.layoutRefs.appContainerRef.current
+    const dispatch = jest.fn()
+    renderHook(() => useCrossHairVisibility({ crossHair, enabled: true, targetNeeded: true, appState, dispatch }))
+    expect(dispatch).not.toHaveBeenCalled()
+
+    const option = document.createElement('div')
+    option.setAttribute('role', 'option')
+    const otherOption = document.createElement('div')
+    otherOption.setAttribute('role', 'option')
+    const outside = document.createElement('button')
+    container.append(option, otherOption, outside)
+
+    act(() => option.dispatchEvent(new FocusEvent('focusin', { bubbles: true })))
+    act(() => otherOption.dispatchEvent(new FocusEvent('focusin', { bubbles: true })))
+    act(() => outside.dispatchEvent(new FocusEvent('focusin', { bubbles: true })))
+
+    expect(dispatch.mock.calls).toEqual([
+      [{ type: 'SET_LISTBOX_FOCUSED', payload: true }],
+      [{ type: 'SET_LISTBOX_FOCUSED', payload: false }]
+    ])
+  })
+
+  it('dispatches listbox focus on mount when the listbox already has focus', () => {
+    const container = appState.layoutRefs.appContainerRef.current
+    const listbox = document.createElement('div')
+    listbox.setAttribute('role', 'listbox')
+    listbox.tabIndex = 0
+    container.appendChild(listbox)
+    document.body.appendChild(container)
+    listbox.focus()
+    const dispatch = jest.fn()
+
+    renderHook(() => useCrossHairVisibility({ crossHair, enabled: true, targetNeeded: true, appState, dispatch }))
+
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_LISTBOX_FOCUSED', payload: true })
+    container.remove()
+  })
+
   it('hides crosshair in keyboard mode until focus enters the map keyboard scope', () => {
     const container = appState.layoutRefs.appContainerRef.current
     const viewportEl = document.createElement('div')
@@ -54,7 +119,7 @@ describe('useCrossHairVisibility', () => {
     container.appendChild(viewportEl)
     appState.interfaceType = 'keyboard'
 
-    renderHook(() => useCrossHairVisibility({ crossHair, enabled: true, selectMarkerOnly: false, appState }))
+    renderHook(() => useCrossHairVisibility({ crossHair, enabled: true, targetNeeded: false, appState }))
 
     // interfaceType is 'keyboard' but nothing in the map keyboard scope has focus yet
     expect(crossHair.hide).toHaveBeenCalled()
@@ -82,7 +147,7 @@ describe('useCrossHairVisibility', () => {
     container.appendChild(mapControlScope)
     appState.interfaceType = 'keyboard'
 
-    renderHook(() => useCrossHairVisibility({ crossHair, enabled: true, selectMarkerOnly: false, appState }))
+    renderHook(() => useCrossHairVisibility({ crossHair, enabled: true, targetNeeded: false, appState }))
     expect(crossHair.fixAtCenter).not.toHaveBeenCalled()
 
     // Focus lands on a direction button nested inside the scoped control, not
@@ -101,7 +166,7 @@ describe('useCrossHairVisibility', () => {
     // interact starts disabled (e.g. a draw session already took over) — the crosshair
     // is presumed to already be showing via that other owner, mirroring what
     // DrawInit.jsx/drawInput.js would have set moments earlier.
-    renderHook(() => useCrossHairVisibility({ crossHair, enabled: false, selectMarkerOnly: false, appState }))
+    renderHook(() => useCrossHairVisibility({ crossHair, enabled: false, targetNeeded: false, appState }))
     crossHair.fixAtCenter.mockClear()
     crossHair.hide.mockClear()
 
@@ -120,7 +185,7 @@ describe('useCrossHairVisibility', () => {
 
     const { rerender } = renderHook(
       (props) => useCrossHairVisibility(props),
-      { initialProps: { crossHair, enabled: true, selectMarkerOnly: false, appState } }
+      { initialProps: { crossHair, enabled: true, targetNeeded: false, appState } }
     )
     expect(crossHair.hide).toHaveBeenCalled()
 
@@ -129,7 +194,7 @@ describe('useCrossHairVisibility', () => {
     // 'keyboard' along the way, but the map keyboard scope was never entered.
     act(() => menuButton.dispatchEvent(new FocusEvent('focusin', { bubbles: true })))
     appState = { ...appState, interfaceType: 'keyboard' }
-    rerender({ crossHair, enabled: true, selectMarkerOnly: false, appState })
+    rerender({ crossHair, enabled: true, targetNeeded: false, appState })
 
     expect(crossHair.fixAtCenter).not.toHaveBeenCalled()
   })

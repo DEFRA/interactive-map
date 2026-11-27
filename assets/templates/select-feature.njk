@@ -38,7 +38,6 @@
 {% block pageScripts %}
   <!-- Defra library scripts -->
   <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
-  <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/datasets/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/interact/dist/umd/index.js"></script>
 
@@ -113,7 +112,6 @@
 
     const map = new defra.InteractiveMap('map', {
       behaviour: 'inline',
-      mapProvider: defra.maplibreProvider(),
       mapStyle: {
         url: 'https://tiles.openfreemap.org/styles/liberty',
         attribution: 'OpenFreeMap © OpenMapTiles Data from OpenStreetMap',
@@ -125,7 +123,7 @@
       plugins: [datasetsPlugin, interactPlugin]
     })
 
-    map.on('map:ready', () => {
+    map.on('map:ready', function () {
       interactPlugin.enable()
 
       map.addPanel(PANEL_ID, {
@@ -138,19 +136,19 @@
       })
     })
 
-    map.on('interact:selectionchange', ({ selectedFeatures }) => {
-      if (selectedFeatures.length > 0) {
-        const { name } = selectedFeatures[0].properties
+    map.on('interact:selectionchange', function (event) {
+      if (event.selectedFeatures.length > 0) {
+        const name = event.selectedFeatures[0].properties.name
         document.getElementById('parcel-info-content').innerHTML =
-          `<p class="govuk-body govuk-!-margin-bottom-1">${name}</p>`
+          '<p class="govuk-body govuk-!-margin-bottom-1">' + name + '</p>'
         map.showPanel(PANEL_ID)
       } else {
         map.hidePanel(PANEL_ID)
       }
     })
 
-    map.on('app:panelclosed', ({ panelId }) => {
-      if (panelId === PANEL_ID) {
+    map.on('app:panelclosed', function (event) {
+      if (event.panelId === PANEL_ID) {
         interactPlugin.clear()
       }
     })

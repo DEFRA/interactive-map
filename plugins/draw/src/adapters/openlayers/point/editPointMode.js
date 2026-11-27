@@ -10,10 +10,6 @@ import { STYLES_CHANGED_EVENT } from '../core/internalEvents.js'
 import { createLiveStroke } from '../../../validation/liveStroke.js'
 
 const TOUCH_INTERFACE = 'touch'
-// Shared phase name with edit_vertex's own move_vertex op — a moved point re-validates the
-// same way (validation/rules.js has no Point-specific rule, so this only ever gates a
-// consumer's own onGeometryChange callback).
-const MOVE_VERTEX = 'commit-move'
 
 // A symbol icon renders far bigger than buildModifyCondition's fixed-radius hit-test (tuned
 // for a plain vertex dot), so this hit-tests the icon's own rendered pixels instead. No touch
@@ -43,7 +39,7 @@ const wirePointLiveValidity = ({ manager, olFeature }) => {
       feature: { type: 'Feature', geometry: { type: 'Point', coordinates } },
       context: { mode: 'edit_point' },
       numVertices: 1,
-      onGeometryChange: manager._geometryValidator
+      onGeometryPreview: manager._previewValidator
     })
   }
   olFeature.getGeometry().on('change', updateLiveValidity)
@@ -70,7 +66,7 @@ const wireTouchHandler = ({ map, container, manager, snap, undoStack, selection 
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()
-      emitGeometryValidation(MOVE_VERTEX, vertexIndex)
+      emitGeometryValidation(vertexIndex)
     },
     // A stray tap never relocates the point — only the offset-target drag and the D-pad do
     // (mirrors the ML adapter's editPointMode/touchHandlers.js onTap no-op).
@@ -99,7 +95,18 @@ const createUndoAction = ({ olFeature, undoStack, selection }) => () => {
   selection.syncGeom()
   // An undo commits the inverse change, so it must re-validate like any other commit —
   // otherwise the Done gate could go stale. Always vertexIndex 0 — a point has only one.
-  selection.emitGeometryValidation(MOVE_VERTEX, 0)
+  selection.emitGeometryValidation(0)
+}
+
+// Moves the point to the given geometry's coordinate as one undoable commit (setGeometry).
+const createSetGeometryAction = ({ olFeature, undoStack, selection, touchHandler }) => (geometry) => {
+  undoStack.push({ type: 'replace_geometry', vertexIndex: 0, previousCoord: olFeature.getGeometry().getCoordinates() })
+  movePoint(olFeature, 0, geometry.coordinates)
+  selection.syncGeom()
+  selection.emitGeometryValidation(0)
+  if (selection.getState().interfaceType === TOUCH_INTERFACE) {
+    touchHandler.updateTargetPosition()
+  }
 }
 
 const wireKeyboardHandler = ({ map, container, snap, undoStack, selection, touchHandler, doUndo }) => {
@@ -114,7 +121,7 @@ const wireKeyboardHandler = ({ map, container, snap, undoStack, selection, touch
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()
-      emitGeometryValidation(MOVE_VERTEX, vertexIndex)
+      emitGeometryValidation(vertexIndex)
     },
     // No midpoint concept for a point, so this is never actually reached — required by
     // createKeyboardHandler's interface all the same. Not reachable through this module's
@@ -204,7 +211,7 @@ export const createEditPointMode = ({ map, manager, options }) => {
         return
       }
       undoStack.push(op)
-      selection.emitGeometryValidation(MOVE_VERTEX, op.vertexIndex)
+      selection.emitGeometryValidation(op.vertexIndex)
     }
   })
 
@@ -253,6 +260,8 @@ export const createEditPointMode = ({ map, manager, options }) => {
     // MapControls' D-pad, routed here via mapProvider.activeMoveTarget (events.js) — claimed
     // once at construction (pointSelectionState's VERTEX_SELECTION) and held for the session.
     nudgeSelectedVertex: keyboardHandler.nudgeByDelta,
+
+    setGeometry: createSetGeometryAction({ olFeature, undoStack, selection, touchHandler }),
 
     destroy () {
       live.destroy()

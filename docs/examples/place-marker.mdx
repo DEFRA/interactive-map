@@ -3,12 +3,9 @@ import CodeTabs from '../../demo/js/codeTabs.js'
 
 # Place a marker to continue
 
-Use the interact plugin's `placeMarker` mode to let users drop a location pin on the map before continuing a journey.
+Use the interact plugin's `placeMarker` mode to let users drop a location pin on the map before continuing a journey. Two patterns work together in this example, depending on the screen size.
 
-Two patterns work together in this example:
-
-- **Hybrid behaviour with built-in back and continue** — on mobile the map opens fullscreen and the `backAndContinue` option renders Back and Continue buttons inside the map. The Continue button is enabled declaratively via `continueEnabledWhen` once a marker has been placed.
-- **External Continue button for inline** — when the map is inline (tablet/desktop), a Continue button sits outside the map container. It uses `app:opened`, `app:closed`, and `app:fullscreenchange` to show and hide in sync with the map's display mode, and `interact:markerchange` to enable once a marker is placed.
+On mobile, the map opens fullscreen and the `backAndContinue` option adds Back and Continue buttons inside the map, with Continue enabled by `continueEnabledWhen` once a marker is placed. On tablet and desktop, the map is inline and a Continue button sits outside it. That button uses `app:opened`, `app:closed` and `app:fullscreenchange` to show and hide with the map, and `interact:markerchange` to enable once a marker is placed.
 
 <DemoMapPlaceMarker />
 
@@ -18,7 +15,6 @@ Two patterns work together in this example:
     language: 'js',
     code: `
       import InteractiveMap from '@defra/interactive-map'
-      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
       import createInteractPlugin from '@defra/interactive-map/plugins/interact'
 
       const interactPlugin = createInteractPlugin({
@@ -27,7 +23,6 @@ Two patterns work together in this example:
 
       const map = new InteractiveMap('my-map', {
         behaviour: 'hybrid',
-        mapProvider: maplibreProvider(),
         mapStyle: {
           url: 'https://your-tile-url/style.json',
           logo: '/path/to/logo.svg',
@@ -43,7 +38,7 @@ Two patterns work together in this example:
           backLabel: 'Back',
           continueLabel: 'Continue',
           continueEnabledWhen: ({ mapState }) =>
-            mapState.markers.items.some(m => m.id === 'location')
+            mapState.markers.items.some(item => item.id === 'location')
         }
       })
 
@@ -53,7 +48,7 @@ Two patterns work together in this example:
 
       // Fired when the built-in Continue button is clicked (mobile/fullscreen)
       map.on('app:continue', ({ mapState }) => {
-        const marker = mapState.markers.items.find(m => m.id === 'location')
+        const marker = mapState.markers.items.find(item => item.id === 'location')
         // navigate to next step with marker.coords
       })
 
@@ -86,9 +81,8 @@ Two patterns work together in this example:
     label: 'UMD',
     language: 'html',
     code: `
-      <script src="/your-assets-path/interactive-map/index.js"></script>
-      <script src="/your-assets-path/maplibre-provider/index.js"></script>
-      <script src="/your-assets-path/interact-plugin/index.js"></script>
+      <script defer src="/your-assets-path/interactive-map/index.js"></script>
+      <script defer src="/your-assets-path/interact-plugin/index.js"></script>
 
       <div id="my-map"></div>
       <div id="external-buttons" hidden>
@@ -96,58 +90,59 @@ Two patterns work together in this example:
       </div>
 
       <script>
-      var interactPlugin = defra.interactPlugin({
-        interactionModes: ['placeMarker']
-      })
+      document.addEventListener('DOMContentLoaded', function () {
+        const interactPlugin = defra.interactPlugin({
+          interactionModes: ['placeMarker']
+        })
 
-      var map = new defra.InteractiveMap('my-map', {
-        behaviour: 'hybrid',
-        mapProvider: defra.maplibreProvider(),
-        mapStyle: {
-          url: 'https://your-tile-url/style.json',
-          logo: '/path/to/logo.svg',
-          logoAltText: 'Your logo alt text',
-          attribution: 'Your tile attribution'
-        },
-        center: [-0.1276, 51.5074],
-        zoom: 12,
-        containerHeight: '516px',
-        plugins: [interactPlugin],
-        backAndContinue: {
-          backLabel: 'Back',
-          continueLabel: 'Continue',
-          continueEnabledWhen: function (context) {
-            return context.mapState.markers.items.some(function (m) { return m.id === 'location' })
+        const map = new defra.InteractiveMap('my-map', {
+          behaviour: 'hybrid',
+          mapStyle: {
+            url: 'https://your-tile-url/style.json',
+            logo: '/path/to/logo.svg',
+            logoAltText: 'Your logo alt text',
+            attribution: 'Your tile attribution'
+          },
+          center: [-0.1276, 51.5074],
+          zoom: 12,
+          containerHeight: '516px',
+          plugins: [interactPlugin],
+          backAndContinue: {
+            backLabel: 'Back',
+            continueLabel: 'Continue',
+            continueEnabledWhen: function (context) {
+              return context.mapState.markers.items.some(function (item) { return item.id === 'location' })
+            }
           }
+        })
+
+        map.on('map:ready', function () {
+          interactPlugin.enable()
+        })
+
+        map.on('app:continue', function (context) {
+          const marker = context.mapState.markers.items.find(function (item) { return item.id === 'location' })
+          // navigate to next step with marker.coords
+        })
+
+        const continueBtn = document.getElementById('continue-btn')
+        const externalButtons = document.getElementById('external-buttons')
+
+        function setInline(isFullscreen) {
+          externalButtons.hidden = isFullscreen
         }
-      })
 
-      map.on('map:ready', function () {
-        interactPlugin.enable()
-      })
+        map.on('app:opened', function (event) { setInline(event.isFullscreen) })
+        map.on('app:closed', function () { externalButtons.hidden = true })
+        map.on('app:fullscreenchange', function (event) { setInline(event.isFullscreen) })
 
-      map.on('app:continue', function (context) {
-        var marker = context.mapState.markers.items.find(function (m) { return m.id === 'location' })
-        // navigate to next step with marker.coords
-      })
+        map.on('interact:markerchange', function () {
+          continueBtn.disabled = false
+        })
 
-      var continueBtn = document.getElementById('continue-btn')
-      var externalButtons = document.getElementById('external-buttons')
-
-      function setInline(isFullscreen) {
-        externalButtons.hidden = isFullscreen
-      }
-
-      map.on('app:opened', function (e) { setInline(e.isFullscreen) })
-      map.on('app:closed', function () { externalButtons.hidden = true })
-      map.on('app:fullscreenchange', function (e) { setInline(e.isFullscreen) })
-
-      map.on('interact:markerchange', function () {
-        continueBtn.disabled = false
-      })
-
-      continueBtn.addEventListener('click', function () {
-        // navigate to next step
+        continueBtn.addEventListener('click', function () {
+          // navigate to next step
+        })
       })
       </script>
     `

@@ -11,6 +11,7 @@
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  overflow: clip; // Can't be scrolled, so focusing something wider than a narrow map can't shift it
 
   touch-action: none;
 }
@@ -119,19 +120,33 @@
 // Top: Includes a panel and buttons in colums
 // ---------------------------------------------------
 
-// Equal side columns keep the middle one centred; the middle is sized to its content first.
+// The side columns share the row by their content, so one only wraps when the row is really full.
+// A column is never narrower than its widest item, so items keep their size and wrap between them.
 .im-o-app__top {
   z-index: 10;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(min-content, auto) auto minmax(min-content, auto);
   margin-bottom: auto;
   align-items: start;
   width: 100%;
   gap: var(--divider-gap);
 }
 
+// With something in the middle, equal side columns keep it centred while there's room. It then moves
+// off-centre as the gaps close, and nothing wraps until they have.
+.im-o-app__top:has(> .im-o-app__top-col:nth-child(2) > :not([hidden])) {
+  grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
+}
+
+// Once the columns no longer fit on one line (set in useLayoutMeasurements), they can narrow and
+// wrap, and the middle wraps past a third of the row.
+.im-o-app__top--wrapped:has(> .im-o-app__top-col:nth-child(2) > :not([hidden])) {
+  grid-template-columns: minmax(min-content, 1fr) fit-content(34%) minmax(min-content, 1fr);
+}
+
 .im-o-app__top-col {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--divider-gap);
 }
 
@@ -164,41 +179,101 @@
 }
 
 // ---------------------------------------------------
-// Left: Buttons and panels
+// Left and right: Buttons and panels
 // ---------------------------------------------------
 
-.im-o-app__left {
+// The top sub-slot, a spacer, then the bottom sub-slot, which sits at the bottom of the column.
+// Each sub-slot grows to its content until the two meet. Grid shares the room out equally, so a
+// sub-slot that needs less than half keeps its full height and the other gets the rest, or each
+// gets half. A panel squeezed this way scrolls its own content. The auto minimums keep buttons and
+// controls at their full height, at this level and in the sub-slots: only panels give way.
+.im-o-app__left,
+.im-o-app__right {
   position: absolute;
-  display: flex;
-  flex-direction: column;
-  left: var(--primary-gap);
-  top: var(--left-offset-top);
-  bottom: var(--left-offset-bottom);
-  gap: var(--divider-gap);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  max-width: calc(100% - (var(--primary-gap) * 2));
+}
 
-  & > *:empty {
-    display: none;
+// With panels open on both sides, each column is at most half the map, so they come no closer than
+// a divider gap. Closed panels have the hidden attribute, or display: none for HTML panels
+$open-panel: '.im-c-panel:not([hidden]):not([style*="display: none"])';
+
+.im-o-app__main:has(> .im-o-app__left > * > #{$open-panel}):has(> .im-o-app__right > * > #{$open-panel}) {
+  > .im-o-app__left,
+  > .im-o-app__right {
+    max-width: calc(50% - var(--primary-gap) - (var(--divider-gap) / 2));
   }
 }
 
-.im-o-app__left-top {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  min-height: 0;
+.im-o-app__left {
+  grid-template-rows: minmax(auto, max-content) minmax(var(--left-slot-gap, var(--divider-gap)), 1fr) minmax(auto, max-content);
+  left: var(--primary-gap);
+  top: var(--left-offset-top);
+  bottom: var(--left-offset-bottom);
+}
+
+.im-o-app__right {
+  grid-template-rows: minmax(auto, max-content) minmax(var(--right-slot-gap, var(--divider-gap)), 1fr) minmax(auto, max-content);
+  right: var(--primary-gap);
+  top: var(--right-offset-top);
+  bottom: var(--right-offset-bottom);
+}
+
+// Each panel or button in a sub-slot shares its room the same way, so two panels in one sub-slot
+// split it rather than one squeezing the other below its own heading
+.im-o-app__left-top,
+.im-o-app__left-bottom,
+.im-o-app__right-top,
+.im-o-app__right-bottom {
   position: relative;
+  display: grid;
+  // A track no wider than the column, so a wide panel narrows to fit rather than widening the track
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: minmax(auto, max-content);
   gap: var(--divider-gap);
 }
 
-.im-o-app__left-bottom {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-end;
+// Only a sub-slot with an open panel can shrink, so the buttons and controls in the other keep their
+// size and the mobile drawer cap can reserve room for them
+:is(.im-o-app__left-top, .im-o-app__left-bottom, .im-o-app__right-top, .im-o-app__right-bottom):has(> #{$open-panel}) {
   min-height: 0;
-  margin-top: auto;
-  position: relative;
-  gap: var(--divider-gap);
+}
+
+// A panel's set and minimum widths give way to its column's (a panel beside a button sits inside the button)
+:is(.im-o-app__left-top, .im-o-app__left-bottom, .im-o-app__right-top, .im-o-app__right-bottom) > .im-c-panel {
+  min-width: min(var(--min-panel-width), 100%);
+  max-width: 100%;
+}
+
+.im-o-app__left-top,
+.im-o-app__right-top {
+  grid-row: 1;
+  align-content: start;
+}
+
+.im-o-app__left-bottom,
+.im-o-app__right-bottom {
+  grid-row: 3;
+  align-content: end;
+}
+
+.im-o-app__left-top,
+.im-o-app__left-bottom {
+  justify-items: start;
+}
+
+.im-o-app__right-top,
+.im-o-app__right-bottom {
+  justify-items: end;
+}
+
+.im-o-app__left-top {
+  max-height: var(--left-top-slot-max-height, none);
+}
+
+.im-o-app__right-top {
+  max-height: var(--right-top-slot-max-height, none);
 }
 
 // ---------------------------------------------------
@@ -215,39 +290,6 @@
   justify-content: center;
   align-items: center;
   z-index: -1; // Support masking the viewport
-}
-
-// ---------------------------------------------------
-// Right: Buttons and panels
-// ---------------------------------------------------
-
-.im-o-app__right {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  right: var(--primary-gap);
-  top: var(--right-offset-top);
-  bottom: var(--right-offset-bottom);
-  gap: var(--divider-gap);
-}
-
-.im-o-app__right-top {
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 auto;
-  align-items: flex-end;
-  position: relative;
-  gap: var(--divider-gap);
-}
-
-.im-o-app__right-bottom {
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 auto;
-  margin-top: auto;
-  align-items: flex-end;
-  position: relative;
-  gap: var(--divider-gap);
 }
 
 // ---------------------------------------------------
@@ -334,11 +376,19 @@
 // Drawer:
 // ---------------------------------------------------
 
+// Capped in useLayoutMeasurements so it never covers the side columns or runs off main
 .im-o-app__drawer {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: var(--drawer-max-height, none);
   z-index: 1;
 }
 
 .im-o-app__drawer .im-c-panel {
+  min-height: 0;
+  max-height: 100%;
+
   @include tools.border-focus-corner-override(
     $corners: 'top'
   );
@@ -468,6 +518,11 @@
 
 }
 
+// Leaves a gap above and below, so a long banner scrolls instead of running off the map
+.im-o-app .im-o-app__modal .im-c-panel--banner {
+  max-height: calc(100% - (var(--primary-gap) * 2));
+}
+
 // Mobile and tablet
 .im-o-app--mobile, .im-o-app--tablet {
   .im-o-app__modal .im-c-panel--banner {
@@ -497,15 +552,15 @@
 
 // Actions inset when width is greater
 .im-o-app--tablet, .im-o-app--desktop {
+  // As wide as the bar, so its size changes when the bar's does and the layout is measured again
   .im-o-app__actions {
     position: absolute;
-    width: 100%;
     left: 0;
+    right: 0;
     bottom: calc(var(--primary-gap) * 2);
-
-    .im-c-panel {
-      max-width: var(--action-bar-max-width);
-    }
+    width: fit-content;
+    max-width: var(--action-bar-max-width);
+    margin-inline: auto;
 
     // Opacity-only so it fades in instead of visually sliding up.
     @media (prefers-reduced-motion: no-preference) {
@@ -527,6 +582,7 @@
 
   .im-c-panel {
     width: 100%;
+    min-width: 0;
 
     @include tools.border-focus-corner-override(
       $corners: 'none'
@@ -536,6 +592,13 @@
 
 .im-o-app--mobile .im-o-app__drawer .im-c-panel {
     clip-path: inset(-20px 0 0 0);
+}
+
+// Only the top panel in the drawer casts a shadow over the map. Panels below it are separated by a
+// border instead, as the actions bar is (see Actions.jsx)
+.im-o-app--mobile .im-o-app__drawer .im-c-panel:not([hidden]):not([style*="display: none"]) ~ .im-c-panel {
+  clip-path: inset(0);
+  border-top: 1px solid var(--app-border-color);
 }
 
 // Inset the focus ring so it isn't clipped by the parent's overflow:hidden.

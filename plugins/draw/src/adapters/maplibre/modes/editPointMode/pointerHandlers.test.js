@@ -77,7 +77,7 @@ describe('pointerHandlers', () => {
 
   test('onClick is vetoed by a rejecting geometry validator, firing draw.placementblocked with a fallback null reason, and leaving the point untouched', () => {
     const { ctx, state, map } = createHarness()
-    map._drawGeometryValidator = () => false // no {reason} shape
+    map._drawPreviewValidator = () => false // no {reason} shape
     ctx.onClick(state, { featureTarget: undefined, lngLat: { lng: 9, lat: 9 }, point: { x: 90, y: 90 } })
     expect(state.feature.coordinates).toEqual([5, 5])
     expect(map.fire).toHaveBeenCalledWith('draw.placementblocked', expect.objectContaining({ reason: null }))
@@ -99,6 +99,26 @@ describe('pointerHandlers', () => {
     state._moveStartPosition = [9, 9]
     ctx.onMouseUp(state, {})
     expect(map._undoStack).toHaveLength(0)
+  })
+
+  test('onDrag that pans the map (point not grabbed) fires no geometrychange, with or without snap', () => {
+    const { ctx, state, map } = createHarness()
+    state.canDragMove = false
+    ctx.onDrag(state, dragEvt(2, 2))
+    state.getSnapEnabled = () => true
+    map._snapInstance = { status: true, snapStatus: false, snapCoords: null, snapToClosestPoint: jest.fn() }
+    ctx.onDrag(state, dragEvt(3, 3))
+    expect(map.fire).not.toHaveBeenCalledWith('draw.geometrychange', expect.anything())
+    expect(state.feature.coordinates).toEqual([5, 5])
+  })
+
+  test('onDrag fires geometrychange after the point moves, carrying the new position', () => {
+    const { ctx, state, map } = createHarness()
+    Object.assign(state, { canDragMove: true, dragMoveLocation: { lng: 0, lat: 0 } })
+    const fired = []
+    map.on('draw.geometrychange', (feature) => fired.push([...feature.coordinates]))
+    ctx.onDrag(state, dragEvt(2, 2))
+    expect(fired).toEqual([[7, 7]])
   })
 
   test('onDrag skips touch, delegates without snap, and snaps when enabled', () => {

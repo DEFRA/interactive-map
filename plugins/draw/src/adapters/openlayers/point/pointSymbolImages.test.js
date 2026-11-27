@@ -1,6 +1,6 @@
 import { getPixelRatio, resolvePointSymbol, refreshAllPointSymbols } from './pointSymbolImages.js'
 import { createSymbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
-import { SymbolImageCache } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
+import { SymbolImageCache } from '../../../../../../providers/openlayers/src/utils/symbolImages.js'
 
 const symbolRegistry = createSymbolRegistry()
 

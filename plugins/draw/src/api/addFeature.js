@@ -1,4 +1,4 @@
-import { flattenStyleProperties } from '../utils/flattenStyleProperties.js'
+import { flattenStyleProperties, toStyleChanges, definedOnly, mapStyleIds } from '../utils/flattenStyleProperties.js'
 import { stripInternalProperties } from '../utils/stripInternalProperties.js'
 import { logger } from '../../../../src/services/logger.js'
 
@@ -9,7 +9,7 @@ const SUPPORTED_GEOMETRY_TYPES = new Set(['Point', 'LineString', 'Polygon'])
 const isValidFeature = (feature) =>
   SUPPORTED_GEOMETRY_TYPES.has(feature.geometry?.type) && feature.geometry?.coordinates !== undefined
 
-export const addFeature = ({ mapProvider, services }, feature) => {
+export const addFeature = ({ mapState, mapProvider, services }, feature) => {
   const { draw } = mapProvider
   const { eventBus } = services
 
@@ -17,14 +17,17 @@ export const addFeature = ({ mapProvider, services }, feature) => {
     return
   }
 
+  // A saved feature carries its style in properties, already flattened; a top-level
+  // stroke/fill/strokeWidth, when given, replaces that prop's saved values.
   const { stroke, fill, strokeWidth, properties, ...featureRest } = feature
+  const savedProperties = flattenStyleProperties(properties)
   const flatFeature = {
     type: 'Feature',
     ...featureRest,
-    properties: {
-      ...properties,
-      ...flattenStyleProperties({ stroke, fill, strokeWidth })
-    }
+    properties: definedOnly({
+      ...savedProperties,
+      ...toStyleChanges(savedProperties, { stroke, fill, strokeWidth }, mapStyleIds(mapState))
+    })
   }
 
   if (!isValidFeature(flatFeature)) {

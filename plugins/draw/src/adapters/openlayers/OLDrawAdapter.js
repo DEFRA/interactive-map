@@ -1,5 +1,6 @@
 import { createOLDraw } from './olDraw.js'
 import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
+import { definedOnly } from '../../utils/flattenStyleProperties.js'
 
 // split.js passes this literal — MapLibre's own always-present "already-drawn
 // shapes" style layer id — as a snapLayers entry so the split line snaps to the
@@ -27,14 +28,17 @@ const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
  *   done() / cancel() / undo() / deleteVertex()
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
  *   getVertexItems() / selectVertex(index) / insertVertexAtMidpoint(index)
- *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
+ *   setGeometry(geometry)
+ *   get(id) / add(feature) / setStyle(id, properties) / setProperties(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
+ *   setSnapAvailable(bool)
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
  *   remove()
  */
 export class OLDrawAdapter {
   _snapEnabled = false
+  _snapAvailable = true
 
   constructor (mapProvider, options) {
     const { manager, remove } = createOLDraw({
@@ -83,15 +87,17 @@ export class OLDrawAdapter {
   getVertexItems () { return this._manager.getVertexItems() }
   selectVertex (index) { this._manager.selectVertex(index) }
   insertVertexAtMidpoint (index) { this._manager.insertVertexAtMidpoint(index) }
+  setGeometry (geometry) { this._manager.setGeometry(geometry) }
 
-  // Record the current geometry validity so the draw mode can block finish gestures
-  // (double-click / click-to-close) while the in-progress shape is invalid.
-  setGeometryValid (valid) { this._manager._geometryValid = valid }
+  // Record whether the in-progress shape can be finished, so the draw mode can block finish
+  // gestures (double-click / click-to-close) while its latest check has failed.
+  setCanFinish (canFinish) { this._manager._canFinish = canFinish }
 
-  // The api entry points assign the active user validator to the adapter; store it
-  // on the manager so the draw mode can veto placements synchronously.
-  set _geometryValidator (fn) { this._manager._geometryValidator = fn }
-  get _geometryValidator () { return this._manager._geometryValidator }
+  // The api entry points assign the session's onGeometryPreview callback to the adapter
+  // (see validation/commitChecks.js's startCheckSession); store it on the manager so the
+  // draw mode can veto placements synchronously.
+  set _previewValidator (fn) { this._manager._previewValidator = fn }
+  get _previewValidator () { return this._manager._previewValidator }
 
   // Show/hide the dashed invalid stroke on the active sketch or edit feature.
   setInvalid (invalid) { this._manager.setInvalid(invalid) }
@@ -110,13 +116,17 @@ export class OLDrawAdapter {
 
   // Patches an existing feature's style properties (stroke/fill/strokeWidth or symbol-family
   // keys) and re-renders — setProperties() must not be called silently, since VectorSource
-  // only redraws in response to the propertychange event that triggers.
+  // only redraws in response to the propertychange event that triggers. A key patched to
+  // undefined is removed.
   setStyle (id, properties) {
     const olFeature = this._manager.store.getOL(id)
     if (!olFeature) {
       return
     }
-    olFeature.setProperties(properties)
+    for (const [key, value] of Object.entries(properties)) {
+      if (value === undefined) { olFeature.unset(key) }
+    }
+    olFeature.setProperties(definedOnly(properties))
     if (olFeature.getGeometry()?.getType() === 'Point' && hasSymbol(olFeature.getProperties())) {
       this._manager.updatePointSymbol(olFeature)
     }
@@ -127,7 +137,13 @@ export class OLDrawAdapter {
 
   setSnapEnabled (bool) {
     this._snapEnabled = bool
-    this._manager.snap?.setActive(bool)
+    this._manager.snap?.setActive(this.isSnapEnabled())
+  }
+
+  // Snaps only while the user has snap on and it's available
+  setSnapAvailable (bool) {
+    this._snapAvailable = bool
+    this._manager.snap?.setActive(this.isSnapEnabled())
   }
 
   setSnapLayers (layers) {
@@ -135,10 +151,15 @@ export class OLDrawAdapter {
     this._manager.snap?.setSnapLayers(translated)
   }
 
-  isSnapEnabled () { return this._snapEnabled }
+  isSnapEnabled () { return this._snapEnabled && this._snapAvailable }
 
   setFeatureProperty () { /* not implemented for OL */ }
   setDrawingPreviewProperty (property, value) { this._manager.setDrawingPreviewProperty(property, value) }
+
+  // Merges data properties into an existing feature (a shallow merge; setStyle handles style)
+  setProperties (id, properties) {
+    this._manager.store.getOL(id)?.setProperties(properties)
+  }
 
   on (type, handler) { this._manager.on(type, handler) }
   off (type, handler) { this._manager.off(type, handler) }

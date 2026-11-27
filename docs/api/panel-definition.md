@@ -93,6 +93,36 @@ HTML content to render in the panel.
 
 ---
 
+### `visibleGeometry`
+**Type:** `object | function`
+
+GeoJSON Feature, FeatureCollection or geometry to keep in view when the panel opens. Can be the GeoJSON, or a function that receives the [Context](./context.md) and returns it. The function is called each time the panel opens, however it opens, so it can return a shape that changes. If it returns nothing, the map doesn't move. If the panel opens over any part of it, the map pans to centre it in the safe zone, or zooms out to fit it if it doesn't fit at the current zoom. If it isn't under the panel, including when it's off screen, the map doesn't move.
+
+Applies to panels in the left, right and drawer slots. Panels in other slots, and modal panels, don't move the map.
+
+```js
+// A plugin's panel keeping the shape being edited in view
+visibleGeometry: ({ pluginState }) => pluginState.feature
+```
+
+---
+
+### `preferPan`
+**Type:** `boolean`
+**Default:** `true`
+
+Whether to pan rather than zoom to show `visibleGeometry`. With `false`, the map fits the geometry when the panel opens over it. See [`fitToBounds`](../api.md#fittoboundsbounds-options).
+
+---
+
+### `paddingPercent`
+**Type:** `number | { top, right, bottom, left }`
+**Default:** `0`
+
+Space to keep around `visibleGeometry`, as a percentage of the safe zone's size. Left and right use its width, top and bottom its height. Limited to 0–25 on each side. See [`fitToBounds`](../api.md#fittoboundsbounds-options).
+
+---
+
 ## Breakpoint Configuration
 
 Each breakpoint (`mobile`, `tablet`, `desktop`) accepts the following properties:

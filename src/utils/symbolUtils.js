@@ -5,12 +5,12 @@ import { logger } from '../services/logger.js'
 const reportedSizes = new Set()
 const quoted = (text) => `'${text}'`
 
-// Symbol style props in dataset style that carry token values.
-// These use the 'symbol' prefix to distinguish them from fill/stroke props at the same level.
-// The prefix is stripped before passing tokens to the registry (e.g. symbolBackgroundColor → backgroundColor).
-const SYMBOL_STYLE_PROPS = new Set([
-  'symbolBackgroundColor', 'symbolForegroundColor',
-  'symbolHaloWidth', 'symbolGraphic'
+// Symbol style props in a dataset style use the 'symbol' prefix to distinguish them from fill/stroke
+// props at the same level. Any of them that isn't structural carries a token value, and the prefix
+// is stripped before passing tokens to the registry (e.g. symbolAccentColor → accentColor).
+const SYMBOL_PROP = /^symbol[A-Z]/
+const STRUCTURAL_SYMBOL_PROPS = new Set([
+  'symbolSvgContent', 'symbolViewBox', 'symbolAnchor', 'symbolSize', 'symbolDescription'
 ])
 
 /**
@@ -49,11 +49,11 @@ export const isStandaloneLabel = (marker) => {
 export const getSymbolStyleColors = (dataset) => {
   if (!hasSymbol(dataset)) { return {} }
   const tokens = {}
-  SYMBOL_STYLE_PROPS.forEach(key => {
-    if (dataset[key] != null) {
+  Object.entries(dataset).forEach(([key, value]) => {
+    if (SYMBOL_PROP.test(key) && !STRUCTURAL_SYMBOL_PROPS.has(key) && value != null) {
       // Strip 'symbol' prefix: symbolBackgroundColor → backgroundColor
       const tokenKey = key.charAt(6).toLowerCase() + key.slice(7) // NOSONAR
-      tokens[tokenKey] = dataset[key]
+      tokens[tokenKey] = value
     }
   })
   return tokens

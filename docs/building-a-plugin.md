@@ -37,7 +37,7 @@ export default function createPlugin ({ units = 'metric' } = {}) {
 The factory pattern allows configuration to be passed when registering the plugin. All properties (except `id` and `load`) are available as [pluginConfig](./plugins/plugin-context.md#pluginconfig) within the plugin.
 
 ```js
-import createScaleBarPlugin from '@defra/interactive-map-plugin-scale-bar'
+import createScaleBarPlugin from '@defra/interactive-map/plugins/scale-bar'
 
 const interactiveMap = new InteractiveMap({
   // ... other options
@@ -114,7 +114,7 @@ export function ScaleBar ({ mapState, pluginConfig }) {
 
 ```js
 // Usage
-import createScaleBarPlugin from '@defra/interactive-map-plugin-scale-bar'
+import createScaleBarPlugin from '@defra/interactive-map/plugins/scale-bar'
 
 const interactiveMap = new InteractiveMap({
   plugins: [

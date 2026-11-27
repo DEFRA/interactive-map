@@ -147,6 +147,18 @@ describe('Worker constructor (string workerUrl)', () => {
     expect(MockWorker).toHaveBeenCalledWith('blob:http://localhost/existing', undefined)
   })
 
+  test('passes module worker URLs through without wrapping', () => {
+    const MockWorker = setupWorkerMock()
+    const mockCreate = jest.fn(() => 'blob:new')
+    URL.createObjectURL = mockCreate
+    load()
+
+    // eslint-disable-next-line no-new
+    new Worker('/maplibre-gl-worker.mjs', { type: 'module' }) // NOSONAR
+    expect(mockCreate).not.toHaveBeenCalled()
+    expect(MockWorker).toHaveBeenCalledWith('/maplibre-gl-worker.mjs', { type: 'module' })
+  })
+
   test('preserves the Worker prototype', () => {
     const MockWorker = setupWorkerMock()
     const mockProto = { foo: 'bar' }

@@ -1,8 +1,9 @@
 import createPlugin from './index.js'
+import { createManifest } from './manifest.js'
 
 jest.mock('./datasets.scss', () => {})
 jest.mock('./manifest.js', () => ({
-  manifest: { InitComponent: jest.fn(), reducer: {} }
+  createManifest: jest.fn(() => ({ InitComponent: jest.fn(), reducer: {} }))
 }))
 
 describe('createPlugin', () => {
@@ -11,14 +12,8 @@ describe('createPlugin', () => {
     expect(plugin.id).toBe('datasets')
   })
 
-  it('applies default noKeyItemText', () => {
-    const plugin = createPlugin()
-    expect(plugin.noKeyItemText).toBe('No features displayed')
-  })
-
-  it('merges provided options (options override defaults, id stays fixed)', () => {
-    const plugin = createPlugin({ noKeyItemText: 'Custom text', extra: true })
-    expect(plugin.noKeyItemText).toBe('Custom text')
+  it('merges provided options (id stays fixed)', () => {
+    const plugin = createPlugin({ id: 'custom', extra: true })
     expect(plugin.extra).toBe(true)
     expect(plugin.id).toBe('datasets')
   })
@@ -32,5 +27,11 @@ describe('createPlugin', () => {
     const plugin = createPlugin()
     const result = await plugin.load()
     expect(result).toBeDefined()
+  })
+
+  it('load() builds the manifest from the plugin options', async () => {
+    const options = { hasMenu: false }
+    await createPlugin(options).load()
+    expect(createManifest).toHaveBeenCalledWith(options)
   })
 })

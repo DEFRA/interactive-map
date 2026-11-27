@@ -53,6 +53,12 @@ jest.mock('./renderer/PluginInits.jsx', () => ({
   PluginInits: jest.fn(() => <div data-testid='plugin-inits' />)
 }))
 
+jest.mock('./renderer/SlotItemsProvider.jsx', () => ({
+  SlotItemsProvider: jest.fn(({ children }) => (
+    <div data-testid='slot-items-provider'>{children}</div>
+  ))
+}))
+
 jest.mock('./layout/Layout.jsx', () => ({
   Layout: jest.fn(() => <div data-testid='layout' />)
 }))

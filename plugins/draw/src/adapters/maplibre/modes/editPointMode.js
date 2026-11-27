@@ -98,7 +98,7 @@ export const EditPointMode = {
   },
 
   setupEventListeners (state) {
-    const handlers = this.handlers = buildEditModeHandlers(this, state, { nudge: this.onNudgePoint })
+    const handlers = this.handlers = buildEditModeHandlers(this, state, { nudge: this.onNudgePoint, setgeometry: this.onSetGeometry })
     bindEditModeListeners(state, this.map, handlers)
   },
 
@@ -134,6 +134,16 @@ export const EditPointMode = {
   onNudgePoint (state, event) {
     this.nudgePointByDelta(state, event.dx, event.dy, event.isLargeStep)
     this.updateTouchPointTarget(state, scalePoint(this.map.project(state.feature.coordinates), state.scale))
+  },
+
+  // Inbound signal from MaplibreDrawAdapter.setGeometry — moves the point to the given
+  // geometry's coordinate as one undoable commit.
+  onSetGeometry (state, event) {
+    const feature = this.getFeature(state.featureId)
+    if (!feature) { return }
+    const previousPosition = feature.getCoordinates()
+    this.setPointPosition(state, state.featureId, event.geometry.coordinates)
+    this.pushUndo({ type: 'replace_geometry', featureId: state.featureId, previousPosition })
   },
 
   onButtonClick (state, event) {

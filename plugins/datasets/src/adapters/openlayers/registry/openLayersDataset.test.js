@@ -1,7 +1,7 @@
 import { OpenLayersDataset } from './openLayersDataset.js'
 import { datasetRegistry } from '../../../registry/datasetRegistry.js'
 import { createSymbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
-import { SymbolImageCache } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
+import { SymbolImageCache } from '../../../../../../providers/openlayers/src/utils/symbolImages.js'
 
 const symbolRegistry = createSymbolRegistry()
 // Use the mock datasetRegistry with the demo datasets attached before each test
@@ -34,7 +34,7 @@ beforeAll(() => {
 
 describe('OpenLayersDataset', () => {
   beforeEach(() => {
-    datasetRegistry.attachCreateDataset(def => new OpenLayersDataset(def))
+    datasetRegistry.attachCreateDataset(def => new OpenLayersDataset(def, datasetRegistry))
     datasetRegistry.mockExtend({
       'ds-fill-only': { id: 'ds-fill-only', style: { fill: 'blue' } },
       'ds-stroke-only': { id: 'ds-stroke-only', style: { stroke: 'red', strokeWidth: 2 } },
@@ -43,6 +43,7 @@ describe('OpenLayersDataset', () => {
       'ds-bare': { id: 'ds-bare', style: { stroke: null } },
       'ds-tiles': { id: 'ds-tiles', tiles: ['https://example.com/{z}/{x}/{y}'], minZoom: 5, maxZoom: 15 },
       'ds-tiles-no-zoom': { id: 'ds-tiles-no-zoom', tiles: ['https://example.com/{z}/{x}/{y}'] },
+      'ds-tiles-grid': { id: 'ds-tiles-grid', tiles: ['https://example.com/{z}/{x}/{y}'], tileMatrixSet: { origin: [0, 1300000], extentAtZoom0: 1300000 } },
       'ds-static-geojson': { id: 'ds-static-geojson', geojson: { type: 'FeatureCollection', features: [] }, style: { fill: 'green' } },
       'ds-id-prop': { id: 'ds-id-prop', idProperty: 'ref', geojson: { type: 'FeatureCollection', features: [] } },
       'ds-hf': { id: 'ds-hf', style: { fill: 'blue' }, hiddenFeatures: [1, 2] },
@@ -101,6 +102,10 @@ describe('OpenLayersDataset', () => {
         minzoom: 0,
         maxzoom: 22
       })
+    })
+
+    it('includes the dataset tileMatrixSet in a tile source descriptor', () => {
+      expect(datasetRegistry.getDataset('ds-tiles-grid').source.tileMatrixSet).toEqual({ origin: [0, 1300000], extentAtZoom0: 1300000 })
     })
 
     it('returns a geojson source for a static geojson dataset', () => {

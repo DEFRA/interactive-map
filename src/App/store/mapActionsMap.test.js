@@ -27,6 +27,23 @@ describe('actionsMap', () => {
     })
   })
 
+  test('MAP_MOVE_START merges payload into state', () => {
+    const payload = { isUserMove: true }
+    const result = actionsMap.MAP_MOVE_START(state, payload)
+    expect(result).toEqual({ ...state, ...payload })
+  })
+
+  test('SET_RESET_VIEW_TARGET sets resetViewTarget', () => {
+    const payload = { center: [1, 2], zoom: 10 }
+    const result = actionsMap.SET_RESET_VIEW_TARGET(state, payload)
+    expect(result).toEqual({ ...state, resetViewTarget: payload, isResetViewTargetKnown: true })
+  })
+
+  test('CLEAR_RESET_VIEW_TARGET marks the reset view target as not known', () => {
+    const result = actionsMap.CLEAR_RESET_VIEW_TARGET({ ...state, resetViewTarget: { center: [1, 2], zoom: 10 }, isResetViewTargetKnown: true })
+    expect(result).toEqual({ ...state, resetViewTarget: null, isResetViewTargetKnown: false })
+  })
+
   test('MAP_MOVE merges payload into state', () => {
     const payload = { center: [10, 20] }
     const result = actionsMap.MAP_MOVE(state, payload)
@@ -49,6 +66,13 @@ describe('actionsMap', () => {
     const mapStyle = { id: 'satellite' }
     const result = actionsMap.SET_MAP_STYLE(state, mapStyle)
     expect(result.mapStyle).toBe(mapStyle)
+    expect(result.otherProp).toBe(state.otherProp)
+  })
+
+  test('SET_MAP_STYLES sets mapStyles', () => {
+    const mapStyles = [{ id: 'outdoor' }, { id: 'dark' }]
+    const result = actionsMap.SET_MAP_STYLES(state, mapStyles)
+    expect(result.mapStyles).toBe(mapStyles)
     expect(result.otherProp).toBe(state.otherProp)
   })
 

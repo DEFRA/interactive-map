@@ -194,6 +194,10 @@
  * opens or expands a custom control rendered elsewhere by the plugin. Text or a function
  * returning the id.
  *
+ * @property {string | ((context: PluginContext) => string | undefined)} [description]
+ * Extra information read by screen readers after the label, set with aria-describedby. Text or a
+ * function returning the text; no description when it returns nothing.
+ *
  * @property {ButtonBreakpointConfig} [desktop]
  * Desktop breakpoint configuration.
  *
@@ -257,6 +261,10 @@
  * Callback to determine if the button should appear pressed. Sets aria-pressed accordingly.
  * Only evaluated for plugin-defined buttons; use toggleButtonState() for host buttons.
  *
+ * @property {(context: PluginContext) => boolean} [busyWhen]
+ * Callback to determine if the action behind the button is in progress. Sets aria-busy
+ * accordingly. Evaluated on every render, like a function label.
+ *
  * @property {ButtonBreakpointConfig} tablet
  * Tablet breakpoint configuration.
  */
@@ -314,8 +322,9 @@
  * @property {(offset: [number, number]) => void} panBy
  * Pan map by pixel offset [x, y]. Positive x pans right, positive y pans down.
  *
- * @property {(bounds: [number, number, number, number] | object) => void} fitToBounds
+ * @property {(bounds: [number, number, number, number] | object, options?: { padding?: { top: number, right: number, bottom: number, left: number } }) => void} fitToBounds
  * Fit map view to the specified bounds [west, south, east, north] or [minX, minY, maxX, maxY] depending on the crs, or a GeoJSON Feature, FeatureCollection, or geometry.
+ * `padding` is extra space in pixels kept around the bounds, inside the map's padding.
  *
  * @property {(padding: { top?: number, bottom?: number, left?: number, right?: number }) => void} setPadding
  * Set map padding as pixel insets from the top, bottom, left and right edges of the map.
@@ -362,10 +371,21 @@
  *
  * @property {() => void} [clearHighlightedLabel]
  * @experimental Clear any highlighted label.
+ */
+
+/**
+ * Options for `interactiveMap.fitToBounds()`.
  *
- * @property {(geojson: object, panelRect: DOMRect) => boolean} [isGeometryObscured]
- * Returns true if the geometry's screen bounding box overlaps the given panel element rectangle.
- * Used internally by useVisibleGeometry to decide whether to pan/zoom when a panel opens.
+ * @typedef {Object} FitToBoundsOptions
+ *
+ * @property {boolean} [preferPan]
+ * Leave the map where it is if the bounds are already inside the safe zone and not under an open
+ * panel. Otherwise pan to centre
+ * them in the safe zone, keeping the current zoom, and only zoom out if they don't fit.
+ *
+ * @property {number | { top?: number, right?: number, bottom?: number, left?: number }} [paddingPercent]
+ * Space kept clear inside the safe zone, as a percentage of its size: left and right use its width,
+ * top and bottom its height. One value for every side, or set per side. Limited to 0–25. Defaults to 0.
  */
 
 /**
@@ -383,11 +403,9 @@
  * @typedef {Object} MaplibreProviderConfig
  *
  * @property {string} [workerUrl]
- * URL to a separately hosted MapLibre worker file (`maplibre-gl-csp-worker.js`).
- * Required when running under a Content Security Policy that blocks `blob:` worker
- * URLs. The file ships with maplibre-gl and must be served from your own origin.
- * When set, MapLibre loads the worker from this URL instead of generating an
- * inline blob, so your CSP only needs `worker-src 'self'`.
+ * URL of the MapLibre worker file. Set automatically with webpack, Vite and the UMD
+ * build; with other bundlers (such as esbuild), serve `maplibre-gl/dist/maplibre-gl-worker.mjs`
+ * and set its URL here.
  */
 
 /**
@@ -655,16 +673,25 @@
  * @property {PanelBreakpointConfig} mobile
  * Mobile breakpoint configuration.
  *
+ * @property {number | { top?: number, right?: number, bottom?: number, left?: number }} [paddingPercent=0]
+ * Space to keep around `visibleGeometry`, as a percentage of the safe zone's size. See `FitToBoundsOptions`.
+ *
+ * @property {boolean} [preferPan=true]
+ * Whether to pan rather than zoom to show `visibleGeometry`. With `false`, the map fits the geometry when the panel opens over it.
+ *
  * @property {ComponentType} [render]
  * Render component.
  *
  * @property {PanelBreakpointConfig} tablet
  * Tablet breakpoint configuration.
  *
- * @property {object} [visibleGeometry]
- * GeoJSON Feature, FeatureCollection, or geometry to keep visible when this panel opens.
- * If any part of the geometry's bounding box is obscured by the safe zone after the panel opens,
- * the map automatically adjusts: Point or MultiPoint geometry routes to setView(), all other types to fitToBounds().
+ * @property {object | ((context: object) => object)} [visibleGeometry]
+ * GeoJSON Feature, FeatureCollection, or geometry to keep visible when this panel opens, or a function
+ * that receives the context and returns it, called each time the panel opens.
+ * If the panel opens over any part of the geometry's bounding box, the map pans to centre it in the safe zone, or zooms
+ * out to fit it if it doesn't fit at the current zoom. If it isn't under the panel, including when it's off screen, the
+ * map doesn't move.
+ * Applies to panels in the left, right and drawer slots. Panels in other slots, and modal panels, don't move the map.
  */
 
 /**
@@ -847,6 +874,11 @@
  * switch access users) and for voice interfaces such as Voice Control, which can
  * trigger a button click but not a drag. When enabled, enableZoomControls' buttons
  * are hidden to avoid duplication.
+ *
+ * @property {boolean} [enableResetView=false]
+ * Whether a reset view button is displayed. It moves the map to the configured bounds
+ * or extent, or to center and zoom if no bounds are set. Disabled until the map is
+ * moved away from that view, and not displayed when none of these are configured.
  *
  * @property {boolean} [enableZoomControls=true]
  * Whether zoom control buttons are displayed. Not displayed when the interface

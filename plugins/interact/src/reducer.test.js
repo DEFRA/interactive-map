@@ -9,10 +9,12 @@ describe('initialState', () => {
       interactionModes: null,
       multiSelect: false,
       deselectOnClickOutside: false,
+      touchTarget: true,
       selectedFeatures: [],
       selectedMarkers: [],
       closeOnAction: true,
-      listboxActiveItem: null
+      listboxActiveItem: null,
+      listboxFocused: false
     })
   })
 })
@@ -179,6 +181,13 @@ describe('SET_LISTBOX_ACTIVE action', () => {
   })
 })
 
+describe('SET_LISTBOX_FOCUSED action', () => {
+  it('sets listboxFocused from the payload', () => {
+    expect(actions.SET_LISTBOX_FOCUSED(initialState, true).listboxFocused).toBe(true)
+    expect(actions.SET_LISTBOX_FOCUSED({ ...initialState, listboxFocused: true }, false).listboxFocused).toBe(false)
+  })
+})
+
 describe('SELECT_MARKER action', () => {
   it('adds a marker in single-select mode, clearing selectedFeatures', () => {
     const state = { ...initialState, selectedFeatures: [{ featureId: 'f1' }], selectedMarkers: [] }
@@ -239,7 +248,8 @@ describe('actions object', () => {
       'SET_SELECTED_FEATURES',
       'SELECT_MARKER',
       'UNSELECT_MARKER',
-      'SET_LISTBOX_ACTIVE'
+      'SET_LISTBOX_ACTIVE',
+      'SET_LISTBOX_FOCUSED'
     ])
     Object.values(actions).forEach(fn => expect(typeof fn).toBe('function'))
   })

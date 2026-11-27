@@ -16,6 +16,16 @@ describe('createMapFocus', () => {
     viewport.remove()
   })
 
+  it.each([
+    ['pointer', true],
+    ['keyboard', false]
+  ])('focuses the viewport with preventScroll for %s users', (interfaceType, preventScroll) => {
+    const focusSpy = jest.spyOn(viewport, 'focus')
+    mapFocus = createMapFocus({ viewportRef: { current: viewport }, getInterfaceType: () => interfaceType })
+    mapFocus.focus()
+    expect(focusSpy).toHaveBeenCalledWith({ preventScroll })
+  })
+
   it('focuses the viewport without changing its name or holding announcements', () => {
     mapFocus.focus()
     expect(document.activeElement).toBe(viewport)

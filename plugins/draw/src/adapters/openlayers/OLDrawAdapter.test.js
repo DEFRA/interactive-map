@@ -19,6 +19,7 @@ const fakeManager = () => ({
   getVertexItems: jest.fn(() => ({ vertices: [[0, 0]], midpoints: [] })),
   selectVertex: jest.fn(),
   insertVertexAtMidpoint: jest.fn(),
+  setGeometry: jest.fn(),
   setInvalid: jest.fn(),
   setDrawingPreviewProperty: jest.fn(),
   get: jest.fn(() => 'feature'),
@@ -147,6 +148,10 @@ test('remaining calls delegate straight through; setFeatureProperty is a deliber
   adapter.insertVertexAtMidpoint(3)
   expect(manager.selectVertex).toHaveBeenCalledWith(2)
   expect(manager.insertVertexAtMidpoint).toHaveBeenCalledWith(3)
+
+  const geometry = { type: 'Polygon', coordinates: [] }
+  adapter.setGeometry(geometry)
+  expect(manager.setGeometry).toHaveBeenCalledWith(geometry)
 })
 
 // A directly-added Point skips draw_point's own icon-resolving drawend handler.
@@ -189,6 +194,7 @@ describe('add() and point symbol resolution', () => {
 describe('setStyle()', () => {
   const fakeOLFeature = (geometryType, properties = {}) => ({
     setProperties: jest.fn(),
+    unset: jest.fn(),
     getGeometry: jest.fn(() => ({ getType: () => geometryType })),
     getProperties: jest.fn(() => properties)
   })
@@ -201,6 +207,17 @@ describe('setStyle()', () => {
     adapter.setStyle('a', { stroke: 'blue' })
 
     expect(manager.store.getOL).toHaveBeenCalledWith('a')
+    expect(olFeature.setProperties).toHaveBeenCalledWith({ stroke: 'blue' })
+  })
+
+  test('unsets a key patched to undefined', () => {
+    const { manager, adapter } = setup()
+    const olFeature = fakeOLFeature('Polygon')
+    manager.store.getOL.mockReturnValue(olFeature)
+
+    adapter.setStyle('a', { stroke: 'blue', strokeDark: undefined })
+
+    expect(olFeature.unset).toHaveBeenCalledWith('strokeDark')
     expect(olFeature.setProperties).toHaveBeenCalledWith({ stroke: 'blue' })
   })
 
@@ -231,18 +248,34 @@ describe('setStyle()', () => {
   })
 })
 
-test('setGeometryValid records validity on the manager for finish gating', () => {
-  const { adapter, manager } = setup()
-  adapter.setGeometryValid(false)
-  expect(manager._geometryValid).toBe(false)
+describe('setProperties()', () => {
+  test('merges the properties into the OL feature', () => {
+    const { manager, adapter } = setup()
+    const olFeature = { setProperties: jest.fn() }
+    manager.store.getOL.mockReturnValue(olFeature)
+    adapter.setProperties('a', { name: 'North field', ref: null })
+    expect(olFeature.setProperties).toHaveBeenCalledWith({ name: 'North field', ref: null })
+  })
+
+  test('does nothing for an id with no existing feature', () => {
+    const { manager, adapter } = setup()
+    manager.store.getOL.mockReturnValue(null)
+    expect(() => adapter.setProperties('missing', { name: 'x' })).not.toThrow()
+  })
 })
 
-test('_geometryValidator accessor stores and retrieves the user callback on the manager', () => {
+test('setCanFinish records validity on the manager for finish gating', () => {
+  const { adapter, manager } = setup()
+  adapter.setCanFinish(false)
+  expect(manager._canFinish).toBe(false)
+})
+
+test('_previewValidator accessor stores and retrieves the preview callback on the manager', () => {
   const { adapter, manager } = setup()
   const validator = jest.fn(() => ({ valid: true }))
-  adapter._geometryValidator = validator
-  expect(manager._geometryValidator).toBe(validator)
-  expect(adapter._geometryValidator).toBe(validator)
+  adapter._previewValidator = validator
+  expect(manager._previewValidator).toBe(validator)
+  expect(adapter._previewValidator).toBe(validator)
 })
 
 test('setInvalid delegates to the manager to toggle the dashed stroke', () => {
@@ -255,4 +288,18 @@ test('remove runs the olDraw cleanup', () => {
   const { adapter } = setup()
   adapter.remove()
   expect(createOLDraw.mock.results.at(-1).value.remove).toHaveBeenCalled()
+})
+
+test('snaps only while snap is on and available', () => {
+  const { manager, adapter } = setup()
+  adapter.setSnapEnabled(true)
+  adapter.setSnapAvailable(false)
+  expect(manager.snap.setActive).toHaveBeenLastCalledWith(false)
+  expect(adapter.isSnapEnabled()).toBe(false)
+  adapter.setSnapAvailable(true)
+  expect(manager.snap.setActive).toHaveBeenLastCalledWith(true)
+  expect(adapter.isSnapEnabled()).toBe(true)
+
+  manager.snap = null
+  expect(() => adapter.setSnapAvailable(false)).not.toThrow()
 })

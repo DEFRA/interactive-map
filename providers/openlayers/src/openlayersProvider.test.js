@@ -1,0 +1,522 @@
+// Mock-prefixed variables are allowed in jest.mock factories by babel-plugin-jest-hoist
+import OpenLayersProvider from './openlayersProvider.js'
+import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
+import { SymbolImageCache } from './utils/symbolImages.js'
+import { PatternImageCache } from './utils/patternImages.js'
+import { attachMapEvents } from './mapEvents.js'
+import { attachAppEvents, createMapStyleLayer } from './appEvents.js'
+import { getExtentFromGeoJSON } from './utils/spatial.js'
+import View from 'ol/View.js'
+
+const mockAnimate = jest.fn()
+const mockGetCenter = jest.fn(() => [400000.126, 300000.455])
+const mockGetZoom = jest.fn(() => 7)
+const mockGetResolution = jest.fn(() => 56)
+const mockCalculateExtent = jest.fn(() => [1.005, 2.014, 3.994, 4.0])
+const mockViewFit = jest.fn()
+const mockViewInstance = {
+  animate: mockAnimate,
+  getCenter: mockGetCenter,
+  getZoom: mockGetZoom,
+  getResolution: mockGetResolution,
+  calculateExtent: mockCalculateExtent,
+  fit: mockViewFit,
+  padding: null
+}
+
+const mockMapOnce = jest.fn()
+const mockMapGetSize = jest.fn(() => [800, 600])
+const mockMapSetTarget = jest.fn()
+const mockMapGetPixel = jest.fn(() => [100, 200])
+const mockMapGetCoord = jest.fn(() => [400000, 300000])
+const mockMapGetLayers = jest.fn(() => ({ forEach: jest.fn() }))
+const mockMapInstance = {
+  once: mockMapOnce,
+  getSize: mockMapGetSize,
+  setTarget: mockMapSetTarget,
+  getPixelFromCoordinate: mockMapGetPixel,
+  getCoordinateFromPixel: mockMapGetCoord,
+  getView: jest.fn(() => mockViewInstance),
+  getLayers: mockMapGetLayers
+}
+
+const mockSource = {}
+const mockVectorTileLayer = {}
+const mockMapEventHandlesRemove = jest.fn()
+const mockSetSource = jest.fn()
+const mockAppEventHandlesRemove = jest.fn()
+
+jest.mock('ol/Map.js', () => ({ __esModule: true, default: jest.fn(() => mockMapInstance) }))
+jest.mock('ol/View.js', () => ({ __esModule: true, default: jest.fn(() => mockViewInstance) }))
+jest.mock('ol/interaction/defaults.js', () => ({ __esModule: true, defaults: jest.fn(() => []) }))
+jest.mock('proj4', () => {
+  const fn = jest.fn()
+  fn.defs = jest.fn()
+  return { __esModule: true, default: fn }
+})
+jest.mock('ol/proj/proj4.js', () => ({ __esModule: true, register: jest.fn() }))
+jest.mock('./mapEvents.js', () => ({
+  __esModule: true,
+  attachMapEvents: jest.fn(() => ({ remove: mockMapEventHandlesRemove, setSource: mockSetSource }))
+}))
+jest.mock('./appEvents.js', () => ({
+  __esModule: true,
+  createMapStyleLayer: jest.fn(async () => ({ layer: mockVectorTileLayer, source: mockSource })),
+  attachAppEvents: jest.fn(() => ({ remove: mockAppEventHandlesRemove }))
+}))
+jest.mock('./utils/highlightFeatures.js', () => ({ __esModule: true, updateHighlightedFeatures: jest.fn() }))
+jest.mock('./utils/spatial.js', () => ({
+  __esModule: true,
+  getAreaDimensions: jest.fn(() => '1 mile by 2 miles'),
+  getCardinalMove: jest.fn(() => 'north 100m'),
+  getExtentFromGeoJSON: jest.fn(() => [10, 20, 30, 40]),
+  getPaddedExtent: jest.fn(() => [0, 0, 800, 600])
+}))
+
+const events = {
+  MAP_READY: 'map:ready',
+  MAP_SET_STYLE: 'map:setstyle',
+  MAP_STYLE_CHANGE: 'map:stylechange'
+}
+
+const defaultInitConfig = {
+  container: document.createElement('div'),
+  padding: null,
+  mapStyle: { id: 'myStyle', url: 'https://tiles.example.com/{z}/{x}/{y}' },
+  mapSize: null,
+  center: [400000, 300000],
+  zoom: 7,
+  bounds: null,
+  minZoom: null,
+  maxZoom: null,
+  transformRequest: null
+}
+
+function makeProvider (mapProviderConfig = {}) {
+  const eventBus = { emit: jest.fn(), on: jest.fn(), off: jest.fn() }
+  const provider = new OpenLayersProvider({ events, eventBus, mapProviderConfig })
+  return { provider, eventBus }
+}
+
+describe('OpenLayersProvider', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockViewInstance.padding = null
+  })
+
+  describe('constructor', () => {
+    it('sets events and eventBus on the instance', () => {
+      const eventBus = { emit: jest.fn() }
+      const provider = new OpenLayersProvider({ events, eventBus, mapProviderConfig: {} })
+      expect(provider.events).toBe(events)
+      expect(provider.eventBus).toBe(eventBus)
+    })
+
+    it('sets capabilities with supportsMapSizes true and supportedShortcuts array', () => {
+      const { provider } = makeProvider()
+      expect(provider.capabilities.supportsMapSizes).toBe(true)
+      expect(Array.isArray(provider.capabilities.supportedShortcuts)).toBe(true)
+    })
+
+    it('spreads mapProviderConfig properties onto instance', () => {
+      const { provider } = makeProvider({ zoomAlignment: 'world', customProp: 'hello' })
+      expect(provider.zoomAlignment).toBe('world')
+      expect(provider.customProp).toBe('hello')
+    })
+
+    test('it should have a name getter', () => {
+      const { provider } = makeProvider()
+      expect(provider.name).toBe('OpenLayersProvider')
+    })
+  })
+
+  describe('isBaseMapReady', () => {
+    it('returns false before initMap has run', () => {
+      const { provider } = makeProvider()
+      expect(provider.isBaseMapReady()).toBe(false)
+    })
+
+    it('returns true once initMap has set this.map', async () => {
+      const { provider } = makeProvider()
+      await provider.initMap(defaultInitConfig)
+      expect(provider.isBaseMapReady()).toBe(true)
+    })
+  })
+
+  describe('initMap', () => {
+    it('creates vector tile layer, OL objects, and emits MAP_READY by default', async () => {
+      const { provider, eventBus } = makeProvider()
+      await provider.initMap(defaultInitConfig)
+      expect(createMapStyleLayer).toHaveBeenCalledWith(defaultInitConfig.mapStyle, null)
+      expect(attachMapEvents).toHaveBeenCalled()
+      expect(attachAppEvents).toHaveBeenCalled()
+      expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_READY, expect.objectContaining({
+        map: mockMapInstance,
+        mapStyleId: 'myStyle'
+      }))
+    })
+
+    it('calls map.once rendercomplete when bounds are provided', async () => {
+      const { provider } = makeProvider()
+      let renderCallback
+      mockMapOnce.mockImplementation((event, cb) => { renderCallback = cb })
+      const bounds = [100, 200, 300, 400]
+      await provider.initMap({ ...defaultInitConfig, bounds })
+      expect(mockMapOnce).toHaveBeenCalledWith('rendercomplete', expect.any(Function))
+      renderCallback()
+      expect(mockViewFit).toHaveBeenCalledWith(bounds, { duration: 0 })
+    })
+
+    it('does not call map.once when no bounds', async () => {
+      const { provider } = makeProvider()
+      await provider.initMap(defaultInitConfig)
+      expect(mockMapOnce).not.toHaveBeenCalled()
+    })
+
+    // Regression: a View with no center is never "defined" (ol/View#isDef), so the map can't
+    // render a single frame — meaning 'rendercomplete' (which is what applies bounds) never
+    // fires either, deadlocking on a permanently blank map for bounds-only config.
+    it('derives an initial center from bounds when no explicit center is given, so the map can render at all', async () => {
+      const { provider } = makeProvider()
+      const bounds = [100, 200, 300, 400]
+      await provider.initMap({ ...defaultInitConfig, center: undefined, bounds })
+      expect(View).toHaveBeenCalledWith(expect.objectContaining({ center: [200, 300] }))
+    })
+
+    it('prefers an explicit center over one derived from bounds', async () => {
+      const { provider } = makeProvider()
+      const bounds = [100, 200, 300, 400]
+      await provider.initMap({ ...defaultInitConfig, center: [400000, 300000], bounds })
+      expect(View).toHaveBeenCalledWith(expect.objectContaining({ center: [400000, 300000] }))
+    })
+
+    it('passes minZoom and maxZoom through to the View unchanged', async () => {
+      const { provider } = makeProvider({ zoomAlignment: 'world' })
+      await provider.initMap({ ...defaultInitConfig, minZoom: 8, maxZoom: 12 })
+      expect(View).toHaveBeenCalledWith(expect.objectContaining({ minZoom: 8, maxZoom: 12 }))
+    })
+
+    // Regression: minZoom used to be floored at the zoom alignment's default via Math.max(),
+    // silently overriding any caller-supplied minZoom that was more permissive (lower) than
+    // that default — e.g. a consumer trying to let people zoom out further than the 'world'
+    // alignment's default minZoom of 6 had their config ignored.
+    it('does not clamp a minZoom below the zoom alignment default', async () => {
+      const { provider } = makeProvider({ zoomAlignment: 'world' })
+      await provider.initMap({ ...defaultInitConfig, minZoom: 0 })
+      expect(View).toHaveBeenCalledWith(expect.objectContaining({ minZoom: 0 }))
+    })
+
+    it('falls back to the zoom alignment defaults when minZoom/maxZoom are not provided', async () => {
+      const { provider } = makeProvider({ zoomAlignment: 'world' })
+      await provider.initMap({ ...defaultInitConfig, minZoom: null, maxZoom: null })
+      expect(View).toHaveBeenCalledWith(expect.objectContaining({ minZoom: 6, maxZoom: 20 }))
+    })
+
+    it('creates the initial layer from the map style', async () => {
+      const { provider } = makeProvider()
+      await provider.initMap(defaultInitConfig)
+      expect(createMapStyleLayer).toHaveBeenCalledWith(defaultInitConfig.mapStyle, null)
+    })
+
+    it('creates the initial layer from raster map styles', async () => {
+      const { provider, eventBus } = makeProvider()
+      const rasterConfig = {
+        ...defaultInitConfig,
+        mapStyle: { id: 'myStyle', url: 'https://tiles.example.com/{z}/{x}/{y}', type: 'raster' }
+      }
+      await provider.initMap(rasterConfig)
+      expect(createMapStyleLayer).toHaveBeenCalledWith(rasterConfig.mapStyle, null)
+      expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_READY, expect.objectContaining({ mapStyleId: 'myStyle' }))
+    })
+
+    it('passes map and source change handler to attachAppEvents', async () => {
+      const { provider } = makeProvider()
+      await provider.initMap(defaultInitConfig)
+      expect(attachAppEvents).toHaveBeenCalledWith(expect.objectContaining({
+        map: mockMapInstance,
+        onBaseSourceChange: mockSetSource
+      }))
+    })
+
+    it('passes pixelRatio to OlMap constructor', async () => {
+      const OlMap = require('ol/Map.js').default
+      const { provider } = makeProvider()
+      await provider.initMap({ ...defaultInitConfig, pixelRatio: 2 })
+      expect(OlMap).toHaveBeenCalledWith(expect.objectContaining({ pixelRatio: 2 }))
+    })
+
+    it('passes mapProvider to attachAppEvents', async () => {
+      const { provider } = makeProvider()
+      await provider.initMap(defaultInitConfig)
+      expect(attachAppEvents).toHaveBeenCalledWith(expect.objectContaining({ mapProvider: provider }))
+    })
+  })
+
+  describe('destroyMap', () => {
+    it('removes event handles, nulls map target and all references', async () => {
+      const { provider } = makeProvider()
+      await provider.initMap(defaultInitConfig)
+      jest.clearAllMocks()
+
+      provider.destroyMap()
+
+      expect(mockMapEventHandlesRemove).toHaveBeenCalled()
+      expect(mockAppEventHandlesRemove).toHaveBeenCalled()
+      expect(mockMapSetTarget).toHaveBeenCalledWith(null)
+      expect(provider.map).toBeNull()
+      expect(provider.view).toBeNull()
+    })
+
+    it('does not throw when called before initMap', () => {
+      const { provider } = makeProvider()
+      expect(() => provider.destroyMap()).not.toThrow()
+    })
+  })
+
+  describe('view control methods', () => {
+    let provider
+
+    beforeEach(async () => {
+      ;({ provider } = makeProvider())
+      await provider.initMap(defaultInitConfig)
+      jest.clearAllMocks()
+      mockViewInstance.padding = null
+    })
+
+    it('setView animates to given center and zoom', () => {
+      provider.setView({ center: [500000, 400000], zoom: 8 })
+      expect(mockAnimate).toHaveBeenCalledWith(expect.objectContaining({ center: [500000, 400000], zoom: 8 }))
+    })
+
+    it('setView falls back to current center and zoom when not supplied', () => {
+      mockGetCenter.mockReturnValue([400000, 300000])
+      mockGetZoom.mockReturnValue(7)
+      provider.setView({})
+      expect(mockAnimate).toHaveBeenCalledWith(expect.objectContaining({ center: [400000, 300000], zoom: 7 }))
+    })
+
+    it('zoomIn increments zoom by delta', () => {
+      mockGetZoom.mockReturnValue(5)
+      provider.zoomIn(2)
+      expect(mockAnimate).toHaveBeenCalledWith(expect.objectContaining({ zoom: 7 }))
+    })
+
+    it('zoomOut decrements zoom by delta', () => {
+      mockGetZoom.mockReturnValue(9)
+      provider.zoomOut(3)
+      expect(mockAnimate).toHaveBeenCalledWith(expect.objectContaining({ zoom: 6 }))
+    })
+
+    it('panBy animates center offset scaled by resolution', () => {
+      mockGetCenter.mockReturnValue([400000, 300000])
+      mockGetResolution.mockReturnValue(56)
+      provider.panBy([10, 20])
+      expect(mockAnimate).toHaveBeenCalledWith(expect.objectContaining({
+        center: [400000 + 10 * 56, 300000 - 20 * 56]
+      }))
+    })
+
+    it('fitToBounds passes an array extent directly to view.fit', () => {
+      provider.fitToBounds([1, 2, 3, 4])
+      expect(getExtentFromGeoJSON).not.toHaveBeenCalled()
+      expect(mockViewFit).toHaveBeenCalledWith([1, 2, 3, 4], expect.any(Object))
+    })
+
+    it('fitToBounds converts GeoJSON to extent via getExtentFromGeoJSON', () => {
+      const geojson = { type: 'Point', coordinates: [0, 51] }
+      provider.fitToBounds(geojson)
+      expect(getExtentFromGeoJSON).toHaveBeenCalledWith(geojson)
+      expect(mockViewFit).toHaveBeenCalledWith([10, 20, 30, 40], expect.any(Object))
+    })
+
+    it('fitToBounds passes extra padding to view.fit as an OL [top, right, bottom, left] array', () => {
+      provider.fitToBounds([1, 2, 3, 4], { padding: { top: 10, right: 20, bottom: 30, left: 40 } })
+      expect(mockViewFit).toHaveBeenCalledWith([1, 2, 3, 4], expect.objectContaining({ padding: [10, 20, 30, 40] }))
+    })
+
+    it('fitToBounds passes no padding to view.fit without the option', () => {
+      provider.fitToBounds([1, 2, 3, 4])
+      expect(mockViewFit.mock.calls.at(-1)[1]).not.toHaveProperty('padding')
+    })
+
+    it('setPadding converts object to OL [top, right, bottom, left] array', () => {
+      provider.setPadding({ top: 10, right: 20, bottom: 30, left: 40 })
+      expect(mockViewInstance.padding).toEqual([10, 20, 30, 40])
+    })
+
+    it('setPadding fills missing keys with zero', () => {
+      provider.setPadding({ top: 10 })
+      expect(mockViewInstance.padding).toEqual([10, 0, 0, 0])
+    })
+
+    it('setPadding with null sets padding to undefined', () => {
+      provider.setPadding(null)
+      expect(mockViewInstance.padding).toBeUndefined()
+    })
+  })
+
+  describe('getter methods', () => {
+    let provider
+
+    beforeEach(async () => {
+      ;({ provider } = makeProvider())
+      await provider.initMap(defaultInitConfig)
+      jest.clearAllMocks()
+    })
+
+    it('getCenter rounds coordinates to 2 decimal places', () => {
+      mockGetCenter.mockReturnValue([400000.126, 300000.455])
+      expect(provider.getCenter()).toEqual([400000.13, 300000.46])
+    })
+
+    it('getZoom delegates to view.getZoom', () => {
+      mockGetZoom.mockReturnValue(9)
+      expect(provider.getZoom()).toBe(9)
+    })
+
+    it('getBounds rounds extent values to 2 decimal places', () => {
+      mockCalculateExtent.mockReturnValue([1.126, 2.456, 3.994, 4.0])
+      expect(provider.getBounds()).toEqual([1.13, 2.46, 3.99, 4])
+    })
+
+    it('getVisibleFeatures delegates to the map (no layers registered here — see queryFeatures.test.js)', () => {
+      expect(provider.getVisibleFeatures(['draw'])).toEqual([])
+      expect(mockMapGetLayers).toHaveBeenCalled()
+    })
+
+    it('getResolution delegates to view.getResolution', () => {
+      mockGetResolution.mockReturnValue(28)
+      expect(provider.getResolution()).toBe(28)
+    })
+  })
+
+  describe('spatial helper methods', () => {
+    let provider
+
+    beforeEach(async () => {
+      ;({ provider } = makeProvider())
+      await provider.initMap(defaultInitConfig)
+      jest.clearAllMocks()
+    })
+
+    it('getAreaDimensions delegates to spatial utils', () => {
+      expect(provider.getAreaDimensions()).toBe('1 mile by 2 miles')
+    })
+
+    it('getCardinalMove delegates to spatial utils', () => {
+      expect(provider.getCardinalMove([0, 0], [100, 100])).toBe('north 100m')
+    })
+
+    it('mapToScreen returns pixel as {x, y}', () => {
+      mockMapGetPixel.mockReturnValue([150, 250])
+      expect(provider.mapToScreen([400000, 300000])).toEqual({ x: 150, y: 250 })
+    })
+
+    it('mapToScreen returns {0, 0} when getPixelFromCoordinate returns null', () => {
+      mockMapGetPixel.mockReturnValue(null)
+      expect(provider.mapToScreen([400000, 300000])).toEqual({ x: 0, y: 0 })
+    })
+
+    it('mapToScreen returns {0, 0} when map is not set', () => {
+      provider.map = null
+      expect(provider.mapToScreen([400000, 300000])).toEqual({ x: 0, y: 0 })
+    })
+
+    it('screenToMap delegates to map.getCoordinateFromPixel', () => {
+      mockMapGetCoord.mockReturnValue([400000, 300000])
+      expect(provider.screenToMap({ x: 100, y: 200 })).toEqual([400000, 300000])
+      expect(mockMapGetCoord).toHaveBeenCalledWith([100, 200])
+    })
+  })
+
+  describe('pattern images', () => {
+    const patternRegistry = { id: 'app-pattern-registry' }
+
+    it('gives each provider (each map) its own pattern cache', () => {
+      const { provider: first } = makeProvider()
+      const { provider: second } = makeProvider()
+      expect(first.patternImages).toBeInstanceOf(PatternImageCache)
+      expect(first.patternImages).not.toBe(second.patternImages)
+    })
+
+    it('addPatternsToMap registers at the map\'s pixel ratio unless given one, and getPatternFill reads its cache', async () => {
+      const { provider } = makeProvider()
+      provider.map = { getPixelRatio: () => 2 }
+      const register = jest.spyOn(provider.patternImages, 'registerPatterns').mockResolvedValue()
+      const configs = [{ fillPattern: 'dot' }]
+
+      await provider.addPatternsToMap(configs, 'outdoor', patternRegistry)
+      expect(register).toHaveBeenLastCalledWith(configs, 'outdoor', patternRegistry, 2)
+      await provider.addPatternsToMap(configs, 'outdoor', patternRegistry, 3)
+      expect(register).toHaveBeenLastCalledWith(configs, 'outdoor', patternRegistry, 3)
+      provider.map = { getPixelRatio: () => 0 }
+      await provider.addPatternsToMap(configs, 'outdoor', patternRegistry)
+      expect(register).toHaveBeenLastCalledWith(configs, 'outdoor', patternRegistry, 1)
+
+      jest.spyOn(provider.patternImages, 'getFill').mockReturnValue('fill')
+      expect(provider.getPatternFill('pattern-id')).toBe('fill')
+    })
+  })
+
+  describe('symbol images', () => {
+    const symbolRegistry = { id: 'app-symbol-registry' }
+
+    it('gives each provider (each map) its own symbol image cache', () => {
+      const { provider: first } = makeProvider()
+      const { provider: second } = makeProvider()
+      expect(first.symbolImages).toBeInstanceOf(SymbolImageCache)
+      expect(first.symbolImages).not.toBe(second.symbolImages)
+    })
+
+    it('addSymbolsToMap registers at the map\'s pixel ratio unless given one', async () => {
+      const { provider } = makeProvider()
+      provider.map = { getPixelRatio: () => 2 }
+      const register = jest.spyOn(provider.symbolImages, 'registerSymbols').mockResolvedValue()
+      const configs = [{ symbol: 'pin' }]
+
+      await provider.addSymbolsToMap(configs, { id: 'outdoor' }, symbolRegistry)
+      expect(register).toHaveBeenLastCalledWith(configs, { id: 'outdoor' }, symbolRegistry, 2)
+
+      await provider.addSymbolsToMap(configs, { id: 'outdoor' }, symbolRegistry, 3)
+      expect(register).toHaveBeenLastCalledWith(configs, { id: 'outdoor' }, symbolRegistry, 3)
+
+      provider.map = { getPixelRatio: () => 0 }
+      await provider.addSymbolsToMap(configs, { id: 'outdoor' }, symbolRegistry)
+      expect(register).toHaveBeenLastCalledWith(configs, { id: 'outdoor' }, symbolRegistry, 1)
+    })
+
+    it('looks up registered images, data URIs and active/selected variants in its own cache', () => {
+      const { provider } = makeProvider()
+      const cache = provider.symbolImages
+      jest.spyOn(cache, 'getImage').mockReturnValue('canvas')
+      jest.spyOn(cache, 'getDataUri').mockReturnValue('data:uri')
+      jest.spyOn(cache, 'getActiveImageId').mockReturnValue('active-id')
+      jest.spyOn(cache, 'getSelectedImageId').mockReturnValue('selected-id')
+
+      expect(provider.getSymbolImage('img')).toBe('canvas')
+      expect(provider.getSymbolDataUri('img')).toBe('data:uri')
+      expect(provider.getActiveSymbolImageId('img')).toBe('active-id')
+      expect(provider.getSelectedSymbolImageId('img')).toBe('selected-id')
+      expect(cache.getImage).toHaveBeenCalledWith('img')
+    })
+
+    it('compiles a dataset filter into a per-feature predicate', () => {
+      const { provider } = makeProvider()
+      const matches = provider.buildFilterEvaluator(['==', ['get', 'kind'], 'field'])
+      expect(matches({ getProperties: () => ({ kind: 'field' }), getId: () => 1, getGeometry: () => null })).toBe(true)
+      expect(matches({ getProperties: () => ({ kind: 'hedge' }), getId: () => 2, getGeometry: () => null })).toBe(false)
+      expect(provider.buildFilterEvaluator(null)).toBeNull()
+    })
+
+    it('highlights with its own symbol image cache, including when re-applying', () => {
+      const { provider } = makeProvider()
+      provider.map = { id: 'map' }
+      updateHighlightedFeatures.mockClear()
+      provider.updateHighlightedFeatures(['selected'], ['active'], { styles: true })
+      expect(updateHighlightedFeatures).toHaveBeenLastCalledWith(provider.map, ['selected'], ['active'], { styles: true }, provider.symbolImages)
+      provider.reapplyHighlights()
+      expect(updateHighlightedFeatures).toHaveBeenCalledTimes(2)
+      expect(updateHighlightedFeatures).toHaveBeenLastCalledWith(provider.map, ['selected'], ['active'], { styles: true }, provider.symbolImages)
+    })
+  })
+})

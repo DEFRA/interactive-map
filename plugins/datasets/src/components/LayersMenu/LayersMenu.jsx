@@ -23,6 +23,7 @@ export const LayersMenu = ({ pluginState }) => {
               <LayersMenuCheckbox
                 key={menuGroupItem.id}
                 menuGroupItem={menuGroupItem}
+                datasetRegistry={pluginState.datasetRegistry}
                 onChange={handleDatasetChange}
               />)
             )

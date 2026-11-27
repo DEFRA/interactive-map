@@ -22,6 +22,8 @@ export const initialState = (config) => {
     isMapReady: false,
     mapProvider: null,
     mapStyle: initialMapStyle,
+    // Every map style the user can switch to — set by a plugin that handles map styles
+    mapStyles: initialMapStyle ? [initialMapStyle] : [],
     mapSize,
     center,
     zoom,
@@ -29,6 +31,12 @@ export const initialState = (config) => {
     resolution: null,
     isAtMaxZoom: null,
     isAtMinZoom: null,
+    // Whether the user started the latest move, rather than code (useUserMoveTracking)
+    isUserMove: false,
+    // The center and zoom the map settled at when last showing its configured view, or null when
+    // there isn't one (useResetViewTarget). Not known yet on load and during a reset.
+    resetViewTarget: null,
+    isResetViewTargetKnown: false,
 
     // Full target marker state
     crossHair: {

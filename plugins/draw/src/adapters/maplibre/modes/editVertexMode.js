@@ -79,7 +79,8 @@ export const EditVertexMode = {
       selectionchange: this.onSelectionChange,
       update: this.onUpdate,
       selectvertex: this.onSelectVertex,
-      insertvertexatmidpoint: this.onInsertVertexAtMidpoint
+      insertvertexatmidpoint: this.onInsertVertexAtMidpoint,
+      setgeometry: this.onSetGeometry
     })
 
     bindEditModeListeners(state, this.map, handlers)
@@ -195,6 +196,16 @@ export const EditVertexMode = {
       state.midpoints = this.getMidpoints(state.featureId)
     }
     this.insertVertex({ ...state, selectedVertexIndex: event.index, selectedVertexType: 'midpoint' })
+  },
+
+  // Inbound signal from MaplibreDrawAdapter.setGeometry — replaces the whole shape (e.g. a
+  // corrected boundary from the consumer) as one undoable commit.
+  onSetGeometry (state, event) {
+    const feature = this.getFeature(state.featureId)
+    if (!feature) { return }
+    const previousGeometry = feature.toGeoJSON().geometry
+    this.replaceGeometry(state, state.featureId, event.geometry)
+    this.pushUndo({ type: 'replace_geometry', featureId: state.featureId, previousGeometry })
   },
 
   onButtonClick (state, event) {

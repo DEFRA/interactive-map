@@ -18,7 +18,7 @@ const makeMap = () => {
     _layers: layers,
     _sources: sources,
     addLayer: jest.fn(layer => { layers.set(layer.id, { ...layer }) }),
-    addSource: jest.fn((id, spec) => { sources.set(id, { ...spec, setData: jest.fn() }) }),
+    addSource: jest.fn((id, spec) => { sources.set(id, { ...spec, setData: jest.fn(), updateData: jest.fn() }) }),
     getLayer: jest.fn(id => layers.get(id) ?? null),
     getSource: jest.fn(id => sources.get(id) ?? null),
     removeLayer: jest.fn(id => { layers.delete(id) }),
@@ -57,7 +57,7 @@ beforeEach(() => {
 
   map = makeMap()
   mapProvider = makeMapProvider(map)
-  adapter = new MaplibreLayerAdapter(mapProvider, symbolRegistry, patternRegistry)
+  adapter = new MaplibreLayerAdapter(mapProvider, symbolRegistry, patternRegistry, datasetRegistry)
   adapter.attachDynamicSources(dynamicSources)
   datasetRegistry.attachCreateDataset(adapter.createDataset)
 })
@@ -285,8 +285,32 @@ describe('setData', () => {
     expect(map.getSource(ds.sourceId).setData).toHaveBeenCalledWith(geojson)
   })
 
+  describe('on a dynamic dataset, whose idProperty is \'id\'', () => {
+    const withIdProperty = { type: 'Feature', id: 1, properties: { id: 1 } }
+    const withoutIdProperty = { type: 'Feature', id: 2, properties: {} }
+    const promoted = { type: 'Feature', id: 2, properties: { id: 2 } }
+    const source = () => map.getSource(datasetRegistry.getDataset('land-covers').sourceId)
+
+    it('passes added and removed features to source.updateData, copying a feature\'s own id into a missing idProperty', () => {
+      adapter.updateData('land-covers', { add: [withIdProperty, withoutIdProperty], remove: [3] })
+      expect(source().updateData).toHaveBeenCalledWith({ add: [withIdProperty, promoted], remove: [3] })
+    })
+
+    it('copies a feature\'s own id into a missing idProperty in setData too', () => {
+      adapter.setData('land-covers', { type: 'FeatureCollection', features: [withIdProperty, withoutIdProperty] })
+      expect(source().setData).toHaveBeenCalledWith({ type: 'FeatureCollection', features: [withIdProperty, promoted] })
+    })
+  })
+
+  it('passes other datasets\' data to source.setData as it is', () => {
+    const geojson = { type: 'FeatureCollection', features: [{ type: 'Feature', id: 1, properties: {} }] }
+    adapter.setData('historic-monuments', geojson)
+    expect(map.getSource(datasetRegistry.getDataset('historic-monuments').sourceId).setData).toHaveBeenCalledWith(geojson)
+  })
+
   it('does nothing when the dataset is not in _datasetSourceMap', () => {
     expect(() => adapter.setData('unknown-dataset', {})).not.toThrow()
+    expect(() => adapter.updateData('unknown-dataset', { add: [], remove: [] })).not.toThrow()
   })
 
   it('does nothing when the source does not have a setData method', () => {

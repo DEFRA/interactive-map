@@ -1,12 +1,12 @@
 import webpack from 'webpack'
-import path, { dirname } from 'path'
-import { fileURLToPath } from 'url'
+import path, { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { setupMiddlewares } from './demo/server/main.js'
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import CopyPlugin from 'copy-webpack-plugin'
 import dotenv from 'dotenv'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
+const __dirname = dirname(fileURLToPath(import.meta.url)) // NOSONAR - Standard Node.js convention in bundler configs
 dotenv.config({ path: path.join(__dirname, './.env'), quiet: true })
 
 export default {
@@ -107,6 +107,8 @@ export default {
       }
     })
   ],
+  // maplibre-gl builds a URL from an expression when its worker is cross-origin; harmless
+  ignoreWarnings: [{ module: /maplibre-gl/, message: /Critical dependency/ }],
   module: {
     rules: [
       {
@@ -119,6 +121,12 @@ export default {
       }, {
         test: /\.css$/i,
         use: [MiniCssExtractPlugin.loader, 'css-loader']
+      }, {
+        // Keeps the esm demo's chunks separate from the other demos' chunks
+        test: /[\\/]dist[\\/]esm[\\/].+\.js$/,
+        exclude: /node_modules/,
+        enforce: 'pre',
+        loader: path.join(__dirname, 'demo/webpack/prefixEsmChunkNames.cjs')
       }
     ]
   },

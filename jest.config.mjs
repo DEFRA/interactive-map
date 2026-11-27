@@ -22,6 +22,7 @@ export default {
     testPathIgnorePatterns: ['<rootDir>/src/test-utils.js'],
     coveragePathIgnorePatterns: [
       '/__mocks__/',
+      '<rootDir>/test/',
       '/__data__/',
       '/node_modules/',
       '<rootDir>/public',
@@ -31,18 +32,22 @@ export default {
       '<rootDir>/demo',
       '<rootDir>/src/test-utils.js',
       '__helpers__',
-      '<rootDir>/providers/beta/',
-      '<rootDir>/plugins/beta/draw-es',
-      '<rootDir>/plugins/beta/draw-ml',
-      '<rootDir>/plugins/beta/draw-ol',
-      '<rootDir>/plugins/beta/frame',
-      '<rootDir>/plugins/beta/map-styles',
-      '<rootDir>/plugins/beta/scale-bar',
-      '<rootDir>/plugins/beta/use-location',
+      '<rootDir>/providers/esri',
+      '<rootDir>/providers/open-names',
+      '<rootDir>/providers/openlayers',
+      '<rootDir>/plugins/draw-es',
+      '<rootDir>/plugins/frame',
+      '<rootDir>/plugins/map-styles',
+      '<rootDir>/plugins/scale-bar',
+      '<rootDir>/plugins/use-location',
       '<rootDir>/.docusaurus',
       '<rootDir>/build/assets/js',
       '/dist/'
     ],
+    // maplibre-gl only exports an `import` condition, which Jest's resolver does not use
+    moduleNameMapper: {
+      '^maplibre-gl$': '<rootDir>/node_modules/maplibre-gl/dist/maplibre-gl.mjs'
+    },
     transformIgnorePatterns: []
   }]
 }

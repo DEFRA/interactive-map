@@ -4,7 +4,6 @@ import { useMarkerCursor } from '../../hooks/useMarkerCursor.js'
 import { useConfig } from '../../store/configContext.js'
 import { useMap } from '../../store/mapContext.js'
 import { useService } from '../../store/serviceContext.js'
-import { scaleFactor } from '../../../config/appConfig.js'
 import { isStandaloneLabel } from '../../../utils/symbolUtils.js'
 import { DEFAULT_SYMBOL_ANCHOR, DEFAULT_SYMBOL_VIEWBOX } from '../../../config/symbolConfig.js'
 import { EVENTS } from '../../../config/events.js'
@@ -25,7 +24,7 @@ const markerVariant = (isSelected, isActive) => {
 
 // The marker's definition carries the viewBox and anchor for its size (see
 // symbolRegistry.getMarkerSymbolDef)
-const resolveSymbolProps = (marker, defaults, symbolRegistry, mapStyle, mapSize, variant) => {
+const resolveSymbolProps = (marker, defaults, symbolRegistry, mapStyle, scale, variant) => {
   const symbolDef = symbolRegistry.getMarkerSymbolDef(marker)
   const styleValues = Object.fromEntries(
     Object.entries(marker).filter(([k]) => !INTERNAL_KEYS.has(k))
@@ -35,7 +34,6 @@ const resolveSymbolProps = (marker, defaults, symbolRegistry, mapStyle, mapSize,
   const [,, svgWidth, svgHeight] = viewBox.split(' ').map(Number)
   const anchor = symbolDef?.anchor ?? DEFAULT_SYMBOL_ANCHOR
   const shapeId = marker.symbol || defaults.symbol
-  const scale = scaleFactor[mapSize] ?? 1
   return { resolvedSvg, viewBox, anchor, shapeId, scaledWidth: svgWidth * scale, scaledHeight: svgHeight * scale }
 }
 
@@ -43,7 +41,7 @@ const resolveSymbolProps = (marker, defaults, symbolRegistry, mapStyle, mapSize,
 // sonarjs/disable-next-line function-name
 export const Markers = () => {
   const { id } = useConfig()
-  const { mapStyle, mapSize } = useMap()
+  const { mapStyle, mapSizeScale } = useMap()
   const { markers, markerRef } = useMarkers()
   const { symbolRegistry, eventBus } = useService()
 
@@ -89,7 +87,7 @@ export const Markers = () => {
           return <LabelMarker key={marker.id} marker={marker} mapId={id} markerRef={markerRef} />
         }
 
-        const symbolProps = resolveSymbolProps(marker, defaults, symbolRegistry, mapStyle, mapSize, markerVariant(isSelected, isActive))
+        const symbolProps = resolveSymbolProps(marker, defaults, symbolRegistry, mapStyle, mapSizeScale, markerVariant(isSelected, isActive))
 
         if (marker.showLabel && marker.label) {
           return <SymbolLabelMarker key={marker.id} marker={marker} mapId={id} markerRef={markerRef} isSelected={isSelected} symbolProps={symbolProps} />

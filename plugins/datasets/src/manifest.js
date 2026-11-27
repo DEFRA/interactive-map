@@ -11,58 +11,68 @@ import { getStyle } from './api/getStyle.js'
 import { setOpacity } from './api/setOpacity.js'
 import { getOpacity } from './api/getOpacity.js'
 import { setData } from './api/setData.js'
+import { refreshDataset } from './api/refreshDataset.js'
 import { setGlobals } from './api/setGlobals.js'
+import { hasLayersMenu } from './utils/hasLayersMenu.js'
+import { createDatasetRegistry } from './registry/datasetRegistry.js'
 
-export const manifest = {
+const layersPanel = {
+  id: 'datasetsLayers',
+  label: 'Layers',
+  mobile: {
+    slot: 'drawer',
+    modal: true,
+    dismissible: true
+  },
+  tablet: {
+    slot: 'left-top',
+    dismissible: true,
+    exclusive: true,
+    width: '260px'
+  },
+  desktop: {
+    slot: 'left-top',
+    modal: false,
+    dismissible: true,
+    exclusive: true,
+    width: '280px'
+  },
+  render: LayersMenu
+}
+
+const layersButton = {
+  id: 'datasetsLayers',
+  label: 'Layers',
+  panelId: 'datasetsLayers',
+  excludeWhen: (context) => !hasLayersMenu(context),
+  iconId: 'layers',
+  mobile: {
+    slot: 'top-left',
+    showLabel: true
+  },
+  tablet: {
+    slot: 'top-left',
+    showLabel: true
+  },
+  desktop: {
+    slot: 'top-left',
+    showLabel: true
+  }
+}
+
+// With hasMenu: false the Layers button and panel are never registered
+export const createManifest = ({ hasMenu } = {}) => ({
   InitComponent: DatasetsInit,
 
+  // load() calls createManifest once per map, so each map gets its own dataset registry
   reducer: {
-    initialState,
+    initialState: { ...initialState, datasetRegistry: createDatasetRegistry() },
     actions
   },
 
-  panels: [{
-    id: 'datasetsLayers',
-    label: 'Layers',
-    mobile: {
-      slot: 'drawer',
-      modal: true,
-      dismissible: true
-    },
-    tablet: {
-      slot: 'left-top',
-      dismissible: true,
-      exclusive: true,
-      width: '260px'
-    },
-    desktop: {
-      slot: 'left-top',
-      modal: false,
-      dismissible: true,
-      exclusive: true,
-      width: '280px'
-    },
-    render: LayersMenu
-  }],
+  panels: hasMenu === false ? [] : [layersPanel],
 
-  buttons: [{
-    id: 'datasetsLayers',
-    label: 'Layers',
-    panelId: 'datasetsLayers',
-    iconId: 'layers',
-    mobile: {
-      slot: 'top-left',
-      showLabel: true
-    },
-    tablet: {
-      slot: 'top-left',
-      showLabel: true
-    },
-    desktop: {
-      slot: 'top-left',
-      showLabel: true
-    }
-  }],
+  buttons: hasMenu === false ? [] : [layersButton],
 
   icons: [{
     id: 'layers',
@@ -82,6 +92,7 @@ export const manifest = {
     setOpacity,
     getOpacity,
     setData,
+    refreshDataset,
     setGlobals
   }
-}
+})

@@ -205,7 +205,7 @@ Custom datasets let you add your own search sources alongside or instead of OS N
 const gridRefDataset = {
   name: 'gridref',
   includeRegex: /^[A-Z]{2}\d{6,10}$/i,
-  buildRequest: (query) => `https://api.example.com/gridref?q=${query}`,
+  buildRequest: (query) => `https://api.example.com/gridref?q=${encodeURIComponent(query)}`,
   parseResults: (json, query) => [{
     id: query,
     text: query,
@@ -272,7 +272,7 @@ Each suggestion object must have:
 |----------|------|-------------|
 | `id` | `string` | Unique identifier for the suggestion |
 | `text` | `string` | Display text shown in the autocomplete list |
-| `marked` | `string` | Optional. HTML string with query terms wrapped in `<mark>` tags. If omitted, the suggestion label will be blank |
+| `marked` | `string` | Optional. Label text with query terms wrapped in `<mark>` tags. Any other markup is shown as text, not rendered as HTML. If omitted, the suggestion label will be blank |
 | `point` | `[x, y]` | Centre coordinate for placing a marker |
 | `bounds` | `[minX, minY, maxX, maxY]` | Bounding box to fit the map to when selected |
 | `type` | `string` | Optional. Value to include in the `search:match` payload to identify the source dataset |
@@ -340,9 +340,9 @@ The full suggestion object returned by the dataset's `parseResults` function, pl
 ```
 
 ```js
-interactiveMap.on('search:match', (e) => {
-  if (e.type === 'parcel') {
-    interactPlugin.selectFeature({ featureId: e.properties.id, layerId: 'parcels' })
+interactiveMap.on('search:match', (event) => {
+  if (event.type === 'parcel') {
+    interactPlugin.selectFeature({ featureId: event.properties.id, layerId: 'parcels' })
   }
 })
 ```

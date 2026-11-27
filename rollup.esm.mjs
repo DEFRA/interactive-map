@@ -10,8 +10,13 @@ import replace from '@rollup/plugin-replace'
 import terser from '@rollup/plugin-terser'
 import postcss from 'rollup-plugin-postcss'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { transformAsync } from '@babel/core'
 
 const __dirname = dirname(fileURLToPath(import.meta.url)) // NOSONAR - Standard Node.js convention in bundler configs
+
+// The @babel/runtime range we ship. Without it, the runtime transform assumes an old runtime and
+// imports the CommonJS-only @babel/runtime/regenerator, which Rollup can't load without a plugin.
+const BABEL_RUNTIME_VERSION = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')).dependencies['@babel/runtime']
 
 /**
  * Cleans output directories before each build starts.
@@ -26,6 +31,40 @@ const cleanPlugin = (dirs) => ({
       }
       fs.mkdirSync(dir, { recursive: true })
     }
+  }
+})
+
+/**
+ * Compiles the chunks that load before the device check (entries and the chunks
+ * they import statically) to ES5, so older browsers can parse them and show the
+ * not-supported message. Hosts' bundlers usually don't transpile node_modules.
+ * Lazily loaded chunks keep modern syntax; they only load once the check passes.
+ * import/export, import() and import.meta are left for the host's bundler.
+ */
+const es5InitialChunksPlugin = () => ({
+  name: 'es5-initial-chunks',
+  async renderChunk (code, chunk, _outputOptions, { chunks }) {
+    const initial = new Set()
+    const addWithStaticImports = (fileName) => {
+      if (initial.has(fileName)) {
+        return
+      }
+      initial.add(fileName)
+      chunks[fileName]?.imports.forEach(addWithStaticImports)
+    }
+    Object.values(chunks).filter(c => c.isEntry).forEach(c => addWithStaticImports(c.fileName))
+
+    if (!initial.has(chunk.fileName)) {
+      return null
+    }
+    const result = await transformAsync(code, {
+      babelrc: false,
+      configFile: false,
+      sourceType: 'module',
+      presets: [['@babel/preset-env', { targets: { ie: '11' }, modules: false }]],
+      plugins: [['@babel/plugin-transform-runtime', { version: BABEL_RUNTIME_VERSION }]]
+    })
+    return { code: result.code, map: null }
   }
 })
 
@@ -82,7 +121,37 @@ const PREACT_EXTERNALS = [
 // dependency so it auto-installs for consumers and is resolved transparently.
 const BABEL_RUNTIME_EXTERNAL = /@babel\/runtime/
 
-const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null, chunkNames = {}) => {
+// Map engines (optional peers) are externalised so consumers share one copy from their own
+// node_modules; they ignore the engines they don't install (see docs/getting-started.md).
+// UMD keeps them bundled.
+export const MAP_ENGINE_EXTERNALS = [
+  'maplibre-gl',
+  /^ol\//,
+  'proj4',
+  /^@arcgis\/core/
+]
+
+const babelPlugin = () => babel({
+  // 'runtime' mode imports helpers from @babel/runtime rather than
+  // inlining them.  This prevents Rollup from deduplicating helpers across
+  // chunks (which caused static imports between entry and lazy chunks).
+  babelHelpers: 'runtime',
+  exclude: /node_modules/,
+  extensions: ['.js', '.jsx'],
+  plugins: [['@babel/plugin-transform-runtime', { version: BABEL_RUNTIME_VERSION }]],
+  // Override babel.config.json targets for ESM: target browsers that
+  // natively support ES modules (Chrome 61+, Firefox 60+, Safari 10.1+).
+  // The UMD build targets old browsers; the ESM build ships modern syntax
+  // and lets the consumer's bundler handle their own browser targets.
+  // This avoids transpiling classes, arrow functions, async/await etc.
+  // into verbose ES5 — the single biggest driver of ESM bundle size.
+  presets: [
+    ['@babel/preset-env', { targets: { chrome: '92', edge: '92', firefox: '90', safari: '15.4', ios: '15.4' }, bugfixes: true }],
+    ['@babel/preset-react', { runtime: 'automatic' }]
+  ]
+})
+
+export const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null, chunkNames = {}) => {
   const esmDir = path.resolve(__dirname, outDir)
   // Use the parent dir as output.dir so CSS can be emitted to css/index.css
   // (a sibling subdir) without Rollup 4's ban on ".." in emitted file names.
@@ -91,8 +160,20 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
 
   // Core build also cleans the shared dist/css before rebuilding
   const dirsToClean = isCore
-    ? [path.resolve(__dirname, 'dist/css'), esmDir]
+    ? [cssDir, esmDir]
     : [esmDir]
+
+  // The core build's entry module, recorded once the build ends so chunkFileNames can tell
+  // the shell chunk (which holds it) from other shared chunks
+  const entryModuleIds = new Set()
+  const recordEntryModulesPlugin = () => ({
+    name: 'record-entry-modules',
+    buildEnd () {
+      for (const id of this.getModuleIds()) {
+        if (this.getModuleInfo(id).isEntry) { entryModuleIds.add(id) }
+      }
+    }
+  })
 
   return {
     input: entryPath,
@@ -101,17 +182,7 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
     // to preact/* before Rollup's external check, so only the preact IDs appear.
     external: isCore
       ? [...PREACT_EXTERNALS, BABEL_RUNTIME_EXTERNAL]
-      : [
-          ...PREACT_EXTERNALS,
-          BABEL_RUNTIME_EXTERNAL,
-          // Map engines (optional peers) are externalised so consumers share one copy
-          // from their own node_modules; they ignore the engines they don't install
-          // (see docs/getting-started.md).  UMD keeps them bundled.
-          'maplibre-gl',
-          /^ol\//,
-          'proj4',
-          /^@arcgis\/core/
-        ],
+      : [...PREACT_EXTERNALS, BABEL_RUNTIME_EXTERNAL, ...MAP_ENGINE_EXTERNALS],
 
     plugins: [
       cleanPlugin(dirsToClean),
@@ -138,30 +209,12 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
         extensions: ['.js', '.jsx'],
         // Force these packages to resolve from root node_modules only,
         // preventing nested copies inside geojson-rbush and mapbox-gl-snap
-        // from being bundled separately (saves ~200 KB in draw-ml).
+        // from being bundled separately (saves ~200 KB in draw).
         dedupe: ['@turf/meta', '@turf/helpers', 'robust-predicates']
       }),
       commonjs({ include: /node_modules/ }),
 
-      babel({
-        // 'runtime' mode imports helpers from @babel/runtime rather than
-        // inlining them.  This prevents Rollup from deduplicating helpers across
-        // chunks (which caused static imports between entry and lazy chunks).
-        babelHelpers: 'runtime',
-        exclude: /node_modules/,
-        extensions: ['.js', '.jsx'],
-        plugins: ['@babel/plugin-transform-runtime'],
-        // Override babel.config.json targets for ESM: target browsers that
-        // natively support ES modules (Chrome 61+, Firefox 60+, Safari 10.1+).
-        // The UMD build targets old browsers; the ESM build ships modern syntax
-        // and lets the consumer's bundler handle their own browser targets.
-        // This avoids transpiling classes, arrow functions, async/await etc.
-        // into verbose ES5 — the single biggest driver of ESM bundle size.
-        presets: [
-          ['@babel/preset-env', { targets: { esmodules: true } }],
-          ['@babel/preset-react', { runtime: 'automatic' }]
-        ]
-      }),
+      babelPlugin(),
 
       // extract is an absolute path; Rollup resolves it relative to output.dir
       // (rootDir) → "css/index.css" — no ".." in the emitted fileName.
@@ -171,12 +224,14 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
         minimize: true
       }),
 
+      es5InitialChunksPlugin(),
+
       terser(),
 
       // webpackChunkNamesPlugin must come after terser so comments survive
       webpackChunkNamesPlugin(),
 
-      ...(isCore ? [removeFullCssPlugin(cssDir)] : []),
+      ...(isCore ? [removeFullCssPlugin(cssDir), recordEntryModulesPlugin()] : []),
 
       // Only runs when ANALYZE=1 is set; writes stats to dist/stats/<name>.html
       ...(process.env.ANALYZE ? [visualizer({
@@ -194,9 +249,15 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
       entryFileNames: 'esm/index.js',
       // Core: give auto-generated chunks meaningful names.
       // - initialiseApp → im-core.js  (the lazy Preact app chunk)
-      // - anything else → im-shell.js (the sync InteractiveMap + shared utils chunk)
+      // - names in chunkNames → their given name (an engine package's lazy provider)
+      // - the chunk holding the entry module → im-shell.js (the sync InteractiveMap + shared utils)
+      // - anything else → im-shared.js (code shared only by lazy chunks, loaded when the map opens)
       chunkFileNames: isCore
-        ? (chunk) => chunk.name === 'initialiseApp' ? 'esm/im-core.js' : 'esm/im-shell.js'
+        ? (chunk) => {
+            if (chunk.name === 'initialiseApp') { return 'esm/im-core.js' }
+            if (chunkNames[chunk.name]) { return `esm/${chunkNames[chunk.name]}.js` }
+            return chunk.moduleIds.some(id => entryModuleIds.has(id)) ? 'esm/im-shell.js' : 'esm/im-shared.js'
+          }
         : (chunk) => `esm/${chunkNames[chunk.name] || chunk.name}.js`,
       // Rollup ignores webpack magic comments; manualChunks is how we assign
       // meaningful names to lazy-loaded splits.
@@ -211,7 +272,7 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
 }
 
 // === All builds ===
-const ALL_BUILDS = [
+export const ALL_BUILDS = [
   // Core
   { entryPath: './src/index.js', outDir: 'dist/esm', isCore: true },
 
@@ -223,30 +284,30 @@ const ALL_BUILDS = [
     manualChunks: (id) => id.includes('/maplibreProvider') ? 'im-maplibre-provider' : undefined
   },
   {
-    entryPath: './providers/beta/open-names/src/index.js',
-    outDir: 'providers/beta/open-names/dist/esm',
+    entryPath: './providers/open-names/src/index.js',
+    outDir: 'providers/open-names/dist/esm',
     manualChunks: (id) => id.includes('/reverseGeocode') ? 'im-reverse-geocode' : undefined
   },
   {
-    entryPath: './providers/beta/esri/src/index.js',
-    outDir: 'providers/beta/esri/dist/esm',
+    entryPath: './providers/esri/src/index.js',
+    outDir: 'providers/esri/dist/esm',
     manualChunks: (id) => id.includes('/esriProvider') ? 'im-esri-provider' : undefined
   },
   {
-    entryPath: './providers/beta/openlayers/src/index.js',
-    outDir: 'providers/beta/openlayers/dist/esm',
+    entryPath: './providers/openlayers/src/index.js',
+    outDir: 'providers/openlayers/dist/esm',
     manualChunks: (id) => id.includes('/openlayersProvider') ? 'im-openlayers-provider' : undefined
   },
 
   // Plugins — each lazy-loads ./manifest.js; manualChunks names that split chunk
   {
-    entryPath: './plugins/beta/scale-bar/src/index.js',
-    outDir: 'plugins/beta/scale-bar/dist/esm',
+    entryPath: './plugins/scale-bar/src/index.js',
+    outDir: 'plugins/scale-bar/dist/esm',
     manualChunks: (id) => id.includes('/manifest') ? 'im-scale-bar-plugin' : undefined
   },
   {
-    entryPath: './plugins/beta/use-location/src/index.js',
-    outDir: 'plugins/beta/use-location/dist/esm',
+    entryPath: './plugins/use-location/src/index.js',
+    outDir: 'plugins/use-location/dist/esm',
     manualChunks: (id) => id.includes('/manifest') ? 'im-use-location-plugin' : undefined
   },
   {
@@ -267,8 +328,8 @@ const ALL_BUILDS = [
     chunkNames: { maplibreLayerAdapter: 'im-datasets-ml-adapter', openlayersLayerAdapter: 'im-datasets-ol-adapter', esriLayerAdapter: 'im-datasets-esri-adapter' }
   },
   {
-    entryPath: './plugins/beta/map-styles/src/index.js',
-    outDir: 'plugins/beta/map-styles/dist/esm',
+    entryPath: './plugins/map-styles/src/index.js',
+    outDir: 'plugins/map-styles/dist/esm',
     manualChunks: (id) => id.includes('/manifest') ? 'im-map-styles-plugin' : undefined
   },
   {
@@ -282,23 +343,13 @@ const ALL_BUILDS = [
     chunkNames: { MaplibreDrawAdapter: 'im-draw-ml-adapter', OLDrawAdapter: 'im-draw-ol-adapter' }
   },
   {
-    entryPath: './plugins/beta/draw-ml/src/index.js',
-    outDir: 'plugins/beta/draw-ml/dist/esm',
-    manualChunks: (id) => id.includes('/manifest') ? 'im-draw-ml-plugin' : undefined
-  },
-  {
-    entryPath: './plugins/beta/draw-es/src/index.js',
-    outDir: 'plugins/beta/draw-es/dist/esm',
+    entryPath: './plugins/draw-es/src/index.js',
+    outDir: 'plugins/draw-es/dist/esm',
     manualChunks: (id) => id.includes('/manifest') ? 'im-draw-es-plugin' : undefined
   },
   {
-    entryPath: './plugins/beta/draw-ol/src/index.js',
-    outDir: 'plugins/beta/draw-ol/dist/esm',
-    manualChunks: (id) => id.includes('/manifest') ? 'im-draw-ol-plugin' : undefined
-  },
-  {
-    entryPath: './plugins/beta/frame/src/index.js',
-    outDir: 'plugins/beta/frame/dist/esm',
+    entryPath: './plugins/frame/src/index.js',
+    outDir: 'plugins/frame/dist/esm',
     manualChunks: (id) => id.includes('/manifest') ? 'im-frame-plugin' : undefined
   },
   {

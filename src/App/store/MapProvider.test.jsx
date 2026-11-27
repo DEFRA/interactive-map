@@ -13,12 +13,14 @@ jest.mock('./mapReducer.js', () => {
 
   const setMapReady = jest.fn((state) => ({ ...state, isMapReady: true }))
   const setMapStyle = jest.fn((state, payload) => ({ ...state, mapStyle: payload }))
+  const setMapStyles = jest.fn((state, payload) => ({ ...state, mapStyles: payload }))
   const setMapSize = jest.fn((state, payload) => ({ ...state, mapSize: payload }))
   const updateCrossHair = jest.fn((state, payload) => ({ ...state, crossHair: payload }))
 
   const actionsMap = {
     SET_MAP_READY: setMapReady,
     SET_MAP_STYLE: setMapStyle,
+    SET_MAP_STYLES: setMapStyles,
     SET_MAP_SIZE: setMapSize,
     UPDATE_CROSS_HAIR: updateCrossHair
   }
@@ -103,6 +105,29 @@ describe('MapProvider', () => {
     })
   })
 
+  test('keeps every announced map style, and selects the saved one', () => {
+    let contextValue
+    const Child = () => {
+      contextValue = React.useContext(MapContext)
+      return null
+    }
+    localStorage.setItem('map1:mapStyleId', 'dark')
+
+    render(
+      <MapProvider options={{ id: 'map1', mapSize: '100x100', eventBus: mockEventBus }}>
+        <Child />
+      </MapProvider>
+    )
+
+    const mapStyles = [{ id: 'outdoor' }, { id: 'dark' }]
+    act(() => {
+      capturedHandlers['map:initmapstyles'](mapStyles)
+    })
+
+    expect(contextValue.mapStyles).toBe(mapStyles)
+    expect(contextValue.mapStyle).toEqual({ id: 'dark' })
+  })
+
   test('dispatches SET_MAP_READY when MAP_READY fires', () => {
     let contextValue
     const Child = () => {
@@ -123,6 +148,30 @@ describe('MapProvider', () => {
     })
 
     expect(contextValue.isMapReady).toBe(true)
+  })
+
+  test.each([
+    ['small', 1],
+    ['medium', 1.5],
+    ['large', 2],
+    ['unknown', 1]
+  ])('provides mapSizeScale for map size %s', (mapSize, expected) => {
+    let contextValue
+    const Child = () => {
+      contextValue = React.useContext(MapContext)
+      return null
+    }
+    render(
+      <MapProvider options={{ id: 'map1', mapSize: 'small', eventBus: mockEventBus }}>
+        <Child />
+      </MapProvider>
+    )
+
+    act(() => {
+      capturedHandlers['map:setsize'](mapSize)
+    })
+
+    expect(contextValue.mapSizeScale).toBe(expected)
   })
 
   test('emits map:sizechange when mapSize changes after initial value', () => {

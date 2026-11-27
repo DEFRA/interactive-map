@@ -2,27 +2,30 @@
 import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../../src/config/events.js'
 import { initialiseDatasets } from './initialiseDatasets.js'
-import { datasetRegistry } from '../registry/datasetRegistry.js'
-import { attachGlobalState } from '../registry/globalDataset.js'
-import { loadLayerAdapter, layerAdapter } from '../adapters/loadLayerAdapter.js'
+import { loadLayerAdapter } from '../adapters/loadLayerAdapter.js'
+import { hasLayersMenu } from '../utils/hasLayersMenu.js'
 
-const pluginConfigHasMenuItems = (pluginConfig) =>
-  pluginConfig.datasets
-    .some(dataset => dataset.showInMenu || dataset.sublayers?.some(sublayer => sublayer.showInMenu))
+const LAYERS_PANEL_ID = 'datasetsLayers'
 
-export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider, services }) {
-  const { dispatch } = pluginState
+// Closes the Layers panel if its menu empties while it's open
+function useCloseEmptyLayersPanel ({ appState, pluginConfig, pluginState, services }) {
+  const { eventBus } = services
+  const hasMenu = hasLayersMenu({ pluginConfig, pluginState })
+  const isLayersPanelOpen = Boolean(appState.openPanels[LAYERS_PANEL_ID])
+
+  useEffect(() => {
+    if (!hasMenu && isLayersPanelOpen) {
+      eventBus.emit(EVENTS.APP_HIDE_PANEL, LAYERS_PANEL_ID)
+    }
+  }, [hasMenu, isLayersPanelOpen])
+}
+
+export function DatasetsInit ({ appState, pluginConfig, pluginState, mapState, mapProvider, services }) {
+  const { dispatch, datasetRegistry } = pluginState
   const { eventBus, symbolRegistry, patternRegistry } = services
   const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
 
-  useEffect(() => {
-    const hasMenu = pluginConfig.hasMenu !== false && pluginConfigHasMenuItems(pluginConfig)
-
-    if (!hasMenu) {
-      eventBus.emitWhenReady(EVENTS.APP_REMOVE_PANEL, 'datasetsLayers')
-      eventBus.emitWhenReady(EVENTS.APP_TOGGLE_BUTTON_STATE, { id: 'datasetsLayers', prop: 'hidden', value: true })
-    }
-  }, [pluginConfig.hasMenu])
+  useCloseEmptyLayersPanel({ appState, pluginConfig, pluginState, services })
 
   // Keep a ref to the latest pluginState so event handlers can access current data
   const pluginStateRef = useRef(pluginState)
@@ -30,6 +33,14 @@ export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider
 
   // Track initialisation and store cleanup function
   const datasetsInstanceRef = useRef(null)
+
+  // Call layerAdapter methods queued from state updates. They wait until the adapter has loaded.
+  const runQueuedActions = (actionsArray) => {
+    const layerAdapter = mapProvider?.datasets
+    if (!actionsArray.length || !layerAdapter) { return }
+    actionsArray.forEach(({ method, parameters }) => layerAdapter[method](...parameters))
+    dispatch({ type: 'REMOVE_ADAPTER_ACTIONS', payload: actionsArray })
+  }
 
   useEffect(() => {
     if (!isBaseMapReady) {
@@ -42,10 +53,11 @@ export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider
     }
 
     const initDatasets = async () => {
-      const adapter = await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry)
+      const adapter = await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry, datasetRegistry)
 
       datasetsInstanceRef.current = initialiseDatasets({
         adapter,
+        datasetRegistry,
         pluginConfig,
         pluginStateRef,
         mapStyle: mapState.mapStyle,
@@ -54,9 +66,12 @@ export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider
         dispatch,
         eventBus
       })
+      // Each map has its own provider, so its API calls reach its own adapter
+      mapProvider.datasets = adapter
+      runQueuedActions(pluginStateRef.current.actionsArray)
     }
 
-    initDatasets()
+    initDatasets() // NOSONAR: Not changing for now as used in production
   }, [isBaseMapReady])
 
   useEffect(() => {
@@ -67,33 +82,28 @@ export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider
 
   useEffect(() => {
     datasetRegistry.attachMapStyle(mapState.mapStyle)
+    const layerAdapter = mapProvider?.datasets
     if (layerAdapter?.onMapStyleChange) {
       // MapLibre's own map.addImage()/setPaintProperty() calls (made while re-registering
       // symbols/patterns below) naturally re-trigger MAP_DATA_CHANGE via the GL engine's own
       // styledata event — nothing extra needed there. OL has no such generic signal (its
       // MAP_DATA_CHANGE is tied only to the basemap tile source's own tileloadend — see
-      // providers/beta/openlayers/src/appEvents.js's comment), so re-registering a symbol on a
+      // providers/openlayers/src/appEvents.js's comment), so re-registering a symbol on a
       // plain ol/layer/Vector never fires it. Emitting it explicitly once re-registration
       // genuinely finishes lets the interact plugin's settle-window re-apply (armed by
       // MAP_STYLE_CHANGE, see useHighlightSync.js) pick up the new theme's selected/active
       // symbol images, instead of a highlight staying stuck on whatever was cached moments
       // before the switch.
-      Promise.resolve(layerAdapter.onMapStyleChange()).then(() => {
+      Promise.resolve(layerAdapter.onMapStyleChange()).then(() => { // NOSONAR: Not changing for now as used in production
         eventBus.emit(EVENTS.MAP_DATA_CHANGE)
       })
     }
   },
   [mapState.mapStyle])
 
-  useEffect(() => attachGlobalState(pluginState.globals), [pluginState.globals])
+  useEffect(() => datasetRegistry.attachGlobals(pluginState.globals), [pluginState.globals])
 
-  // Call layerAdapter methods that are queued from state updates
-  useEffect(() => {
-    const { actionsArray } = pluginState
-    if (!actionsArray.length) { return }
-    actionsArray.forEach(({ method, parameters }) => layerAdapter[method](...parameters))
-    dispatch({ type: 'REMOVE_ADAPTER_ACTIONS', payload: actionsArray })
-  }, [pluginState.actionsArray])
+  useEffect(() => runQueuedActions(pluginState.actionsArray), [pluginState.actionsArray])
 
   // Cleanup only on unmount
   useEffect(() => {
@@ -101,6 +111,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider
       if (datasetsInstanceRef.current) {
         datasetsInstanceRef.current.remove()
         datasetsInstanceRef.current = null
+        mapProvider.datasets = null
       }
     }
   }, [])

@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../../src/config/events.js'
 import { isStandaloneLabel } from '../../../../src/utils/symbolUtils.js'
-import { scaleFactor } from '../../../../src/config/appConfig.js'
 import { buildLayerConfigMap } from '../utils/featureQueries.js'
 import { getGeometryCenter } from '../utils/spatial.js'
 
@@ -21,14 +20,14 @@ const isInViewport = (el) => {
     bottom > containerRect.top && top < containerRect.bottom
 }
 
-// Screen position for a [lng, lat] point, scaled for the current mapSize — same correction
+// Screen position for a [lng, lat] point, scaled for the current map size — same correction
 // useMarkersAPI.js's projectCoords applies (the map canvas itself is rendered at a different
-// resolution per mapSize; nothing to do with CSS transforms). mapProvider.mapToScreen is a
+// resolution per map size; nothing to do with CSS transforms). mapProvider.mapToScreen is a
 // provider-agnostic method (implemented by every provider, including OpenLayers/Esri), so this
 // helper works unchanged once OpenLayers' getVisibleFeatures stops being a stub.
-const projectToScreen = (mapProvider, mapSize, coords) => {
+const projectToScreen = (mapProvider, mapSizeScale, coords) => {
   const { x, y } = mapProvider.mapToScreen(coords)
-  return { x: x * scaleFactor[mapSize], y: y * scaleFactor[mapSize] }
+  return { x: x * mapSizeScale, y: y * mapSizeScale }
 }
 
 // x/y are the marker's own screen position — computed fresh here rather than read off
@@ -36,7 +35,7 @@ const projectToScreen = (mapProvider, mapSize, coords) => {
 // current pan position. Used to position the corresponding accessible list item so touch/voice
 // AT overlays (e.g. macOS Voice Control's "Show Numbers") land on the actual feature instead of
 // stacking at the top-left of the viewport.
-const collectVisibleMarkers = (markers, mapProvider, mapSize) => {
+const collectVisibleMarkers = (markers, mapProvider, mapSizeScale) => {
   const items = []
   for (const marker of markers.items) {
     if (!marker.label) { continue }
@@ -44,7 +43,7 @@ const collectVisibleMarkers = (markers, mapProvider, mapSize) => {
     if (!isStandaloneLabel(marker) && el && isInViewport(el)) {
       const item = { id: marker.id, label: marker.label, isMarker: true }
       if (marker.coords) {
-        Object.assign(item, projectToScreen(mapProvider, mapSize, marker.coords))
+        Object.assign(item, projectToScreen(mapProvider, mapSizeScale, marker.coords))
       }
       items.push(item)
     }
@@ -52,7 +51,7 @@ const collectVisibleMarkers = (markers, mapProvider, mapSize) => {
   return items
 }
 
-const toFeatureItem = (feature, layerConfigMap, seenIds, mapProvider, mapSize) => {
+const toFeatureItem = (feature, layerConfigMap, seenIds, mapProvider, mapSizeScale) => {
   const config = layerConfigMap[feature.layer?.id]
   if (!config?.labelProperty) {
     return null
@@ -84,19 +83,19 @@ const toFeatureItem = (feature, layerConfigMap, seenIds, mapProvider, mapSize) =
   // geometry (e.g. OpenLayers' getVisibleFeatures, currently a stub returning [] — see PR notes).
   const center = getGeometryCenter(feature)
   if (center) {
-    Object.assign(item, projectToScreen(mapProvider, mapSize, center))
+    Object.assign(item, projectToScreen(mapProvider, mapSizeScale, center))
   }
   return item
 }
 
-const collectVisibleFeatures = (mapProvider, layers, mapSize) => {
+const collectVisibleFeatures = (mapProvider, layers, mapSizeScale) => {
   const items = []
   const seenIds = new Set()
   const layerIds = layers.map(layer => layer.layerId)
   const layerConfigMap = buildLayerConfigMap(layers)
   const features = mapProvider.getVisibleFeatures(layerIds)
   for (const feature of features) {
-    const item = toFeatureItem(feature, layerConfigMap, seenIds, mapProvider, mapSize)
+    const item = toFeatureItem(feature, layerConfigMap, seenIds, mapProvider, mapSizeScale)
     if (item) {
       items.push(item)
     }
@@ -118,7 +117,7 @@ const collectVisibleFeatures = (mapProvider, layers, mapSize) => {
  * own doc comment for why: a single "whoever emits last wins" event doesn't scale once more
  * than one plugin, e.g. draw mid-edit, needs to contribute to or take over the same list).
  */
-function useItemListSync ({ markers, mapSize, interactionModes, layers, mapProvider, multiSelect, spatialListRegistry, eventBus, itemsRef }) {
+function useItemListSync ({ markers, mapSizeScale, interactionModes, layers, mapProvider, multiSelect, spatialListRegistry, eventBus, itemsRef }) {
   const multiSelectRef = useRef(multiSelect)
   multiSelectRef.current = multiSelect // always-current for the provider's getItems below, same convention as itemsRef
 
@@ -126,10 +125,10 @@ function useItemListSync ({ markers, mapSize, interactionModes, layers, mapProvi
     const handleMoveEnd = () => {
       const items = []
       if (interactionModes?.includes('selectMarker')) {
-        items.push(...collectVisibleMarkers(markers, mapProvider, mapSize))
+        items.push(...collectVisibleMarkers(markers, mapProvider, mapSizeScale))
       }
       if (interactionModes?.includes('selectFeature') && layers.length > 0) {
-        items.push(...collectVisibleFeatures(mapProvider, layers, mapSize))
+        items.push(...collectVisibleFeatures(mapProvider, layers, mapSizeScale))
       }
       itemsRef.current = items
       spatialListRegistry.notifyItemsChanged('interact')
@@ -141,7 +140,7 @@ function useItemListSync ({ markers, mapSize, interactionModes, layers, mapProvi
       eventBus.off(EVENTS.MAP_MOVE_END, handleMoveEnd)
       eventBus.off(EVENTS.MAP_DATA_CHANGE, handleMoveEnd)
     }
-  }, [markers, mapSize, interactionModes, layers, mapProvider, multiSelect, spatialListRegistry, eventBus, itemsRef])
+  }, [markers, mapSizeScale, interactionModes, layers, mapProvider, multiSelect, spatialListRegistry, eventBus, itemsRef])
 
   // Registers once, for the lifetime of the hook — getItems reads itemsRef/multiSelectRef
   // fresh on every call, so there's never a need to re-register just because a prop changed;
@@ -240,12 +239,12 @@ function useSelectItemHandler ({ eventBus, dispatch, listboxActiveItemRef, multi
  * @param {{ mapState: object, pluginState: object, services: object, mapProvider: object, spatialListRegistry: object }} params
  */
 export function useSpatialList ({ mapState, pluginState, services, mapProvider, spatialListRegistry }) {
-  const { markers, mapSize } = mapState
+  const { markers, mapSizeScale } = mapState
   const { dispatch, interactionModes, layers, multiSelect } = pluginState
   const { eventBus } = services
   const listboxActiveItemRef = useRef(null)
   const itemsRef = useRef([])
-  useItemListSync({ markers, mapSize, interactionModes, layers, mapProvider, multiSelect, spatialListRegistry, eventBus, itemsRef })
+  useItemListSync({ markers, mapSizeScale, interactionModes, layers, mapProvider, multiSelect, spatialListRegistry, eventBus, itemsRef })
   useActiveItemHandler({ itemsRef, eventBus, dispatch, listboxActiveItemRef })
   useSelectItemHandler({ eventBus, dispatch, listboxActiveItemRef, multiSelect })
 }

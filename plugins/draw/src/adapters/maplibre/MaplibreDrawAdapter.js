@@ -7,6 +7,7 @@ import { createLiveStroke } from '../../validation/liveStroke.js'
 import { createLiveDrawChecks } from '../../validation/liveDrawChecks.js'
 import { resolvePointSymbol } from './pointSymbolImages.js'
 import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
+import { definedOnly } from '../../utils/flattenStyleProperties.js'
 import { getCoords, getMidpointCoords } from './modes/editVertexMode/geometryHelpers.js'
 import { logger } from '../../../../../src/services/logger.js'
 
@@ -64,8 +65,10 @@ export const displayedShape = (mode, coordinates) => {
  *   done() / cancel() / undo() / deleteVertex()
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
  *   getVertexItems() / selectVertex(index) / insertVertexAtMidpoint(index)
- *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
+ *   setGeometry(geometry)
+ *   get(id) / add(feature) / setStyle(id, properties) / setProperties(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
+ *   setSnapAvailable(bool)
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
  *   remove()
@@ -80,6 +83,7 @@ export class MaplibreDrawAdapter {
     // Assigned once per feature, on creation only (see styles.js's SORT_KEY_PROP) — drives
     // paint order so a later-drawn feature reliably layers above an earlier one.
     this._sortKeyCounter = 0
+    this._snapAvailable = true
 
     const { draw, remove } = createMapboxDraw({
       mapStyle: options.mapStyle,
@@ -202,9 +206,9 @@ export class MaplibreDrawAdapter {
     const shape = displayedShape(mode, event.coordinates)
     if (!shape) { return }
     if (mode === 'draw_polygon' || mode === 'draw_line') {
-      this._liveDrawChecks.update({ feature: shape.feature, numVertices: shape.numVertices, context: { mode }, onGeometryChange: this._geometryValidator })
+      this._liveDrawChecks.update({ feature: shape.feature, numVertices: shape.numVertices, context: { mode }, onGeometryPreview: this._previewValidator })
     } else {
-      this._liveStroke.update({ ...shape, context: { mode }, onGeometryChange: this._geometryValidator })
+      this._liveStroke.update({ ...shape, context: { mode }, onGeometryPreview: this._previewValidator })
     }
   }
 
@@ -282,16 +286,23 @@ export class MaplibreDrawAdapter {
     this._map.fire(CUSTOM_DRAW_EVENTS.INSERT_VERTEX_AT_MIDPOINT, { index })
   }
 
-  // Record the current geometry validity so the draw mode can block finish gestures
-  // (double-click / click-to-close) while the in-progress shape is invalid.
-  setGeometryValid (valid) {
-    this._map._drawGeometryValid = valid
+  // Replaces the edited shape as a single undoable change. Bridged into
+  // the mode via a custom event, same pattern as insertVertexAtMidpoint.
+  setGeometry (geometry) {
+    this._map.fire(CUSTOM_DRAW_EVENTS.SET_GEOMETRY, { geometry })
   }
 
-  // The api entry points assign the active user validator to the adapter; store it
-  // on the map (like _drawGeometryValid) so modes can veto placements synchronously.
-  set _geometryValidator (fn) { this._map._drawGeometryValidator = fn }
-  get _geometryValidator () { return this._map._drawGeometryValidator }
+  // Record whether the in-progress shape can be finished, so the draw mode can block finish
+  // gestures (double-click / click-to-close) while its latest check has failed.
+  setCanFinish (canFinish) {
+    this._map._drawCanFinish = canFinish
+  }
+
+  // The api entry points assign the session's onGeometryPreview callback to the adapter
+  // (see validation/commitChecks.js's startCheckSession); store it on the map (like
+  // _drawCanFinish) so modes can veto placements synchronously.
+  set _previewValidator (fn) { this._map._drawPreviewValidator = fn }
+  get _previewValidator () { return this._map._drawPreviewValidator }
 
   // Committed-verdict write (events.js, edit mode): routed through the live-stroke
   // controller so its cached state stays in sync with the rendered layers.
@@ -346,13 +357,14 @@ export class MaplibreDrawAdapter {
   }
 
   // Patches an existing feature's style properties and re-renders via add(), so a Point's
-  // icon gets re-resolved the same way a directly-added one does.
+  // icon gets re-resolved the same way a directly-added one does. A key patched to undefined
+  // is removed — add() replaces the feature's properties as a whole.
   setStyle (id, properties) {
     const feature = this._draw.get(id)
     if (!feature) {
       return
     }
-    this.add({ ...feature, properties: { ...feature.properties, ...properties } })
+    this.add({ ...feature, properties: definedOnly({ ...feature.properties, ...properties }) })
   }
 
   delete (id) { this._draw.delete(id) }
@@ -360,9 +372,23 @@ export class MaplibreDrawAdapter {
 
   setSnapEnabled (bool) {
     this._mapProvider.snapEnabled = bool
+    this._applySnapStatus()
+  }
+
+  // Snaps only while the user has snap on and it's available
+  setSnapAvailable (bool) {
+    if (bool === this._snapAvailable) {
+      return
+    }
+    this._snapAvailable = bool
+    this._applySnapStatus()
+  }
+
+  _applySnapStatus () {
+    const isActive = this.isSnapEnabled()
     const snap = getSnapInstance(this._map)
-    if (snap?.setSnapStatus) { snap.setSnapStatus(bool) }
-    if (!bool && snap) {
+    if (snap?.setSnapStatus) { snap.setSnapStatus(isActive) }
+    if (!isActive && snap) {
       clearSnapState(snap)
       if (this._map.getLayer('snap-helper-circle')) {
         this._map.setLayoutProperty('snap-helper-circle', 'visibility', 'none')
@@ -382,11 +408,21 @@ export class MaplibreDrawAdapter {
   }
 
   isSnapEnabled () {
-    return this._mapProvider.snapEnabled === true
+    return this._mapProvider.snapEnabled === true && this._snapAvailable
   }
 
   setFeatureProperty (id, property, value) {
     this._draw.setFeatureProperty(id, property, value)
+  }
+
+  // Merges data properties into an existing feature (a shallow merge; setStyle handles style).
+  // Written in place rather than re-added like setStyle, so it's safe while the feature is
+  // still in an edit mode.
+  setProperties (id, properties) {
+    if (!this._draw.get(id)) { return }
+    for (const [key, value] of Object.entries(properties)) {
+      this._draw.setFeatureProperty(id, key, value)
+    }
   }
 
   // Tags the in-progress rubber-band feature (no stable id yet) with a property and

@@ -1,15 +1,15 @@
 import { createDataset } from './createDataset.js'
 import { DatasetDefinitionCache } from './datasetDefinitionCache.js'
+import { isVisibleWhen } from './isVisibleWhen.js'
 
-const datasetRegistry = {
+// Shared by every registry; each registry's own state is set in createDatasetRegistry
+const datasetRegistryMethods = {
   attach (datasetsRef, orderedDatasetsRef, mapStyle) {
     this._datasets = datasetsRef
     this._orderedDatasets = orderedDatasetsRef
     this.attachMapStyle(mapStyle)
     this._invalidateChangedDatasets()
   },
-
-  _definitionCache: new DatasetDefinitionCache(),
 
   _invalidateCache () { // used in tests to clear the cache between runs
     this._definitionCache = new DatasetDefinitionCache()
@@ -26,7 +26,7 @@ const datasetRegistry = {
   // createDataset defaults to a generic dataset factory function, but can be overridden by calling
   // attachCreateDataset, which allows the layer adapter to provide its own createDataset function,
   attachCreateDataset (newCreateDatasetFunction) { this._createDataset = newCreateDatasetFunction },
-  _createDataset: (datasetDefinition) => createDataset(datasetDefinition),
+  _createDataset: (datasetDefinition, datasetRegistry) => createDataset(datasetDefinition, datasetRegistry),
 
   attachMapStyle (mapStyle) {
     if (mapStyle) {
@@ -36,6 +36,31 @@ const datasetRegistry = {
 
   get mapStyle () {
     return this._mapStyle
+  },
+
+  attachGlobals (globals) {
+    if (globals) {
+      this._globals = globals
+    }
+  },
+
+  get globals () {
+    return this._globals
+  },
+
+  attachMenuStateRef (menuStateRef) {
+    this._menuStateRef = menuStateRef
+  },
+
+  isVisibleWhen (visibleWhen) {
+    return isVisibleWhen(visibleWhen, {
+      mapStyleId: this._mapStyle?.id,
+      menuState: this._menuStateRef?.current?.menuState
+    })
+  },
+
+  get datasets () {
+    return this._datasets
   },
 
   // getDataset retrieves a dataset by id, creating a new Dataset instance that wraps the definition
@@ -48,7 +73,7 @@ const datasetRegistry = {
     if (cachedDefinition) {
       return cachedDefinition
     }
-    const registryDataset = this._createDataset(definition)
+    const registryDataset = this._createDataset(definition, this)
     this._definitionCache.add(registryDataset)
     if (registryDataset.isSublayer) {
       // Ensure the parent dataset is also cached
@@ -83,7 +108,6 @@ const datasetRegistry = {
     }, { patternConfigs: [], symbolConfigs: [] })
   },
 
-  _lastMenuState: {},
   invalidateKeyItemsOnMenuStateChange (menuState) {
     if (menuState === this._lastMenuState) {
       return
@@ -91,7 +115,6 @@ const datasetRegistry = {
     this._lastMenuState = menuState
     this._lastKeyItemsDatasets = null
   },
-  _lastKeyItems: {},
   keyItems () {
     if (this.datasets === this._lastKeyItemsDatasets) {
       return this._lastKeyItems
@@ -139,6 +162,12 @@ const datasetRegistry = {
   }
 }
 
-Object.defineProperty(datasetRegistry, 'datasets', { get: () => datasetRegistry._datasets })
-
-export { datasetRegistry }
+// Each datasets plugin instance (one per map) creates its own registry, so maps on the same page
+// never see each other's datasets
+export const createDatasetRegistry = () => Object.assign(Object.create(datasetRegistryMethods), {
+  _definitionCache: new DatasetDefinitionCache(),
+  _globals: {},
+  _menuStateRef: {},
+  _lastMenuState: {},
+  _lastKeyItems: {}
+})

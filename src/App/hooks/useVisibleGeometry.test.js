@@ -1,22 +1,31 @@
 import { renderHook } from '@testing-library/react'
-import { useVisibleGeometry, getGeometryType, getPointCoordinates } from './useVisibleGeometry'
+import { useVisibleGeometry } from './useVisibleGeometry'
 import { useConfig } from '../store/configContext.js'
 import { useApp } from '../store/appContext.js'
+import { useMap } from '../store/mapContext.js'
+import { getPanelElementId } from '../../utils/getPanelElementId.js'
 
 jest.mock('../store/configContext.js')
 jest.mock('../store/appContext.js')
+jest.mock('../store/mapContext.js')
+// Like the real one: a value is returned as it is, a function is called with the context
+jest.mock('./useEvaluateProp.js', () => ({
+  useEvaluateProp: () => (prop, pluginId) => typeof prop === 'function' ? prop({ pluginId, pluginState: { feature: 'from plugin state' } }) : prop
+}))
 
 const pointFeature = { type: 'Feature', geometry: { type: 'Point', coordinates: [1, 51] }, properties: {} }
-const multiPointFeature = { type: 'Feature', geometry: { type: 'MultiPoint', coordinates: [[1, 51], [2, 52]] }, properties: {} }
 const polygonFeature = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] }, properties: {} }
 
 const APP_ID = 'test'
 const panelRect = { left: 600, top: 0, right: 1000, bottom: 800, width: 400, height: 800 }
 
+// Every coordinate lands at (700, 100), under the panel
+const underPanel = () => ({ x: 700, y: 100 })
+
 // Creates a panel DOM element with id matching what useVisibleGeometry queries.
 const makePanelEl = (panelId, rect = panelRect) => {
   const el = document.createElement('div')
-  el.id = `${APP_ID}-panel-${panelId}`
+  el.id = getPanelElementId(APP_ID, panelId)
   el.getBoundingClientRect = jest.fn(() => rect)
   return el
 }
@@ -24,9 +33,8 @@ const makePanelEl = (panelId, rect = panelRect) => {
 const setup = (overrides = {}) => {
   const capturedHandlers = {}
   const mapProvider = {
-    isGeometryObscured: jest.fn(() => true),
     fitToBounds: jest.fn(),
-    setView: jest.fn(),
+    mapToScreen: jest.fn(underPanel),
     ...overrides.mapProvider
   }
   const eventBus = {
@@ -35,14 +43,20 @@ const setup = (overrides = {}) => {
     ...overrides.eventBus
   }
 
-  // appContainerRef holds panel elements that the hook queries by id
+  // appContainerRef holds panel elements that the hook queries by id, in a slot over the map
   const appContainer = document.createElement('div')
   const myPanelEl = makePanelEl('myPanel')
   appContainer.appendChild(myPanelEl)
 
+  const viewport = document.createElement('div')
+  viewport.getBoundingClientRect = () => ({ left: 0, top: 0 })
+
   const layoutRefs = {
     mainRef: { current: document.createElement('div') },
     appContainerRef: { current: appContainer },
+    viewportRef: { current: viewport },
+    // Tests that pass their own container keep it in the slot
+    rightTopRef: overrides.layoutRefs?.appContainerRef ?? { current: appContainer },
     ...overrides.layoutRefs
   }
   const panelConfig = {
@@ -57,6 +71,7 @@ const setup = (overrides = {}) => {
 
   useConfig.mockReturnValue({ id: APP_ID, mapProvider, eventBus, ...overrides.config })
   useApp.mockReturnValue({ layoutRefs, panelConfig, panelRegistry, breakpoint: 'desktop', ...overrides.app })
+  useMap.mockReturnValue({ mapSize: 'small', ...overrides.map })
 
   return { mapProvider, eventBus, capturedHandlers, layoutRefs, panelConfig, myPanelEl, appContainer }
 }
@@ -99,14 +114,14 @@ describe('useVisibleGeometry', () => {
     const { mapProvider, capturedHandlers } = setup()
     renderHook(() => useVisibleGeometry())
     capturedHandlers['app:panelopened']({ panelId: 'emptyPanel' })
-    expect(mapProvider.isGeometryObscured).not.toHaveBeenCalled()
+    expect(mapProvider.fitToBounds).not.toHaveBeenCalled()
   })
 
   test('does nothing when panel does not exist in config', () => {
     const { mapProvider, capturedHandlers } = setup()
     renderHook(() => useVisibleGeometry())
     capturedHandlers['app:panelopened']({ panelId: 'unknownPanel' })
-    expect(mapProvider.isGeometryObscured).not.toHaveBeenCalled()
+    expect(mapProvider.fitToBounds).not.toHaveBeenCalled()
   })
 
   test('does nothing when panel element is not in the DOM', () => {
@@ -117,86 +132,37 @@ describe('useVisibleGeometry', () => {
     renderHook(() => useVisibleGeometry())
     capturedHandlers['app:panelopened']({ panelId: 'noElPanel' })
     jest.runAllTimers()
-    expect(mapProvider.isGeometryObscured).not.toHaveBeenCalled()
-  })
-
-  test('does nothing when mapProvider has no isGeometryObscured method', () => {
-    const { capturedHandlers, mapProvider } = setup({ mapProvider: { isGeometryObscured: null, fitToBounds: jest.fn(), setView: jest.fn() } })
-    renderHook(() => useVisibleGeometry())
-    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
     expect(mapProvider.fitToBounds).not.toHaveBeenCalled()
   })
 
-  test('does nothing when panel element has zero dimensions (panel not yet visible)', () => {
-    const zeroRect = { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 }
-    const appContainer = document.createElement('div')
-    appContainer.appendChild(makePanelEl('myPanel', zeroRect))
-    const { mapProvider, capturedHandlers } = setup({
-      layoutRefs: {
-        mainRef: { current: document.createElement('div') },
-        appContainerRef: { current: appContainer }
-      }
-    })
-    renderHook(() => useVisibleGeometry())
-    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
-
-    // Run only the first pending animation frame — panel has zero size so it reschedules
-    jest.runOnlyPendingTimers()
-
-    expect(mapProvider.isGeometryObscured).not.toHaveBeenCalled()
-  })
-
-  test('does nothing when geometry is not obscured', () => {
-    const { mapProvider, capturedHandlers } = setup({ mapProvider: { isGeometryObscured: jest.fn(() => false), fitToBounds: jest.fn(), setView: jest.fn() } })
-    renderHook(() => useVisibleGeometry())
-    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
-    jest.runAllTimers()
-    expect(mapProvider.fitToBounds).not.toHaveBeenCalled()
-    expect(mapProvider.setView).not.toHaveBeenCalled()
-  })
-
-  test('calls fitToBounds with visibleGeometry for non-point geometry when obscured', () => {
+  test('calls fitToBounds with preferPan once the panel has a size', () => {
     const { mapProvider, capturedHandlers } = setup()
     renderHook(() => useVisibleGeometry())
     capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
     jest.runAllTimers()
 
-    expect(mapProvider.isGeometryObscured).toHaveBeenCalledWith(polygonFeature, panelRect)
-    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(polygonFeature)
-    expect(mapProvider.setView).not.toHaveBeenCalled()
+    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(polygonFeature, { preferPan: true })
   })
 
-  test('calls setView with center for Point geometry when obscured', () => {
+  test('waits for the panel to have a size before calling fitToBounds', () => {
+    const zeroRect = { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 }
+    const panelEl = makePanelEl('myPanel', zeroRect)
     const appContainer = document.createElement('div')
-    appContainer.appendChild(makePanelEl('pointPanel'))
+    appContainer.appendChild(panelEl)
     const { mapProvider, capturedHandlers } = setup({
-      panelConfig: { pointPanel: { visibleGeometry: pointFeature, desktop: { slot: 'left-top' } } },
       layoutRefs: { mainRef: { current: document.createElement('div') }, appContainerRef: { current: appContainer } }
     })
     renderHook(() => useVisibleGeometry())
-    capturedHandlers['app:panelopened']({ panelId: 'pointPanel' })
-    jest.runAllTimers()
-
-    expect(mapProvider.setView).toHaveBeenCalledWith({ center: [1, 51] })
+    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
+    jest.runOnlyPendingTimers()
     expect(mapProvider.fitToBounds).not.toHaveBeenCalled()
+
+    panelEl.getBoundingClientRect.mockReturnValue(panelRect)
+    jest.runOnlyPendingTimers()
+    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(polygonFeature, { preferPan: true })
   })
 
-  test('calls setView with first coordinate for MultiPoint geometry when obscured', () => {
-    const appContainer = document.createElement('div')
-    appContainer.appendChild(makePanelEl('mpPanel'))
-    const { mapProvider, capturedHandlers } = setup({
-      panelConfig: { mpPanel: { visibleGeometry: multiPointFeature, desktop: { slot: 'left-top' } } },
-      layoutRefs: { mainRef: { current: document.createElement('div') }, appContainerRef: { current: appContainer } }
-    })
-    renderHook(() => useVisibleGeometry())
-    capturedHandlers['app:panelopened']({ panelId: 'mpPanel' })
-    jest.runAllTimers()
-
-    expect(mapProvider.setView).toHaveBeenCalledWith({ center: [1, 51] })
-    expect(mapProvider.fitToBounds).not.toHaveBeenCalled()
-  })
-
-  test('calls fitToBounds for a raw non-Feature geometry (e.g. Polygon) when obscured', () => {
+  test('passes a bare geometry, not just a Feature, to fitToBounds', () => {
     const rawPolygon = { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] }
     const appContainer = document.createElement('div')
     appContainer.appendChild(makePanelEl('geoPanel'))
@@ -207,38 +173,150 @@ describe('useVisibleGeometry', () => {
     renderHook(() => useVisibleGeometry())
     capturedHandlers['app:panelopened']({ panelId: 'geoPanel' })
     jest.runAllTimers()
-    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(rawPolygon)
-    expect(mapProvider.setView).not.toHaveBeenCalled()
+    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(rawPolygon, { preferPan: true })
   })
 
-  test('calls setView for a raw Point geometry (not Feature-wrapped) when obscured', () => {
-    const rawPoint = { type: 'Point', coordinates: [1, 51] }
-    const appContainer = document.createElement('div')
-    appContainer.appendChild(makePanelEl('rawPointPanel'))
-    const { mapProvider, capturedHandlers } = setup({
-      panelConfig: { rawPointPanel: { visibleGeometry: rawPoint, desktop: { slot: 'left-top' } } },
-      layoutRefs: { mainRef: { current: document.createElement('div') }, appContainerRef: { current: appContainer } }
-    })
+  test('leaves the map alone when the geometry isn\'t under the panel', () => {
+    const { mapProvider, capturedHandlers } = setup({ mapProvider: { mapToScreen: jest.fn(() => ({ x: 100, y: 100 })) } })
     renderHook(() => useVisibleGeometry())
-    capturedHandlers['app:panelopened']({ panelId: 'rawPointPanel' })
+    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
     jest.runAllTimers()
-    expect(mapProvider.setView).toHaveBeenCalledWith({ center: [1, 51] })
     expect(mapProvider.fitToBounds).not.toHaveBeenCalled()
   })
 
-  test('does not call setView when Point feature has null coordinates', () => {
-    const nullCoordsFeature = { type: 'Feature', geometry: { type: 'Point', coordinates: null }, properties: {} }
-    const appContainer = document.createElement('div')
-    appContainer.appendChild(makePanelEl('nullPanel'))
+  test('leaves the map alone when the geometry is off screen', () => {
+    const { mapProvider, capturedHandlers } = setup({ mapProvider: { mapToScreen: jest.fn(() => ({ x: -500, y: 100 })) } })
+    renderHook(() => useVisibleGeometry())
+    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
+    jest.runAllTimers()
+    expect(mapProvider.fitToBounds).not.toHaveBeenCalled()
+  })
+
+  test('moves the map when only part of the geometry is under the panel', () => {
+    // West corners at x 500, east corners at x 650, across the panel's left edge at 600
+    const mapToScreen = jest.fn(([x]) => ({ x: x === 0 ? 500 : 650, y: 100 }))
+    const { mapProvider, capturedHandlers } = setup({ mapProvider: { mapToScreen } })
+    renderHook(() => useVisibleGeometry())
+    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
+    jest.runAllTimers()
+    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(polygonFeature, { preferPan: true })
+  })
+
+  test('measures the geometry in CSS pixels at larger map sizes', () => {
+    // Map pixel 350 is CSS pixel 700 at the large size, under the panel
     const { mapProvider, capturedHandlers } = setup({
-      panelConfig: { nullPanel: { visibleGeometry: nullCoordsFeature, desktop: { slot: 'left-top' } } },
-      layoutRefs: { mainRef: { current: document.createElement('div') }, appContainerRef: { current: appContainer } }
+      mapProvider: { mapToScreen: jest.fn(() => ({ x: 350, y: 50 })) },
+      map: { mapSize: 'large' }
     })
     renderHook(() => useVisibleGeometry())
-    capturedHandlers['app:panelopened']({ panelId: 'nullPanel' })
+    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
     jest.runAllTimers()
-    expect(mapProvider.setView).not.toHaveBeenCalled()
+    expect(mapProvider.fitToBounds).toHaveBeenCalled()
+  })
+
+  test('measures the panel relative to the viewport', () => {
+    // The geometry at x 700 is under a panel at 600–1000 on the page, but the viewport starts
+    // at 300, so the panel covers 300–700 of the map and only touches the geometry's edge
+    const { mapProvider, capturedHandlers, layoutRefs } = setup()
+    layoutRefs.viewportRef.current.getBoundingClientRect = () => ({ left: 300, top: 0 })
+    renderHook(() => useVisibleGeometry())
+    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
+    jest.runAllTimers()
     expect(mapProvider.fitToBounds).not.toHaveBeenCalled()
+  })
+
+  test('leaves the map alone for a panel that isn\'t in a slot over the map, like a modal', () => {
+    const { mapProvider, capturedHandlers } = setup({ layoutRefs: { rightTopRef: { current: document.createElement('div') } } })
+    renderHook(() => useVisibleGeometry())
+    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
+    jest.runAllTimers()
+    expect(mapProvider.fitToBounds).not.toHaveBeenCalled()
+  })
+
+  test('moves the map for a panel in the drawer', () => {
+    const drawer = document.createElement('div')
+    drawer.appendChild(makePanelEl('myPanel'))
+    const { mapProvider, capturedHandlers } = setup({
+      layoutRefs: { appContainerRef: { current: drawer }, rightTopRef: { current: null }, drawerRef: { current: drawer } }
+    })
+    renderHook(() => useVisibleGeometry())
+    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
+    jest.runAllTimers()
+    expect(mapProvider.fitToBounds).toHaveBeenCalled()
+  })
+
+  test('leaves the map alone when there is no viewport to measure against', () => {
+    const { mapProvider, capturedHandlers } = setup({ layoutRefs: { viewportRef: { current: null } } })
+    renderHook(() => useVisibleGeometry())
+    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
+    jest.runAllTimers()
+    expect(mapProvider.fitToBounds).not.toHaveBeenCalled()
+  })
+
+  test('finds a panel whose id is in camelCase', () => {
+    // The panel's element id is in kebab case: test-panel-draw-rules-issues
+    const appContainer = document.createElement('div')
+    appContainer.appendChild(makePanelEl('drawRulesIssues'))
+    const { mapProvider, capturedHandlers } = setup({
+      panelConfig: { drawRulesIssues: { visibleGeometry: polygonFeature } },
+      layoutRefs: { appContainerRef: { current: appContainer } }
+    })
+    renderHook(() => useVisibleGeometry())
+    capturedHandlers['app:panelopened']({ panelId: 'drawRulesIssues' })
+    jest.runAllTimers()
+    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(polygonFeature, { preferPan: true })
+  })
+
+  test('calls a visibleGeometry function as the panel opens, with its plugin\'s context', () => {
+    const visibleGeometry = jest.fn(({ pluginState }) => pluginState.feature === 'from plugin state' ? pointFeature : null)
+    const { mapProvider, capturedHandlers } = setup({
+      panelConfig: { myPanel: { visibleGeometry, pluginId: 'drawRules' } }
+    })
+    renderHook(() => useVisibleGeometry())
+    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
+    jest.runAllTimers()
+    expect(visibleGeometry).toHaveBeenCalledWith(expect.objectContaining({ pluginId: 'drawRules' }))
+    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(pointFeature, { preferPan: true })
+  })
+
+  test('leaves the map alone when a visibleGeometry function returns nothing', () => {
+    const { mapProvider, capturedHandlers } = setup({
+      panelConfig: { myPanel: { visibleGeometry: () => null } }
+    })
+    renderHook(() => useVisibleGeometry())
+    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
+    jest.runAllTimers()
+    expect(mapProvider.fitToBounds).not.toHaveBeenCalled()
+  })
+
+  test('passes the panel\'s own preferPan and paddingPercent to fitToBounds', () => {
+    const { mapProvider, capturedHandlers } = setup({
+      panelConfig: { myPanel: { visibleGeometry: polygonFeature, preferPan: false, paddingPercent: 10 } }
+    })
+    renderHook(() => useVisibleGeometry())
+    capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
+    jest.runAllTimers()
+    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(polygonFeature, { preferPan: false, paddingPercent: 10 })
+  })
+
+  test('uses the options sent with the opened event, for a panel opening as it\'s added', () => {
+    const { mapProvider, capturedHandlers } = setup({
+      panelConfig: { myPanel: { visibleGeometry: polygonFeature, preferPan: false, paddingPercent: 10 } }
+    })
+    renderHook(() => useVisibleGeometry())
+    capturedHandlers['app:panelopened']({ panelId: 'myPanel', visibleGeometry: pointFeature, preferPan: true, paddingPercent: 20 })
+    jest.runAllTimers()
+    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(pointFeature, { preferPan: true, paddingPercent: 20 })
+  })
+
+  test('uses the panel\'s own value for each option the opened event leaves out', () => {
+    const { mapProvider, capturedHandlers } = setup({
+      panelConfig: { myPanel: { visibleGeometry: polygonFeature, preferPan: false, paddingPercent: 10 } }
+    })
+    renderHook(() => useVisibleGeometry())
+    capturedHandlers['app:panelopened']({ panelId: 'myPanel', visibleGeometry: pointFeature })
+    jest.runAllTimers()
+    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(pointFeature, { preferPan: false, paddingPercent: 10 })
   })
 
   test('uses latest panelConfig via ref when it changes between renders', () => {
@@ -257,22 +335,7 @@ describe('useVisibleGeometry', () => {
 
     capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
     jest.runAllTimers()
-    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(updatedGeometry)
-  })
-
-  test('uses slot from event payload when registry config lacks slot info', () => {
-    const freshGeometry = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] }, properties: {} }
-    const appContainer = document.createElement('div')
-    appContainer.appendChild(makePanelEl('freshPanel'))
-    const { mapProvider, capturedHandlers } = setup({
-      panelRegistry: { getPanelConfig: jest.fn(() => ({ freshPanel: { visibleGeometry: freshGeometry } })) },
-      layoutRefs: { mainRef: { current: document.createElement('div') }, appContainerRef: { current: appContainer } }
-    })
-    renderHook(() => useVisibleGeometry())
-    // Event includes slot (as middleware provides for ADD_PANEL); registry config has no slot info
-    capturedHandlers['app:panelopened']({ panelId: 'freshPanel', slot: 'left-top' })
-    jest.runAllTimers()
-    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(freshGeometry)
+    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(updatedGeometry, { preferPan: true })
   })
 
   test('falls back to panelRegistry for panels not yet in stale panelConfig', () => {
@@ -286,7 +349,7 @@ describe('useVisibleGeometry', () => {
     renderHook(() => useVisibleGeometry())
     capturedHandlers['app:panelopened']({ panelId: 'freshPanel' })
     jest.runAllTimers()
-    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(freshGeometry)
+    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(freshGeometry, { preferPan: true })
   })
 
   test('falls back to config when panel not in panelConfig and registry returns null', () => {
@@ -302,7 +365,7 @@ describe('useVisibleGeometry', () => {
     capturedHandlers['app:panelopened']({ panelId: 'missingPanel', visibleGeometry: polygonFeature, slot: 'left-top' })
     jest.runAllTimers()
     // Should still call fitToBounds using visibleGeometry from event payload
-    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(polygonFeature)
+    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(polygonFeature, { preferPan: true })
   })
 
   test('uses visibleGeometry from event payload directly, bypassing registry (ADD_PANEL first-click case)', () => {
@@ -316,41 +379,6 @@ describe('useVisibleGeometry', () => {
     renderHook(() => useVisibleGeometry())
     capturedHandlers['app:panelopened']({ panelId: 'newPanel', slot: 'left-top', visibleGeometry: polygonFeature })
     jest.runAllTimers()
-    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(polygonFeature)
-  })
-})
-
-describe('getGeometryType', () => {
-  test('returns null for falsy input', () => {
-    expect(getGeometryType(null)).toBeNull()
-    expect(getGeometryType(undefined)).toBeNull()
-  })
-
-  test('returns geometry type for a Feature', () => {
-    expect(getGeometryType({ type: 'Feature', geometry: { type: 'Polygon' } })).toBe('Polygon')
-  })
-
-  test('returns type directly for a raw geometry', () => {
-    expect(getGeometryType({ type: 'Point' })).toBe('Point')
-    expect(getGeometryType({ type: 'FeatureCollection' })).toBe('FeatureCollection')
-  })
-})
-
-describe('getPointCoordinates', () => {
-  test('returns null for unrecognised geometry type', () => {
-    expect(getPointCoordinates({ type: 'Polygon', coordinates: [] })).toBeNull()
-    expect(getPointCoordinates({ type: 'LineString', coordinates: [] })).toBeNull()
-  })
-
-  test('returns coordinates for a Point', () => {
-    expect(getPointCoordinates(pointFeature.geometry)).toEqual(pointFeature.geometry.coordinates)
-  })
-
-  test('returns first coordinate for a MultiPoint', () => {
-    expect(getPointCoordinates(multiPointFeature.geometry)).toEqual(multiPointFeature.geometry.coordinates[0])
-  })
-
-  test('recurses into Feature geometry', () => {
-    expect(getPointCoordinates(pointFeature)).toEqual(pointFeature.geometry.coordinates)
+    expect(mapProvider.fitToBounds).toHaveBeenCalledWith(polygonFeature, { preferPan: true })
   })
 })

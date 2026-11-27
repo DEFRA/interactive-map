@@ -175,6 +175,11 @@ export class OLDrawManager {
     this._modeInstance?.insertVertexAtMidpoint?.(index)
   }
 
+  // Replaces the edited shape as one undoable commit. Only the edit modes implement it.
+  setGeometry (geometry) {
+    this._modeInstance?.setGeometry?.(geometry)
+  }
+
   // Show/hide the dashed invalid stroke on the active draw sketch or edit feature.
   setInvalid (invalid) {
     this._modeInstance?.setInvalid?.(invalid)

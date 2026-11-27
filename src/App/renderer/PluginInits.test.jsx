@@ -77,7 +77,7 @@ describe('PluginInits', () => {
   })
 
   it('renders wrapped InitComponent for plugin with InitComponent and valid mode', () => {
-    const InitComp = () => <div data-testid='init' />
+    const InitComp = jest.fn(() => <div data-testid='init' />)
     const plugin = {
       id: 'plugin1',
       _originalPlugin: {},
@@ -88,10 +88,25 @@ describe('PluginInits', () => {
 
     const { getByTestId } = render(<PluginInits />)
     expect(getByTestId('init')).toBeTruthy()
-    expect(withPluginContexts).toHaveBeenCalledWith(
-      InitComp,
-      expect.objectContaining({ pluginId: 'plugin1' })
-    )
+    expect(withPluginContexts).toHaveBeenCalledWith(InitComp)
+    // The plugin's id and config, without its api, are passed when rendering
+    expect(InitComp.mock.calls[0][0]).toEqual({ pluginId: 'plugin1', pluginConfig: { foo: 'bar' } })
+  })
+
+  it('passes the same pluginConfig object on every render', () => {
+    const InitComp = jest.fn(() => <div data-testid='init' />)
+    pluginRegistryMock.registeredPlugins.push({
+      id: 'plugin1',
+      _originalPlugin: {},
+      config: { foo: 'bar', api: {} },
+      InitComponent: InitComp
+    })
+
+    const { rerender } = render(<PluginInits />)
+    rerender(<PluginInits />)
+
+    const [firstProps, secondProps] = InitComp.mock.calls.map(([props]) => props)
+    expect(secondProps.pluginConfig).toBe(firstProps.pluginConfig)
   })
 
   it('skips plugin without InitComponent', () => {

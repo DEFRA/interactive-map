@@ -1,57 +1,30 @@
 import React from 'react'
 import { render } from '@testing-library/react'
 import { SlotRenderer } from './SlotRenderer.jsx'
-import { getSlotItems } from './slotAggregator'
-import { useApp } from '../store/appContext'
-import { useConfig } from '../store/configContext'
-import { useEvaluateProp } from '../hooks/useEvaluateProp'
-import { useApplicationModeFilter } from '../hooks/useApplicationModeFilter.js'
+import { useSlotItems } from './SlotItemsProvider.jsx'
 
-jest.mock('./slotAggregator', () => ({
-  getSlotItems: jest.fn()
+jest.mock('./SlotItemsProvider.jsx', () => ({
+  useSlotItems: jest.fn()
 }))
+// Actions reads the open panels from app state
 jest.mock('../store/appContext', () => ({
-  useApp: jest.fn()
-}))
-jest.mock('../store/configContext', () => ({
-  useConfig: jest.fn()
-}))
-jest.mock('../hooks/useEvaluateProp', () => ({
-  useEvaluateProp: jest.fn()
-}))
-jest.mock('../hooks/useApplicationModeFilter.js', () => ({
-  useApplicationModeFilter: jest.fn()
+  useApp: () => ({ breakpoint: 'desktop', openPanels: {}, panelConfig: {} })
 }))
 
 describe('SlotRenderer', () => {
-  const mockAppConfig = { id: 'testId' }
-  const mockAppState = {
-    breakpoint: 'desktop',
-    mode: 'view',
-    openPanels: {},
-    dispatch: jest.fn(),
-    disabledButtons: new Set()
-  }
-  const mockEvaluateProp = jest.fn(x => x)
-  const mockIsHiddenByApplicationMode = jest.fn(() => false)
-
   beforeEach(() => {
     jest.clearAllMocks()
-    useConfig.mockReturnValue(mockAppConfig)
-    useApp.mockReturnValue(mockAppState)
-    useEvaluateProp.mockReturnValue(mockEvaluateProp)
-    useApplicationModeFilter.mockReturnValue(mockIsHiddenByApplicationMode)
   })
 
   it('renders nothing if no slot items', () => {
-    getSlotItems.mockReturnValue([])
+    useSlotItems.mockReturnValue([])
     const { container } = render(<SlotRenderer slot='header' />)
     expect(container.firstChild).toBeNull()
   })
 
   it('wraps slot items in <Actions> for actions slot', () => {
     const items = [{ element: <div key='1'>Item1</div> }]
-    getSlotItems.mockReturnValue(items)
+    useSlotItems.mockReturnValue(items)
 
     const { getByText } = render(<SlotRenderer slot='actions' />)
     expect(getByText('Item1')).toBeInTheDocument()
@@ -62,22 +35,16 @@ describe('SlotRenderer', () => {
       { element: <div key='1'>Item1</div> },
       { element: <span key='2'>Item2</span> }
     ]
-    getSlotItems.mockReturnValue(items)
+    useSlotItems.mockReturnValue(items)
 
     const { getByText } = render(<SlotRenderer slot='header' />)
     expect(getByText('Item1')).toBeInTheDocument()
     expect(getByText('Item2')).toBeInTheDocument()
   })
 
-  it('calls getSlotItems with correct arguments including evaluateProp and the application mode filter', () => {
-    getSlotItems.mockReturnValue([])
+  it('looks up the items for its own slot', () => {
+    useSlotItems.mockReturnValue([])
     render(<SlotRenderer slot='sidebar' />)
-    expect(getSlotItems).toHaveBeenCalledWith({
-      slot: 'sidebar',
-      appState: mockAppState,
-      appConfig: mockAppConfig,
-      evaluateProp: mockEvaluateProp,
-      isHiddenByApplicationMode: mockIsHiddenByApplicationMode
-    })
+    expect(useSlotItems).toHaveBeenCalledWith('sidebar')
   })
 })

@@ -1,7 +1,6 @@
 import { Dataset } from './dataset.js'
 import { MapboxStyleDataset } from './mapboxStyleDataset.js'
 import { datasetRegistry } from './datasetRegistry.js'
-import { attachGlobalState } from './globalDataset.js'
 import { hashString } from '../../../../src/utils/hashString.js'
 // Use the mock datasetRegistry with the demo datasets attached before each test
 jest.mock('./datasetRegistry.js')
@@ -14,44 +13,44 @@ const globalState = {
 
 describe('MapboxStyleDataset', () => {
   beforeEach(() => {
-    datasetRegistry.attachCreateDataset(def => new MapboxStyleDataset(def))
+    datasetRegistry.attachCreateDataset(def => new MapboxStyleDataset(def, datasetRegistry))
   })
 
   describe('_hiddenFeaturesIdExpression', () => {
     it('uses get(idProperty) when idProperty is set', () => {
-      const dataset = new MapboxStyleDataset({ idProperty: 'ref' })
+      const dataset = new MapboxStyleDataset({ idProperty: 'ref' }, datasetRegistry)
       expect(dataset._hiddenFeaturesIdExpression).toEqual(['to-string', ['get', 'ref']])
     })
 
     it('uses the feature id when idProperty is not set', () => {
-      const dataset = new MapboxStyleDataset({})
+      const dataset = new MapboxStyleDataset({}, datasetRegistry)
       expect(dataset._hiddenFeaturesIdExpression).toEqual(['to-string', ['id']])
     })
 
     it('uses the dynamicGeoJSON hiddenFeaturesIdExpression when the dataset is dynamic', () => {
-      const dataset = new MapboxStyleDataset({ dynamicGeoJSON: { idProperty: 'ref' } })
+      const dataset = new MapboxStyleDataset({ dynamicGeoJSON: { idProperty: 'ref' } }, datasetRegistry)
       expect(dataset._hiddenFeaturesIdExpression).toEqual(['to-string', ['get', 'ref']])
     })
   })
 
   describe('filter', () => {
     it('returns null when there is no filter and no hidden features', () => {
-      const dataset = new MapboxStyleDataset({})
+      const dataset = new MapboxStyleDataset({}, datasetRegistry)
       expect(dataset.filter).toBeNull()
     })
 
     it('returns its own filter expression directly when it is the only filter', () => {
-      const dataset = new MapboxStyleDataset({ filter: ['==', ['get', 'type'], 'foo'] })
+      const dataset = new MapboxStyleDataset({ filter: ['==', ['get', 'type'], 'foo'] }, datasetRegistry)
       expect(dataset.filter).toEqual(['==', ['get', 'type'], 'foo'])
     })
 
     it('returns the hidden features filter directly when it is the only filter', () => {
-      const dataset = new MapboxStyleDataset({ hiddenFeatures: [1, 2] })
+      const dataset = new MapboxStyleDataset({ hiddenFeatures: [1, 2] }, datasetRegistry)
       expect(dataset.filter).toEqual(['!', ['in', ['to-string', ['id']], ['literal', ['1', '2']]]])
     })
 
     it('combines its own filter and the hidden features filter with "all"', () => {
-      const dataset = new MapboxStyleDataset({ filter: ['==', ['get', 'type'], 'foo'], hiddenFeatures: [5] })
+      const dataset = new MapboxStyleDataset({ filter: ['==', ['get', 'type'], 'foo'], hiddenFeatures: [5] }, datasetRegistry)
       expect(dataset.filter).toEqual([
         'all',
         ['==', ['get', 'type'], 'foo'],
@@ -63,28 +62,28 @@ describe('MapboxStyleDataset', () => {
       const parentDef = { id: 'parent', filter: ['==', ['get', 'cat'], 'a'] }
       const childDef = { id: 'child', parentId: 'parent', filter: ['==', ['get', 'sub'], 'b'] }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-      expect(new MapboxStyleDataset(childDef).filter).toEqual(['all', parentDef.filter, childDef.filter])
+      expect(new MapboxStyleDataset(childDef, datasetRegistry).filter).toEqual(['all', parentDef.filter, childDef.filter])
     })
   })
 
   describe('sourceId', () => {
     it('returns a tiles-based id for an array of tiles URLs', () => {
-      const dataset = new MapboxStyleDataset({ id: 'ds', tiles: ['https://example.com/{z}/{x}/{y}'] })
+      const dataset = new MapboxStyleDataset({ id: 'ds', tiles: ['https://example.com/{z}/{x}/{y}'] }, datasetRegistry)
       expect(dataset.sourceId).toBe(`tiles-${hashString('https://example.com/{z}/{x}/{y}')}`)
     })
 
     it('returns geojson-{hash} for a static string geojson url', () => {
-      const dataset = new MapboxStyleDataset({ id: 'ds', geojson: 'https://example.com/data.geojson' })
+      const dataset = new MapboxStyleDataset({ id: 'ds', geojson: 'https://example.com/data.geojson' }, datasetRegistry)
       expect(dataset.sourceId).toBe(`geojson-${hashString('https://example.com/data.geojson')}`)
     })
 
     it('returns geojson-{id} for an inline geojson object', () => {
-      const dataset = new MapboxStyleDataset({ id: 'ds', geojson: { type: 'FeatureCollection', features: [] } })
+      const dataset = new MapboxStyleDataset({ id: 'ds', geojson: { type: 'FeatureCollection', features: [] } }, datasetRegistry)
       expect(dataset.sourceId).toBe('geojson-ds')
     })
 
     it('returns source-{id} when there are no tiles and no geojson', () => {
-      const dataset = new MapboxStyleDataset({ id: 'ds' })
+      const dataset = new MapboxStyleDataset({ id: 'ds' }, datasetRegistry)
       expect(dataset.sourceId).toBe('source-ds')
     })
 
@@ -92,20 +91,20 @@ describe('MapboxStyleDataset', () => {
       const parentDef = { id: 'parent', geojson: { type: 'FeatureCollection', features: [] } }
       const childDef = { id: 'child', parentId: 'parent' }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-      expect(new MapboxStyleDataset(childDef).sourceId).toBe('geojson-parent')
+      expect(new MapboxStyleDataset(childDef, datasetRegistry).sourceId).toBe('geojson-parent')
     })
   })
 
   describe('leafLayerIds / layerIds', () => {
     it('leafLayerIds defaults to an empty array on the base class', () => {
-      expect(new MapboxStyleDataset({ id: 'ds' }).leafLayerIds).toEqual([])
+      expect(new MapboxStyleDataset({ id: 'ds' }, datasetRegistry).leafLayerIds).toEqual([])
     })
 
     it('layerIds returns leafLayerIds for a dataset with no sublayers', () => {
       class FakeAdapterDataset extends MapboxStyleDataset {
         get leafLayerIds () { return [this.id] }
       }
-      const dataset = new FakeAdapterDataset({ id: 'ds' })
+      const dataset = new FakeAdapterDataset({ id: 'ds' }, datasetRegistry)
       expect(dataset.layerIds).toEqual(['ds'])
     })
 
@@ -117,14 +116,14 @@ describe('MapboxStyleDataset', () => {
       // attach() call alone does not reset — restore this file's own default afterward so this
       // doesn't leak into other tests in this file.
       try {
-        datasetRegistry.attachCreateDataset(def => new FakeAdapterDataset(def))
+        datasetRegistry.attachCreateDataset(def => new FakeAdapterDataset(def, datasetRegistry))
         const parentDef = { id: 'parent', sublayerIds: ['child-a', 'child-b'] }
         const childA = { id: 'child-a', parentId: 'parent' }
         const childB = { id: 'child-b', parentId: 'parent' }
         datasetRegistry.attach({ parent: parentDef, 'child-a': childA, 'child-b': childB })
         expect(datasetRegistry.getDataset('parent').layerIds).toEqual(['child-a', 'child-b'])
       } finally {
-        datasetRegistry.attachCreateDataset(def => new MapboxStyleDataset(def))
+        datasetRegistry.attachCreateDataset(def => new MapboxStyleDataset(def, datasetRegistry))
       }
     })
   })
@@ -142,12 +141,12 @@ describe('MapboxStyleDataset', () => {
     beforeEach(() => {
       // visibility/opacity both fold in global state (see globalDataset.js) — set explicitly
       // here rather than relying on whatever an earlier test in this file last left it as.
-      attachGlobalState(globalState)
-      datasetRegistry.attachCreateDataset(def => new FakeAdapterDataset(def))
+      datasetRegistry.attachGlobals(globalState)
+      datasetRegistry.attachCreateDataset(def => new FakeAdapterDataset(def, datasetRegistry))
     })
 
     afterEach(() => {
-      datasetRegistry.attachCreateDataset(def => new MapboxStyleDataset(def))
+      datasetRegistry.attachCreateDataset(def => new MapboxStyleDataset(def, datasetRegistry))
     })
 
     describe('getLayersWithVisibility', () => {
@@ -168,7 +167,7 @@ describe('MapboxStyleDataset', () => {
 
     describe('getLayersWithOpacity', () => {
       it('returns layerIds and opacity for a top-level dataset with no sublayers', () => {
-        const dataset = new FakeAdapterDataset({ id: 'ds', style: { opacity: 0.4 } })
+        const dataset = new FakeAdapterDataset({ id: 'ds', style: { opacity: 0.4 } }, datasetRegistry)
         expect(dataset.getLayersWithOpacity()).toEqual([{ layerIds: ['ds'], opacity: 0.4 }])
       })
 
@@ -190,7 +189,7 @@ describe('MapboxStyleDataset', () => {
         class UnevenAdapterDataset extends MapboxStyleDataset {
           get leafLayerIds () { return this.style?.renderable ? [this.id] : [] }
         }
-        datasetRegistry.attachCreateDataset(def => new UnevenAdapterDataset(def))
+        datasetRegistry.attachCreateDataset(def => new UnevenAdapterDataset(def, datasetRegistry))
         const parentDef = { id: 'parent', sublayerIds: ['child-renderable', 'child-unsupported'] }
         const childRenderable = { id: 'child-renderable', parentId: 'parent', style: { renderable: true, opacity: 0.5 } }
         const childUnsupported = { id: 'child-unsupported', parentId: 'parent', style: { opacity: 0.9 } }
@@ -203,12 +202,12 @@ describe('MapboxStyleDataset', () => {
 
     describe('getLayersWithFilters', () => {
       it('returns an empty array when there are no hidden features and no sublayers', () => {
-        const dataset = new FakeAdapterDataset({ id: 'ds' })
+        const dataset = new FakeAdapterDataset({ id: 'ds' }, datasetRegistry)
         expect(dataset.getLayersWithFilters()).toEqual([])
       })
 
       it('returns an entry with layerIds and filter when the dataset has hidden features', () => {
-        const dataset = new FakeAdapterDataset({ id: 'ds', hiddenFeatures: [1, 2] })
+        const dataset = new FakeAdapterDataset({ id: 'ds', hiddenFeatures: [1, 2] }, datasetRegistry)
         expect(dataset.getLayersWithFilters()).toEqual([{
           layerIds: ['ds'],
           filter: ['!', ['in', ['to-string', ['id']], ['literal', ['1', '2']]]]
@@ -235,6 +234,6 @@ describe('MapboxStyleDataset', () => {
   })
 
   it('extends the base Dataset class', () => {
-    expect(new MapboxStyleDataset({})).toBeInstanceOf(Dataset)
+    expect(new MapboxStyleDataset({}, datasetRegistry)).toBeInstanceOf(Dataset)
   })
 })

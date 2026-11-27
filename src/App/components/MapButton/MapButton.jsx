@@ -115,6 +115,21 @@ const getControlledElement = ({ idPrefix, panelId, buttonId, hasMenu, panelRole 
 }
 
 /**
+ * The button's tooltip: its label when the label isn't shown, and its description when it has one.
+ * @param {Object} options - Configuration options
+ * @param {string} options.label - The button's label
+ * @param {string} [options.description] - The button's description
+ * @param {boolean} [options.showLabel] - Whether the label is shown
+ * @returns {{ label?: string, description?: string }|null} The tooltip, or null when it would be empty
+ */
+const getTooltip = ({ label, description, showLabel }) => {
+  if (showLabel && !description) {
+    return null
+  }
+  return { label: showLabel ? undefined : label, description }
+}
+
+/**
  * Builds the complete props object for a button or anchor element.
  * Handles ARIA attributes, event handlers, refs, and conditional styling.
  * @param {Object} options - Configuration options
@@ -127,6 +142,7 @@ const getControlledElement = ({ idPrefix, panelId, buttonId, hasMenu, panelRole 
  * @param {boolean} options.isDisabled - Whether the button is disabled
  * @param {boolean} options.isPressed - Whether the button is in pressed state
  * @param {boolean} options.isExpanded - Whether content controlled by button is expanded
+ * @param {boolean} [options.isBusy] - Whether the action behind the button is in progress (aria-busy)
  * @param {boolean} options.isPanelOpen - Whether the controlled panel is open
  * @param {boolean} options.isPopupOpen - Whether the popup menu is open
  * @param {Object|null} options.controlledElement - The element controlled by this button
@@ -147,6 +163,7 @@ const buildButtonProps = ({
   isDisabled,
   isPressed,
   isExpanded,
+  isBusy,
   isPanelOpen,
   isPopupOpen,
   controlledElement,
@@ -174,6 +191,7 @@ const buildButtonProps = ({
     'aria-disabled': isDisabled || undefined,
     'aria-expanded': ariaExpanded,
     'aria-pressed': typeof isPressed === 'boolean' ? isPressed : undefined,
+    'aria-busy': isBusy || undefined,
     'aria-controls': controlledElement?.id ?? ariaControls,
     'aria-haspopup': HASPOPUP_ROLES.has(controlledElement?.role) ? controlledElement.role : undefined,
     ...(href
@@ -196,6 +214,7 @@ const buildButtonProps = ({
  * @param {boolean} [props.isDisabled=false] - Whether the button is disabled
  * @param {boolean} [props.isPressed] - Whether the button is in pressed state (aria-pressed)
  * @param {boolean} [props.isExpanded] - Whether content controlled by the button is expanded
+ * @param {boolean} [props.isBusy] - Whether the action behind the button is in progress (aria-busy)
  * @param {boolean} [props.isHidden=false] - Whether to hide the button (hidden attribute, so it stays mounted)
  * @param {boolean} [props.isPanelOpen=false] - Whether the controlled panel is open
  * @param {string} [props.panelRole] - The controlled panel's own ARIA role, used for aria-haspopup
@@ -207,6 +226,7 @@ const buildButtonProps = ({
  * @param {string} [props.href] - URL for anchor element; if provided, renders as <a> instead of <button>
  * @param {string} [props.ariaControls] - Explicit aria-controls target id for buttons that toggle
  *   inline UI which is neither a panel nor a popup (a panelId/menuItems always takes precedence).
+ * @param {string} [props.description] - Extra information shown as the tooltip and read by screen readers after the label
  * @returns {JSX.Element} The rendered button component
  */
 export const MapButton = ({
@@ -218,6 +238,7 @@ export const MapButton = ({
   isDisabled,
   isPressed,
   isExpanded,
+  isBusy,
   isHidden,
   isPanelOpen,
   panelRole,
@@ -227,7 +248,8 @@ export const MapButton = ({
   menuItems,
   idPrefix,
   href,
-  ariaControls
+  ariaControls,
+  description
 }) => {
   const { id: appId } = useConfig()
   const { buttonRefs } = useApp()
@@ -249,6 +271,7 @@ export const MapButton = ({
   const showIcon = iconId || iconSvgContent || hasMenu
   const buttonSlot = getButtonSlot(panelId, buttonId)
   const controlledElement = getControlledElement({ idPrefix, panelId, buttonId, hasMenu, panelRole })
+  const tooltip = getTooltip({ label, description, showLabel })
 
   /**
    * Handles button click events.
@@ -288,6 +311,7 @@ export const MapButton = ({
     isDisabled,
     isPressed,
     isExpanded,
+    isBusy,
     isPanelOpen,
     isPopupOpen,
     controlledElement,
@@ -308,7 +332,7 @@ export const MapButton = ({
       data-button-slot={buttonSlot}
       hidden={isHidden}
     >
-      {showLabel ? buttonEl : <Tooltip content={label}>{buttonEl}</Tooltip>}
+      {tooltip ? <Tooltip label={tooltip.label} description={tooltip.description}>{buttonEl}</Tooltip> : buttonEl}
       {buttonSlot && <SlotRenderer slot={buttonSlot} />}
       {/* Mounted permanently, not just while open, so its aria-controls id stays a stable node. */}
       {controlledElement?.type === 'popup' && (

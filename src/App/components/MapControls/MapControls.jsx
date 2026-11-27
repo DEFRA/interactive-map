@@ -5,6 +5,7 @@ import { useConfig } from '../../store/configContext.js'
 import { useMap } from '../../store/mapContext.js'
 import { useService } from '../../store/serviceContext.js'
 import { resolveStepAmount } from '../../../utils/resolveNudgeStep.js'
+import { getFocusOptions } from '../../../utils/getFocusOptions.js'
 
 const DIRECTIONS = [
   { id: 'panUp', verb: 'up', dx: 0, dy: -1, key: 'ArrowUp' },
@@ -52,7 +53,7 @@ export const MapControls = () => {
   // arrow keys right after without an extra click into the map first.
   const returnFocusToViewport = () => {
     if (interfaceType !== 'keyboard') {
-      requestAnimationFrame(() => layoutRefs.viewportRef.current?.focus())
+      requestAnimationFrame(() => layoutRefs.viewportRef.current?.focus(getFocusOptions(interfaceType)))
     }
   }
 

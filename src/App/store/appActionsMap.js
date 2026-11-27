@@ -9,6 +9,11 @@ import { registerControl as registerControlFn, addControl as addControlFn } from
 function buildOpenPanels (state, panelId, breakpoint, props, focusOnOpen) {
   const panelConfig = state.panelConfig || state.panelRegistry.getPanelConfig()
   const bpConfig = panelConfig[panelId]?.[breakpoint]
+  // Missing panel, or no config at this breakpoint: leave the open panels unchanged.
+  if (!bpConfig) {
+    return state.openPanels
+  }
+
   const isExclusiveNonModal = !!bpConfig.exclusive && !bpConfig.modal
   const isModal = !!bpConfig.modal
 
@@ -87,11 +92,15 @@ const setInterfaceType = (state, payload) => {
 
 const openPanel = (state, payload) => {
   const { panelId, props = {}, focusOnOpen } = payload
+  const openPanels = buildOpenPanels(state, panelId, state.breakpoint, props, focusOnOpen)
+  if (openPanels === state.openPanels) {
+    return state
+  }
 
   return {
     ...state,
     previousOpenPanels: state.openPanels,
-    openPanels: buildOpenPanels(state, panelId, state.breakpoint, props, focusOnOpen)
+    openPanels
   }
 }
 

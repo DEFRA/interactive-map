@@ -5,6 +5,7 @@ import { ServiceProvider } from './store/ServiceProvider.jsx'
 import { removeLoadingState } from '..//InteractiveMap/domStateManager.js'
 import { PluginProvider } from './store/PluginProvider.jsx'
 import { PluginInits } from './renderer/PluginInits.jsx'
+import { SlotItemsProvider } from './renderer/SlotItemsProvider.jsx'
 import { Layout } from './layout/Layout.jsx'
 import { EVENTS as events } from '../config/events.js'
 
@@ -22,7 +23,9 @@ export const App = (props) => {
         <ServiceProvider eventBus={props.eventBus} pluginRegistry={props.pluginRegistry}>
           <PluginProvider>
             <PluginInits />
-            <Layout />
+            <SlotItemsProvider>
+              <Layout />
+            </SlotItemsProvider>
           </PluginProvider>
         </ServiceProvider>
       </MapProvider>

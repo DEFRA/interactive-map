@@ -7,8 +7,8 @@ import { hidesNothing } from './applicationModes.js'
 import { stringToKebab } from '../../utils/stringToKebab.js'
 
 /**
- * Map controls for a given slot and app state.
- * Returns an array of control descriptors.
+ * Map controls for a given slot and app state — or, with no slot, for every slot.
+ * Returns an array of control descriptors, each with the slot it renders in.
  */
 export function mapControls ({ slot, appState, evaluateProp, isHiddenByApplicationMode = hidesNothing }) {
   const { breakpoint, pluginRegistry, controlConfig } = appState
@@ -40,7 +40,7 @@ export function mapControls ({ slot, appState, evaluateProp, isHiddenByApplicati
       }
 
       // Only include controls allowed in this slot
-      return bpConfig.slot === slot && slotAllowed
+      return (slot === undefined || bpConfig.slot === slot) && slotAllowed
     })
     .map(control => {
       // Detect plugin owning this control
@@ -65,10 +65,7 @@ export function mapControls ({ slot, appState, evaluateProp, isHiddenByApplicati
         )
       } else {
         // Plugin control: wrap render with plugin context
-        const Wrapped = withPluginContexts(control.render, {
-          pluginId,
-          pluginConfig: plugin?.config
-        })
+        const Wrapped = withPluginContexts(control.render)
         // Core's own element around the plugin's control, as MapButton's wrapper is for buttons and
         // Panel's root for panels — so hiding it (application mode) never remounts it: display:
         // contents leaves layout untouched while shown, hidden hides it with its state intact.
@@ -79,7 +76,7 @@ export function mapControls ({ slot, appState, evaluateProp, isHiddenByApplicati
             className={`im-c-control-wrapper im-c-control-wrapper--${stringToKebab(control.id)}`}
             hidden={isHidden}
           >
-            <Wrapped />
+            <Wrapped pluginId={pluginId} pluginConfig={plugin?.config} />
           </div>
         )
       }
@@ -87,6 +84,7 @@ export function mapControls ({ slot, appState, evaluateProp, isHiddenByApplicati
       return {
         id: control.id,
         type: 'control',
+        slot: control[breakpoint].slot,
         order: control[breakpoint]?.order ?? 0,
         tab: control[breakpoint]?.tab,
         element

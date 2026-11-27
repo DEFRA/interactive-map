@@ -37,7 +37,9 @@ Controls which interactions are active when the user clicks the map. Values can 
 - `'placeMarker'` — if no feature is matched (or `selectFeature` is not active), places a location marker at the clicked coordinates
 
 > [!NOTE]
-> On touch and keyboard, a crosshair and "Select" action button are shown when interact is enabled. For touch users, this applies when `'placeMarker'` or `'selectFeature'` is included — modes where a precise point on the map needs to be chosen. When `'selectMarker'` is the only active mode, touch users tap markers directly and the crosshair is not shown.
+> On touch, a crosshair and "Select" action button are shown when `'placeMarker'` or `'selectFeature'` is included — modes where a precise point on the map needs to be chosen. When `'selectMarker'` is the only active mode, touch users tap markers directly and neither is shown. [`touchTarget`](#touchtarget) turns them off for touch in every mode.
+>
+> Keyboard users get the crosshair while the map has focus, and press <kbd>Enter</kbd> to select. Opening the map controls shows the crosshair and "Select" button for every input type.
 
 **Common combinations:**
 
@@ -110,6 +112,27 @@ When `true`, clicking outside any selectable feature clears the current selectio
 **Default:** `10`
 
 Click detection radius in pixels applied to line features. Lines have a 1px rendered width so a buffer is required for reliable selection. Polygon and symbol/icon features use exact hit detection and are unaffected by this value.
+
+---
+
+### `touchTarget`
+**Type:** `boolean`
+**Default:** `true`
+
+When `false`, touch users don't get the crosshair and "Select" button, and tap features directly instead. Opening the map controls shows both again, for every input type. Keyboard behaviour is unchanged.
+
+```js
+createInteractPlugin({
+  interactionModes: ['selectFeature'],
+  touchTarget: false
+})
+```
+
+> [!IMPORTANT]
+> Only set `touchTarget: false` when the features users select are at least 44×44 CSS pixels at the zoom levels they use ([WCAG 2.2 Target Size (Enhanced)](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced)), for example field parcels at a sensible zoom. Thin lines and small shapes are hard to tap accurately, especially for users with motor impairments, who rely on the crosshair to position the map instead.
+
+> [!NOTE]
+> If you also use the [draw plugin](draw.md), disable interact while drawing or editing, so the two plugins don't both control the crosshair. See [Application mode](draw.md#application-mode).
 
 ---
 
@@ -288,15 +311,15 @@ Emitted when the user confirms their selection (clicks "Done").
 ```
 
 ```js
-interactiveMap.on('interact:done', (e) => {
-  if (e.coords) {
-    console.log('Location selected:', e.coords)
+interactiveMap.on('interact:done', (event) => {
+  if (event.coords) {
+    console.log('Location selected:', event.coords)
   }
-  if (e.selectedFeatures) {
-    console.log('Features selected:', e.selectedFeatures)
+  if (event.selectedFeatures) {
+    console.log('Features selected:', event.selectedFeatures)
   }
-  if (e.selectedMarkers) {
-    console.log('Markers selected:', e.selectedMarkers)
+  if (event.selectedMarkers) {
+    console.log('Markers selected:', event.selectedMarkers)
   }
 })
 ```
@@ -333,8 +356,8 @@ Emitted whenever the selected features or selected markers change.
 ```
 
 ```js
-interactiveMap.on('interact:selectionchange', (e) => {
-  console.log('Selected features:', e.selectedFeatures)
+interactiveMap.on('interact:selectionchange', (event) => {
+  console.log('Selected features:', event.selectedFeatures)
 })
 ```
 

@@ -105,6 +105,18 @@ describe('ADD_DATASET', () => {
     })
   })
 
+  it('adds a dataset that is not in the menu and leaves the menu unchanged', () => {
+    const menu = [{ id: 'roads', type: 'checkbox', visibleWhen: true, items: [{ id: 'roads', label: 'Roads' }] }]
+    const state = makeState({ menu })
+    const dataset = { id: 'highlights', label: 'Highlights' }
+
+    const result = actions.ADD_DATASET(state, { dataset, mapStyle: {} })
+
+    expect(result.mappedDatasets).toHaveProperty('highlights')
+    expect(result.orderedDatasets).toContain('highlights')
+    expect(result.menu).toBe(menu)
+  })
+
   it('logs error and returns unchanged state when dataset already exists', () => {
     const state = makeStateWithDataset('roads')
     const result = actions.ADD_DATASET(state, { dataset: { id: 'roads', label: 'Roads' }, mapStyle: {} })
@@ -188,6 +200,12 @@ describe('SET_MENU', () => {
     const menu = [{ id: 'layers', items: [] }]
     const result = actions.SET_MENU(state, { menu })
     expect(result.menu).toBe(menu)
+  })
+
+  it('marks the menu as initialised', () => {
+    const state = makeState()
+    const result = actions.SET_MENU(state, { menu: [] })
+    expect(result.menuInitialised).toBe(true)
   })
 
   it('does not add to actionsArray', () => {
@@ -365,13 +383,26 @@ describe('SHOW_FEATURES', () => {
 
 describe('REMOVE_ADAPTER_ACTIONS', () => {
   it('removes completed actions from actionsArray', () => {
-    const action1 = { method: 'addDataset', parameters: ['roads'], actionId: 0 }
-    const action2 = { method: 'applyStyle', parameters: ['roads', {}], actionId: 1 }
+    const action1 = { method: 'addDataset', parameters: ['roads'] }
+    const action2 = { method: 'applyStyle', parameters: ['roads', {}] }
     const state = { ...makeState(), actionsArray: [action1, action2] }
 
     const result = actions.REMOVE_ADAPTER_ACTIONS(state, [action1])
 
     expect(result.actionsArray).toEqual([action2])
+  })
+
+  it('only removes the completed action when another has the same method and parameters', () => {
+    const state = makeStateWithDataset('roads')
+    const state1 = actions.SET_DATASET_VISIBILITY(state, { datasetId: 'roads', visible: false })
+    const state2 = actions.SET_GLOBAL_OPACITY(state1, { opacity: 0.5 })
+    const state3 = actions.SET_GLOBAL_OPACITY(state2, { opacity: 0.8 })
+    const [, firstOpacityAction, secondOpacityAction] = state3.actionsArray
+
+    const result = actions.REMOVE_ADAPTER_ACTIONS(state3, [firstOpacityAction])
+
+    expect(result.actionsArray).toEqual([state3.actionsArray[0], secondOpacityAction])
+    expect(result.actionsArray[1]).toBe(secondOpacityAction)
   })
 
   it('returns unchanged state when completedActions is empty', () => {
@@ -384,23 +415,5 @@ describe('REMOVE_ADAPTER_ACTIONS', () => {
     const state = makeState()
     const result = actions.REMOVE_ADAPTER_ACTIONS(state, undefined)
     expect(result).toBe(state)
-  })
-})
-
-// ─── actionId counter behaviour ───────────────────────────────────────────────
-
-describe('actionId counter', () => {
-  it('resets actionId to 0 when actionsArray is empty', () => {
-    const state = makeStateWithDataset('roads')
-    const result = actions.SET_DATASET_VISIBILITY(state, { datasetId: 'roads', visible: false })
-    expect(result.actionsArray[0].actionId).toBe(0)
-  })
-
-  it('increments actionId for each successive queued action', () => {
-    const state = makeStateWithDataset('roads')
-    const state1 = actions.SET_DATASET_VISIBILITY(state, { datasetId: 'roads', visible: false })
-    const state2 = actions.SET_DATASET_VISIBILITY(state1, { datasetId: 'roads', visible: true })
-
-    expect(state2.actionsArray[1].actionId).toBe(1)
   })
 })

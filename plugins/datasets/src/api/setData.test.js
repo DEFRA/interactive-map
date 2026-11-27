@@ -1,17 +1,9 @@
 import { setData } from './setData.js'
-import { datasetRegistry } from '../registry/datasetRegistry.js'
 import { logger } from '../../../../src/services/logger.js'
-import { layerAdapter } from '../adapters/loadLayerAdapter.js'
 
-jest.mock('../adapters/loadLayerAdapter.js', () => ({
-  layerAdapter: {
-    setData: jest.fn()
-  }
-}))
+const layerAdapter = { setData: jest.fn() }
 
-jest.mock('../registry/datasetRegistry.js', () => ({
-  datasetRegistry: { getDataset: jest.fn() }
-}))
+const datasetRegistry = { getDataset: jest.fn() }
 
 jest.mock('../../../../src/services/logger.js')
 
@@ -24,7 +16,7 @@ describe('setData', () => {
   it('calls layerAdapter.setData with datasetId and geojson', () => {
     datasetRegistry.getDataset.mockReturnValue({ id: 'my-dataset' })
 
-    setData({ pluginState: { layerAdapter } }, geojson, { datasetId: 'my-dataset' })
+    setData({ pluginState: { datasetRegistry }, mapProvider: { datasets: layerAdapter } }, geojson, { datasetId: 'my-dataset' })
 
     expect(layerAdapter.setData).toHaveBeenCalledWith('my-dataset', geojson)
   })
@@ -32,7 +24,7 @@ describe('setData', () => {
   it('does nothing when the dataset is not found in the registry', () => {
     datasetRegistry.getDataset.mockReturnValue(undefined)
 
-    setData({ pluginState: { layerAdapter } }, geojson, { datasetId: 'missing' })
+    setData({ pluginState: { datasetRegistry }, mapProvider: { datasets: layerAdapter } }, geojson, { datasetId: 'missing' })
 
     expect(layerAdapter.setData).not.toHaveBeenCalled()
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('missing'))
@@ -44,17 +36,26 @@ describe('setData', () => {
       tiles: ['https://example.com/{z}/{x}/{y}']
     })
 
-    setData({ pluginState: { layerAdapter } }, geojson, { datasetId: 'tiles-dataset' })
+    setData({ pluginState: { datasetRegistry }, mapProvider: { datasets: layerAdapter } }, geojson, { datasetId: 'tiles-dataset' })
 
     expect(layerAdapter.setData).not.toHaveBeenCalled()
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('tiles-dataset'))
+  })
+
+  it('warns and does nothing when dataset is a dynamic GeoJSON dataset', () => {
+    datasetRegistry.getDataset.mockReturnValue({ id: 'dynamic-dataset', hasDynamicGeoJSON: true })
+
+    setData({ pluginState: { datasetRegistry }, mapProvider: { datasets: layerAdapter } }, geojson, { datasetId: 'dynamic-dataset' })
+
+    expect(layerAdapter.setData).not.toHaveBeenCalled()
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('refreshDataset'))
   })
 
   it("doesn't throw when layerAdapter is undefined", () => {
     datasetRegistry.getDataset.mockReturnValue({ id: 'my-dataset' })
     // Should not throw even if layerAdapter is undefined
     expect(() =>
-      setData({ pluginState: { layerAdapter: undefined } }, geojson, { datasetId: 'my-dataset' })
+      setData({ pluginState: { datasetRegistry }, mapProvider: { datasets: undefined } }, geojson, { datasetId: 'my-dataset' })
     ).not.toThrow()
   })
 })

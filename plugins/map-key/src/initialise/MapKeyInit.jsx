@@ -1,21 +1,18 @@
-import { useEffect, useRef } from 'react'
-import { setDatasetRegistry } from '../registry/getDatasetRegistry.js'
-import { attachPluginStateRef } from '../reducers/mergeKeyGroupItems.js'
+import { useEffect } from 'react'
 
 // additional possible params here are: pluginConfig, appState, mapProvider,
 export function MapKeyInit ({ pluginConfig, pluginState, mapState, services }) {
   const { dispatch } = pluginState
   const { eventBus } = services
-  const pluginStateRef = useRef(pluginState)
-  pluginStateRef.current = pluginState
 
   useEffect(() => {
     if (!mapState.isMapReady) {
       return
     }
-    attachPluginStateRef(pluginStateRef)
-    // Request a handle on the datasetsRegistry singleton
-    eventBus.requestOnce('datasets:registry', setDatasetRegistry)
+    // Request this map's datasets registry, which arrives straight away if the datasets plugin is ready
+    eventBus.requestOnce('datasets:registry', (datasetRegistry) => {
+      dispatch({ type: 'SET_DATASET_REGISTRY', payload: datasetRegistry })
+    })
     eventBus.emit('map-key:ready')
   }, [mapState.isMapReady])
 

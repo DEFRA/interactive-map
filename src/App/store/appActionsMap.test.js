@@ -441,6 +441,27 @@ describe('actionsMap full coverage', () => {
       expect(res.openPanels).toHaveProperty('p2')
       expect(res.openPanels).toHaveProperty('p1')
     })
+
+    test('missing panel is a no-op and does not throw', () => {
+      const tmp = {
+        ...state,
+        panelConfig: { keyboardHelp: { desktop: { exclusive: true, modal: false } } },
+        openPanels: { keyboardHelp: { props: {} } }
+      }
+      const res = actionsMap.OPEN_PANEL(tmp, { panelId: 'datasetsLayers' })
+      expect(res).toBe(tmp)
+    })
+
+    test('panel with no config for the current breakpoint is a no-op', () => {
+      const tmp = {
+        ...state,
+        panelConfig: { p1: { mobile: { exclusive: true, modal: false } } },
+        openPanels: { p2: { props: {} } },
+        breakpoint: 'desktop'
+      }
+      const res = actionsMap.OPEN_PANEL(tmp, { panelId: 'p1', props: {} })
+      expect(res).toBe(tmp)
+    })
   })
 
   describe('SET_LISTBOX_ACTIVE', () => {

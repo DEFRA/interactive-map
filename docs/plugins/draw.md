@@ -1,9 +1,13 @@
 # Draw Plugin
 
-The draw plugin lets users draw and edit point, polygon and line features on the map — placing vertices by click, tap, or keyboard, snapping to existing map layers, and validating geometry as it's built. Polygons can also be split and merged. It works identically with both the MapLibre and OpenLayers map providers, determining the correct adapter to use from the `mapProvider` passed to `InteractiveMap` — there's nothing to configure in the plugin itself.
+The draw plugin lets users draw and edit points, lines and polygons on the map. They can place vertices by click, tap or keyboard, and snap to existing map layers. Shapes are checked as they're built. Polygons can also be split and merged.
 
-> [!IMPORTANT]
-> **Using a bundler (ESM)?** This plugin includes adapters for more than one map provider, so your bundler needs to ignore the map engines you haven't installed. See [Bundler configuration](../getting-started.md#bundler-configuration-esm).
+Hooks let you add your own checks at each stage: as vertices are placed, as the shape changes, and when it's finished. Use them to apply your own rules, help users fix or review their shapes, and attach your own data.
+
+It works the same with `@defra/interactive-map` (MapLibre) and `@defra/interactive-map-openlayers`.
+
+> [!NOTE]
+> `@defra/interactive-map-esri` has a separate draw plugin, imported the same way, with limited features. It only draws and edits polygons, and doesn't support the options, validation or most of the methods below.
 
 ## ESM usage
 
@@ -26,7 +30,7 @@ interactiveMap.on('map:ready', () => {
 
 ## UMD usage
 
-Copy the entire `plugins/draw/dist/umd/` directory to `/your-assets-path/plugins/draw/umd/`. The plugin uses dynamic imports to load MapLibre or OpenLayers support on demand, so all files in the directory must be served from the same location. Then add the script tag:
+Copy the entire `plugins/draw/dist/umd/` directory to `/your-assets-path/plugins/draw/umd/`. The plugin loads the rest of its files when it's used, so all files in the directory must be served from the same location. Then add the script tag:
 
 ```html
 <script defer src="/your-assets-path/plugins/draw/umd/index.js"></script>
@@ -36,7 +40,6 @@ Copy the entire `plugins/draw/dist/umd/` directory to `/your-assets-path/plugins
 const drawPlugin = defra.drawPlugin()
 
 const interactiveMap = new defra.InteractiveMap('map', {
-  mapProvider: defra.maplibreProvider(),
   plugins: [drawPlugin]
 })
 ```
@@ -71,11 +74,53 @@ createDrawPlugin({
 
 ---
 
+### `snapMinZoom`
+
+**Type:** `number`
+
+The lowest zoom snapping works at. Use it to only snap at the zooms where the snap layers are shown.
+
+Below it, the Snap button is disabled and the user's on/off choice is kept. When the user has snap on and zooms below it during a draw or edit, a hint tells them to zoom in. While the button is disabled, the same text is its tooltip and is read by screen readers with the button.
+
+```js
+createDrawPlugin({
+  snapLayers: ['OS/TopographicLine/Field Boundary'],
+  snapMinZoom: 16
+})
+```
+
+---
+
+### `snapZoomInHintText`
+
+**Type:** `string`
+**Default:** `'Zoom in to use snap'`
+
+Hint shown when the user zooms below [`snapMinZoom`](#snapminzoom), and read with the Snap button while it's disabled.
+
+---
+
+### `onGeometryPreview`
+
+**Type:** `Function`
+
+Plugin-level synchronous check, called while a shape is drawn or dragged and when a vertex is about to be placed. Can be overridden per call. See [`onGeometryPreview`](#ongeometrypreviewevent).
+
+---
+
 ### `onGeometryChange`
 
 **Type:** `Function`
 
-Plugin-level validation callback, called throughout the draw/edit lifecycle so you can enforce your own rules (e.g. "shapes must stay inside a boundary") alongside the built-in ones. Can be overridden per call — see [Validation](#validation) below for the full contract, and `newPolygon`, `newLine`, `newPoint`, `editFeature` for the per-call override.
+Plugin-level check, called after each committed change to a shape. Can return a Promise, so the shape can be checked against a service. Can be overridden per call. See [`onGeometryChange`](#ongeometrychangeevent-context).
+
+---
+
+### `onGeometryFinish`
+
+**Type:** `Function`
+
+Plugin-level check, called when a shape is finished. Can return a Promise. Can be overridden per call. See [`onGeometryFinish`](#ongeometryfinishevent-context).
 
 ---
 
@@ -84,23 +129,23 @@ Plugin-level validation callback, called throughout the draw/edit lifecycle so y
 > [!NOTE]
 > Each colour accepts a plain colour string or a style-keyed object (e.g. `{ light: '#1d70b8', dark: '#ffffff' }`).
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `shapeStroke` | `string \| Record<string, string>` | Default stroke colour for an inactive (not being drawn/edited) shape, when the feature sets no `stroke` of its own |
-| `shapeFill` | `string \| Record<string, string>` | Default fill colour for an inactive shape, when the feature sets no `fill` of its own |
-| `strokeWidth` | `number` | Default stroke width in pixels. **Default:** `2` |
-| `editStroke` | `string \| Record<string, string>` | Stroke colour of the shape currently being drawn or edited |
-| `editFill` | `string \| Record<string, string>` | Fill colour of the shape currently being drawn or edited |
-| `editVertex` | `string \| Record<string, string>` | Colour of placed, unselected vertex handles |
-| `editMidpoint` | `string \| Record<string, string>` | Colour of the midpoint handles used to insert a new vertex on an edge |
-| `editActive` | `string \| Record<string, string>` | Colour of the currently selected/active vertex handle |
-| `editHalo` | `string \| Record<string, string>` | Colour of the halo drawn behind vertex/midpoint handles for contrast |
-| `invalidStroke` | `string \| Record<string, string>` | Stroke colour of the dashed outline shown while the shape fails validation |
-| `splitValid` | `string \| Record<string, string>` | Colour of the split line while it would produce a valid split |
-| `splitInvalid` | `string \| Record<string, string>` | Colour of the split line while it would not produce a valid split |
-| `snapVertex` | `string \| Record<string, string>` | Colour of the snap indicator shown over a vertex |
-| `snapEdge` | `string \| Record<string, string>` | Colour of the snap indicator shown over an edge |
-| `snapRadius` | `number` | Snap tolerance in pixels. **Default:** `12` |
+| Property | Description |
+|----------|-------------|
+| `shapeStroke` | **Type:** `string \| Record<string, string>`<br />Default stroke colour for an inactive (not being drawn/edited) shape, when the feature sets no `stroke` of its own |
+| `shapeFill` | **Type:** `string \| Record<string, string>`<br />Default fill colour for an inactive shape, when the feature sets no `fill` of its own |
+| `strokeWidth` | **Type:** `number`<br />**Default:** `2`<br />Default stroke width in pixels |
+| `editStroke` | **Type:** `string \| Record<string, string>`<br />Stroke colour of the shape currently being drawn or edited |
+| `editFill` | **Type:** `string \| Record<string, string>`<br />Fill colour of the shape currently being drawn or edited |
+| `editVertex` | **Type:** `string \| Record<string, string>`<br />Colour of placed, unselected vertex handles |
+| `editMidpoint` | **Type:** `string \| Record<string, string>`<br />Colour of the midpoint handles used to insert a new vertex on an edge |
+| `editActive` | **Type:** `string \| Record<string, string>`<br />Colour of the currently selected/active vertex handle |
+| `editHalo` | **Type:** `string \| Record<string, string>`<br />Colour of the halo drawn behind vertex/midpoint handles for contrast |
+| `invalidStroke` | **Type:** `string \| Record<string, string>`<br />Stroke colour of the dashed outline shown while the shape fails validation |
+| `splitValid` | **Type:** `string \| Record<string, string>`<br />Colour of the split line while it would produce a valid split |
+| `splitInvalid` | **Type:** `string \| Record<string, string>`<br />Colour of the split line while it would not produce a valid split |
+| `snapVertex` | **Type:** `string \| Record<string, string>`<br />Colour of the snap indicator shown over a vertex |
+| `snapEdge` | **Type:** `string \| Record<string, string>`<br />Colour of the snap indicator shown over an edge |
+| `snapRadius` | **Type:** `number`<br />**Default:** `12`<br />Snap tolerance in pixels |
 
 ```js
 createDrawPlugin({
@@ -113,66 +158,178 @@ createDrawPlugin({
 
 ## Validation
 
-Every geometry change — placing a vertex, dragging one, finishing a shape — is checked against a set of built-in rules before it's accepted, plus your own `onGeometryChange` callback if you provide one.
+Every change is checked against the built-in rules, then against your own callbacks if you set them.
 
 ### Built-in rules
 
-| Rule | Applies to | Behaviour |
-|------|-----------|-----------|
-| Minimum vertices | Polygon (3), Line (2) | Gates the Done button — a shape below the minimum can't be finished |
-| Self-intersection | Polygon | Gates the Done button — a self-crossing shape can't be finished |
-| Self-intersection (placement) | Polygon | Rejects a vertex placement outright if it would make the drawn path cross itself — the vertex never appears |
-| Non-zero area | Polygon | Gates the Done button — a collinear/degenerate ring can't be finished |
+| Rule | Description |
+|------|-------------|
+| Minimum vertices | A polygon needs 3 vertices and a line 2 before it can be finished |
+| Self-intersection | A polygon that crosses itself can't be finished. A vertex that would make the drawn path cross itself is rejected and never placed |
+| Non-zero area | A flat polygon, with all its vertices in a line, can't be finished |
 
-Rule failures gate the Done button (the shape can pass through interim invalid states while being built or reshaped, shown with a dashed outline) except the placement-time self-intersection check, which is a hard veto — that specific vertex is rejected and never placed.
+While a rule fails, the shape has a dashed outline.
 
-### `onGeometryChange` callback
+### Callbacks
 
-Set at the plugin level (`createDrawPlugin({ onGeometryChange })`) or per call (`newPolygon`/`newLine`/`newPoint`/`editFeature`'s `options.onGeometryChange`, which takes precedence when given). Not used by `split` (which validates that the line actually bisects the shape) or `merge`/`addFeature`/`setStyle` (no validation). For a `Point`, only the `'place'` phase applies — placing or dragging a point can be vetoed, but there's no minimum-vertices/self-intersection/area check.
+| Callback | Description |
+|----------|-------------|
+| [`onGeometryPreview`](#ongeometrypreviewevent) | Live checks while a shape is drawn or dragged, and before a vertex is placed. Must answer straight away |
+| [`onGeometryChange`](#ongeometrychangeevent-context) | After each change. Can return a Promise. The latest result enables or disables Done |
+| [`onGeometryFinish`](#ongeometryfinishevent-context) | When a shape is finished. Can return a Promise. Decides whether the shape is created, or the edit finishes |
 
-**Signature:** `onGeometryChange(event) => boolean | { valid: boolean, reason?: string } | undefined`
+#### Setting the callbacks
 
-| Return value | Meaning |
-|---|---|
-| `true` / `undefined` | Valid |
-| `false` | Invalid, no reason shown |
-| `{ valid, reason }` | Valid or invalid, with an optional reason surfaced as a hint toast (except for placement, which never toasts — see `phase` below) |
+Set them at plugin level, `createDrawPlugin({ onGeometryPreview, onGeometryChange, onGeometryFinish })`, or per call in the options of `newPolygon`, `newLine`, `newPoint` and `editFeature`. Each per-call callback replaces only its plugin-level equivalent for that session. The others still apply. To do more than one thing on a change, call each from one callback.
 
-**Event payload:**
+They aren't used by `split`, `merge`, `addFeature`, `setStyle` or `setProperties`.
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `feature` | `GeoJSON.Feature` | The shape at this point — the in-progress feature during `'preview'`, the committed/candidate feature at every other phase |
-| `phase` | `string` | See table below |
-| `mode` | `'draw_polygon' \| 'draw_line' \| 'draw_point' \| 'edit_vertex' \| 'edit_point'` | The active draw mode |
-| `vertexIndex` | `number` | Index of the vertex being placed/added/moved/inserted/deleted. Present on `'place'` and every `'commit-*'` phase |
-| `numVertices` | `number` | Count of already-committed vertices, excluding any in-progress cursor point. Present on every `'preview'` call |
+#### What they return
 
-**Phases:**
+| Value | Description |
+|-------|-------------|
+| `true` | Valid |
+| `undefined` | Valid |
+| `false` | Invalid, with no reason shown |
+| `result.valid` | Whether the shape is valid |
+| `result.reason` | Why the shape is invalid. Shown as a hint and sent with [`draw:geometryinvalid`](#drawgeometryinvalid) |
+| `result.announcement` | Read out by screen readers instead of draw's own message. When it's set, `reason` isn't shown as a hint, so you can show it yourself. From `onGeometryPreview`, it's only read out for a rejected vertex |
+| `result.properties` | Properties to add to the finished shape. `onGeometryFinish` only, on a passing result. See [Adding properties to the finished shape](#adding-properties-to-the-finished-shape) |
+| `result.reopen` | `true` to reopen a new shape in edit mode, valid, instead of creating it. `onGeometryFinish` only, on a passing result for phase `'create'`. See [Reopening a shape that passes](#reopening-a-shape-that-passes) |
 
-| Phase | When | Can veto? |
-|-------|------|-----------|
-| `'preview'` | Live feedback on every rubber-band move while drawing/dragging, throttled to once per frame. Drives both the dashed-outline check and the Add-point button | No — display only |
-| `'place'` | A real click/tap/Add-point press, evaluated once, synchronously | Yes — a hard rule or your callback returning invalid rejects the vertex outright; it never appears |
-| `'create'` | A whole new feature just finished being drawn | Gates whether it's accepted as-is or reopened in edit mode |
-| `'edit-start'` | An existing feature was just loaded into an edit session — the baseline check before anything has changed | Gates the initial Done state |
-| `'commit-add'` | A vertex was added while drawing | Gates Done |
-| `'commit-move'` | A vertex was dragged/nudged while editing | Gates Done |
-| `'commit-insert'` | A vertex was inserted at a midpoint while editing | Gates Done |
-| `'commit-delete'` | A vertex was removed while editing | Gates Done |
+#### What they receive
+
+| Property | Description |
+|----------|-------------|
+| `event.feature` | The shape being checked, as a GeoJSON feature |
+| `event.phase` | Why the callback was called. See each callback below |
+| `event.mode` | The draw mode: `'draw_polygon'`, `'draw_line'`, `'draw_point'`, `'edit_vertex'` or `'edit_point'` |
+| `event.vertexIndex` | The vertex being placed or changed. Only on `'place'`, and on a `'change'` to a single vertex |
+| `event.numVertices` | How many vertices have been placed, not counting the one following the pointer. Only on `'preview'` |
+| `event.detail` | The `detail` passed to [`recheckGeometry`](#recheckgeometrydetail). Only on `'recheck'` |
+| `context.signal` | An `AbortSignal`, aborted when a newer check starts or the session ends. Pass it to `fetch` to cancel the request. Not passed to `onGeometryPreview` |
+| `context.revision` | A number that increases with every check. Not passed to `onGeometryPreview` |
+
+#### Debouncing
+
+Debouncing and timeouts are up to you. Waiting on `signal` gives a debounce that cancels itself when the shape changes again:
 
 ```js
+const wait = (ms, signal) => new Promise((resolve, reject) => {
+  const timer = setTimeout(resolve, ms)
+  signal.addEventListener('abort', () => { clearTimeout(timer); reject(signal.reason) }, { once: true })
+})
+
 createDrawPlugin({
-  onGeometryChange: (event) => ({
+  onGeometryPreview: (event) => ({
     valid: isEastOfWalesBorder(event.feature.geometry),
     reason: 'Points must be placed east of the England/Wales border'
-  })
+  }),
+  onGeometryChange: async ({ feature }, { signal }) => {
+    infoPanel.update(measureArea(feature))
+    await wait(300, signal)
+    const response = await fetch('/api/boundary-checks', { method: 'POST', body: JSON.stringify(feature), signal })
+    return response.json() // { valid, reason }
+  }
 })
 ```
 
+## `onGeometryPreview(event)`
+
+**Signature:** `onGeometryPreview(event) => result`
+
+Must answer straight away. A Promise counts as valid. It runs on every frame of a drag, so keep it quick.
+
+| Phase | When |
+|-------|------|
+| `'preview'` | While a shape is drawn or dragged. Drives the dashed outline and the Add point button. While editing, it also enables or disables Done |
+| `'place'` | Before a vertex is placed by a click, tap, <kbd>Enter</kbd> or Add point. An invalid result rejects the vertex |
+
+Use it for rules about a single vertex, such as where the first point can go. `onGeometryChange` isn't called until the shape has its minimum number of vertices.
+
+## `onGeometryChange(event, context)`
+
+**Signature:** `onGeometryChange(event, context) => result | Promise<result>`
+
+Called after each change to a shape.
+
+| Phase | When |
+|-------|------|
+| `'change'` | The shape changed, including with [`setGeometry`](#setgeometrygeometry) or undo |
+| `'edit-start'` | `editFeature` opened the shape |
+| `'recheck'` | [`recheckGeometry`](#recheckgeometrydetail) was called |
+| `'create'` | Only without `onGeometryFinish`. A new shape was finished without a passing result, such as a new point |
+| `'edit-finish'` | Only without `onGeometryFinish`, when the last result set `recheckOnFinish`. Done was pressed on an edit |
+
+It's only called once the built-in rules pass, and only the result for the latest change counts. If it fails, throws or rejects, the shape can't be finished: call `recheckGeometry()` to retry. If the shape is finished while a check is running, draw waits for the result.
+
+While a check is running, Done stays as the last result of `onGeometryChange` or `onGeometryFinish` left it: disabled if that result failed, otherwise enabled. When `editFeature` opens a shape, Done is disabled until its `'edit-start'` check passes.
+
+## `onGeometryFinish(event, context)`
+
+**Signature:** `onGeometryFinish(event, context) => result | Promise<result>`
+
+Called when a shape is finished, to check the whole shape once. Without it, finishing uses the latest `onGeometryChange` result. If `onGeometryChange` already checks the shape with your service, you don't need `onGeometryFinish`.
+
+| Phase | When |
+|-------|------|
+| `'create'` | A new shape or point was finished |
+| `'edit-finish'` | Done was pressed on an edit |
+
+Draw waits for the result. A new shape that fails, or passes with [`reopen`](#reopening-a-shape-that-passes), reopens in edit mode ([`draw:reopened`](#drawreopened)), where Undo starts empty and Cancel discards it. An edit that fails stays open. If the latest `onGeometryChange` result failed, the shape can't be finished, so `onGeometryFinish` isn't called. If an `onGeometryChange` check is still running when the shape is finished, it's cancelled and `onGeometryFinish` decides.
+
+This updates a panel on every change, and validates the shape once it's finished:
+
+```js
+createDrawPlugin({
+  // Returns nothing, so every change counts as valid
+  onGeometryChange: ({ feature }, { signal }) => {
+    contextPanel.update(feature, { signal })
+  },
+  onGeometryFinish: ({ feature }, { signal }) => validateWithService(feature, { signal })
+})
+```
+
+Don't `await` the panel update. `onGeometryChange` would then be pending until the panel replies: a slow reply is announced as "Checking shape", and finishing the shape cancels it.
+
+#### Adding properties to the finished shape
+
+A passing result can include `properties` to store with the shape, such as what the check found. Draw adds them before the shape is created or the edit finishes, so they're in [`draw:created`](#drawcreated) and [`draw:edited`](#drawedited). They follow the same rules as [`setProperties`](#setpropertiesfeatureid-properties).
+
+```js
+createDrawPlugin({
+  onGeometryFinish: async ({ feature }, { signal }) => {
+    try {
+      return await validateWithService(feature, { signal })
+    } catch {
+      // Let the user finish, but record that the shape wasn't checked
+      return { valid: true, properties: { drawRules: { checked: false, reason: 'error' } } }
+    }
+  }
+})
+```
+
+Keep them under one key of your own, such as `drawRules`, so they don't clash with other properties. `properties` is ignored on a failing result, and from `onGeometryPreview` and `onGeometryChange`.
+
+#### Reopening a shape that passes
+
+A passing result for a new shape can include `reopen: true`, to show the user something before the shape is created, such as suggestions, without blocking it. The shape reopens in edit mode with Done enabled, and [`draw:reopened`](#drawreopened) is sent with `status: 'valid'`.
+
+Pressing Done on the unchanged shape creates it from that same result, including its `properties`, without calling `onGeometryFinish` again. If the user changes the shape first, `onGeometryFinish` is called with phase `'edit-finish'`.
+
+```js
+createDrawPlugin({
+  onGeometryFinish: async ({ feature, phase }) => phase === 'create' && hasSuggestions(feature)
+    ? { valid: true, reopen: true, announcement: '1 suggestion for your shape. Check the issues panel' }
+    : { valid: true }
+})
+```
+
+`reopen` is ignored on a failing result, which reopens the shape anyway, on `'edit-finish'`, and from `onGeometryPreview` and `onGeometryChange`.
+
 ## Methods
 
-Methods are called on the plugin instance. `newPolygon`, `newLine`, `newPoint`, `editFeature`, `addFeature`, `setStyle`, `deleteFeature`, `split`, and `merge` all need `mapProvider.draw` to be ready — call them after [`draw:ready`](#drawready).
+Methods are called on the plugin instance. `newPolygon`, `newLine`, `newPoint`, `editFeature`, `addFeature`, `setStyle`, `setProperties`, `deleteFeature`, `split`, `merge`, `setGeometry` and `recheckGeometry` all need `mapProvider.draw` to be ready — call them after [`draw:ready`](#drawready).
 
 ---
 
@@ -180,15 +337,17 @@ Methods are called on the plugin instance. `newPolygon`, `newLine`, `newPoint`, 
 
 Start drawing a new polygon.
 
-| Argument | Type | Description |
-|----------|------|-------------|
-| `featureId` | `string` | **Required.** ID to assign the finished feature |
-| `options.snapLayers` | `string[]` | Overrides the plugin-level `snapLayers` for this session |
-| `options.onGeometryChange` | `Function` | Overrides the plugin-level `onGeometryChange` for this session — see [Validation](#validation) |
-| `options.stroke` | `string \| Record<string, string>` | Stroke colour for this shape |
-| `options.fill` | `string \| Record<string, string>` | Fill colour for this shape |
-| `options.strokeWidth` | `number` | Stroke width in pixels for this shape |
-| `options.properties` | `Object` | Custom GeoJSON properties to set on the finished feature |
+| Argument | Description |
+|----------|-------------|
+| `featureId` | **Type:** `string`<br />**Required**<br />ID to assign the finished feature |
+| `options.snapLayers` | **Type:** `string[]`<br />Overrides the plugin-level `snapLayers` for this session |
+| `options.onGeometryPreview` | **Type:** `Function`<br />Replaces the plugin-level `onGeometryPreview` for this session — see [Validation](#validation) |
+| `options.onGeometryChange` | **Type:** `Function`<br />Replaces the plugin-level `onGeometryChange` for this session — see [Validation](#validation) |
+| `options.onGeometryFinish` | **Type:** `Function`<br />Replaces the plugin-level `onGeometryFinish` for this session — see [Validation](#validation) |
+| `options.stroke` | **Type:** `string \| Record<string, string>`<br />Stroke colour for this shape |
+| `options.fill` | **Type:** `string \| Record<string, string>`<br />Fill colour for this shape |
+| `options.strokeWidth` | **Type:** `number`<br />Stroke width in pixels for this shape |
+| `options.properties` | **Type:** `Object`<br />Custom GeoJSON properties to set on the finished feature |
 
 ```js
 drawPlugin.newPolygon(crypto.randomUUID(), {
@@ -216,21 +375,23 @@ drawPlugin.newLine(crypto.randomUUID(), {
 
 Start drawing a new point. Unlike `newPolygon`/`newLine`, it commits as soon as a point is placed — there's no Done step.
 
-| Argument | Type | Description |
-|----------|------|-------------|
-| `featureId` | `string` | **Required.** ID to assign the finished feature |
-| `options.snapLayers` | `string[]` | Overrides the plugin-level `snapLayers` for this session |
-| `options.onGeometryChange` | `Function` | Overrides the plugin-level `onGeometryChange` for this session — see [Validation](#validation) |
-| `options.properties` | `Object` | Custom GeoJSON properties to set on the finished feature |
-| `options.symbol` | `string` | Built-in symbol id — `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, or `'diamond'` |
-| `options.symbolSvgContent` | `string` | Custom SVG markup, used instead of `symbol` |
-| `options.symbolBackgroundColor` | `string \| Record<string, string>` | Symbol background colour |
-| `options.symbolForegroundColor` | `string \| Record<string, string>` | Symbol foreground colour |
-| `options.symbolGraphic` | `string` | Overrides the symbol's inner graphic (built-in name or SVG path data) |
-| `options.symbolHaloWidth` | `number` | Symbol halo width |
-| `options.symbolViewBox` | `string` | SVG `viewBox`, for use with `symbolSvgContent` |
-| `options.symbolAnchor` | `[number, number]` | Normalised `[x, y]` anchor point |
-| `options.symbolSize` | `'small' \| 'medium' \| 'large'` | Symbol size — see [Symbol Config](../api/symbol-config.md#size) |
+| Argument | Description |
+|----------|-------------|
+| `featureId` | **Type:** `string`<br />**Required**<br />ID to assign the finished feature |
+| `options.snapLayers` | **Type:** `string[]`<br />Overrides the plugin-level `snapLayers` for this session |
+| `options.onGeometryPreview` | **Type:** `Function`<br />Replaces the plugin-level `onGeometryPreview` for this session — see [Validation](#validation) |
+| `options.onGeometryChange` | **Type:** `Function`<br />Replaces the plugin-level `onGeometryChange` for this session — see [Validation](#validation) |
+| `options.onGeometryFinish` | **Type:** `Function`<br />Replaces the plugin-level `onGeometryFinish` for this session — see [Validation](#validation) |
+| `options.properties` | **Type:** `Object`<br />Custom GeoJSON properties to set on the finished feature |
+| `options.symbol` | **Type:** `string`<br />Built-in symbol id — `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, or `'diamond'` |
+| `options.symbolSvgContent` | **Type:** `string`<br />Custom SVG markup, used instead of `symbol` |
+| `options.symbolBackgroundColor` | **Type:** `string \| Record<string, string>`<br />Symbol background colour |
+| `options.symbolForegroundColor` | **Type:** `string \| Record<string, string>`<br />Symbol foreground colour |
+| `options.symbolGraphic` | **Type:** `string`<br />Overrides the symbol's inner graphic (built-in name or SVG path data) |
+| `options.symbolHaloWidth` | **Type:** `number`<br />Symbol halo width |
+| `options.symbolViewBox` | **Type:** `string`<br />SVG `viewBox`, for use with `symbolSvgContent` |
+| `options.symbolAnchor` | **Type:** `[number, number]`<br />Normalised `[x, y]` anchor point |
+| `options.symbolSize` | **Type:** `'small' \| 'medium' \| 'large'`<br />Symbol size — see [Symbol Config](../api/symbol-config.md#size) |
 
 These mirror [MarkerOptions](../api/marker-config.md#markeroptions)' `symbol`-family properties (prefixed with `symbol` here to sit alongside other feature properties) — see [Symbol Config](../api/symbol-config.md) for the full resolution order and SVG token structure. Points with no symbol config render with the plugin's default marker.
 
@@ -247,11 +408,13 @@ drawPlugin.newPoint(crypto.randomUUID(), {
 
 Open an existing feature in edit mode — vertex-edit for a `Polygon`/`LineString`, single-coordinate drag for a `Point`. Returns `false` (without doing anything) if the feature doesn't exist or the plugin isn't ready yet — check the return value before assuming the edit session started.
 
-| Argument | Type | Description |
-|----------|------|-------------|
-| `featureId` | `string` | **Required.** ID of the feature to edit |
-| `options.snapLayers` | `string[]` | Overrides the plugin-level `snapLayers` for this session |
-| `options.onGeometryChange` | `Function` | Overrides the plugin-level `onGeometryChange` for this session |
+| Argument | Description |
+|----------|-------------|
+| `featureId` | **Type:** `string`<br />**Required**<br />ID of the feature to edit |
+| `options.snapLayers` | **Type:** `string[]`<br />Overrides the plugin-level `snapLayers` for this session |
+| `options.onGeometryPreview` | **Type:** `Function`<br />Replaces the plugin-level `onGeometryPreview` for this session — see [Validation](#validation) |
+| `options.onGeometryChange` | **Type:** `Function`<br />Replaces the plugin-level `onGeometryChange` for this session — see [Validation](#validation) |
+| `options.onGeometryFinish` | **Type:** `Function`<br />Replaces the plugin-level `onGeometryFinish` for this session — see [Validation](#validation) |
 
 ```js
 const editSuccess = drawPlugin.editFeature(selectedFeatureId)
@@ -266,15 +429,17 @@ if (!editSuccess) {
 
 Add a `Point`, `LineString`, or `Polygon` feature directly to the map without a draw session — e.g. loading in existing shapes on `draw:ready`.
 
-| Argument | Type | Description |
-|----------|------|-------------|
-| `feature.id` | `string` | **Required.** Feature ID |
-| `feature.type` | `string` | Defaults to `'Feature'` if omitted |
-| `feature.geometry` | `GeoJSON.Geometry` | **Required.** `Point`, `LineString`, or `Polygon` geometry |
-| `feature.stroke` | `string \| Record<string, string>` | Stroke colour (`LineString`/`Polygon`) |
-| `feature.fill` | `string \| Record<string, string>` | Fill colour (`Polygon`) |
-| `feature.strokeWidth` | `number` | Stroke width in pixels (`LineString`/`Polygon`) |
-| `feature.properties` | `Object` | Custom GeoJSON properties — a `Point`'s `symbol`-family properties go here (see `newPoint` above) |
+| Argument | Description |
+|----------|-------------|
+| `feature.id` | **Type:** `string`<br />**Required**<br />Feature ID |
+| `feature.type` | **Type:** `string`<br />Defaults to `'Feature'` if omitted |
+| `feature.geometry` | **Type:** `GeoJSON.Geometry`<br />**Required**<br />`Point`, `LineString`, or `Polygon` geometry |
+| `feature.stroke` | **Type:** `string \| Record<string, string>`<br />Stroke colour (`LineString`/`Polygon`). Replaces any stroke colours in `properties` |
+| `feature.fill` | **Type:** `string \| Record<string, string>`<br />Fill colour (`Polygon`). Replaces any fill colours in `properties` |
+| `feature.strokeWidth` | **Type:** `number`<br />Stroke width in pixels (`LineString`/`Polygon`). Replaces any stroke widths in `properties` |
+| `feature.properties` | **Type:** `Object`<br />Custom GeoJSON properties — a `Point`'s `symbol`-family properties go here (see `newPoint` above) |
+
+A feature saved from [`draw:created`](#drawcreated) or [`draw:edited`](#drawedited) keeps its style in `properties`, so it can be added back as it is.
 
 A feature with a missing/unsupported `geometry.type` or no `geometry.coordinates` is logged as a warning and ignored.
 
@@ -304,13 +469,37 @@ interactiveMap.on('draw:ready', () => {
 
 Update an existing feature's style — stroke/fill/strokeWidth or, for a `Point`, its `symbol`-family properties (see `newPoint` above). Only the keys you pass are changed; anything else the feature already has is left alone. Returns `false` if the feature doesn't exist.
 
-| Argument | Type | Description |
-|----------|------|-------------|
-| `featureId` | `string` | **Required.** ID of the feature to update |
-| `styleChanges` | `Object` | **Required.** Any mix of `stroke`, `fill`, `strokeWidth`, or `symbol`-family properties |
+Setting `stroke`, `fill` or `strokeWidth` replaces all of its values, including colours set for each map style: `setStyle(id, { stroke: '#d4351c' })` shows the new colour in every map style. Colours for each style are stored as properties named after the style, such as `strokeDark` for a style with the ID `dark`, so avoid giving your own properties names like these.
+
+| Argument | Description |
+|----------|-------------|
+| `featureId` | **Type:** `string`<br />**Required**<br />ID of the feature to update |
+| `styleChanges` | **Type:** `Object`<br />**Required**<br />Any mix of `stroke`, `fill`, `strokeWidth`, or `symbol`-family properties |
 
 ```js
 drawPlugin.setStyle('monument1', { symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' } })
+```
+
+---
+
+### `setProperties(featureId, properties)`
+
+Add or change a feature's own properties, such as details from a form or an ID from your backend. They're kept on the feature, so later [`draw:edited`](#drawedited) events include them. Returns `false` if the feature doesn't exist.
+
+| Argument | Description |
+|----------|-------------|
+| `featureId` | **Type:** `string`<br />**Required**<br />ID of the feature to update |
+| `properties` | **Type:** `Object`<br />**Required**<br />Properties to add or change |
+
+- New values replace old ones with the same name. Objects are replaced, not merged.
+- `undefined` values are skipped. `null` is kept, to clear a property.
+- Style properties are ignored with a warning: use [`setStyle`](#setstylefeatureid-stylechanges). So are draw's internal properties.
+- If the feature is being edited, cancelling the edit keeps the properties.
+
+```js
+detailsForm.addEventListener('submit', () => {
+  drawPlugin.setProperties('field-1', { name: form.name.value, landUse: form.landUse.value })
+})
 ```
 
 ---
@@ -319,9 +508,9 @@ drawPlugin.setStyle('monument1', { symbolBackgroundColor: { outdoor: '#1d70b8', 
 
 Remove one or more features from the map.
 
-| Argument | Type | Description |
-|----------|------|-------------|
-| `featureIds` | `string[]` | IDs of the features to remove |
+| Argument | Description |
+|----------|-------------|
+| `featureIds` | **Type:** `string[]`<br />IDs of the features to remove |
 
 ```js
 drawPlugin.deleteFeature(['test1234'])
@@ -335,19 +524,19 @@ Start drawing a line across a polygon to split it in two. Splitting is a pure co
 
 Always snaps to the polygon's own outline, in addition to any layers in `snapLayers`.
 
-| Argument | Type | Description |
-|----------|------|-------------|
-| `featureId` | `string` | **Required.** ID of the polygon to split |
-| `options.snapLayers` | `string[]` | Additional layers to snap against, on top of the polygon's own outline |
+| Argument | Description |
+|----------|-------------|
+| `featureId` | **Type:** `string`<br />**Required**<br />ID of the polygon to split |
+| `options.snapLayers` | **Type:** `string[]`<br />Additional layers to snap against, on top of the polygon's own outline |
 
 ```js
 drawPlugin.split(selectedFeatureId)
 
-interactiveMap.on('draw:split', (e) => {
-  drawPlugin.deleteFeature([e.originalFeatureId])
-  e.featureCollection.features.forEach((feature, index) => {
+interactiveMap.on('draw:split', (event) => {
+  drawPlugin.deleteFeature([event.originalFeatureId])
+  event.featureCollection.features.forEach((feature, index) => {
     drawPlugin.addFeature({
-      id: `${e.originalFeatureId}-${index === 0 ? 'a' : 'b'}`,
+      id: `${event.originalFeatureId}-${index === 0 ? 'a' : 'b'}`,
       type: feature.type,
       geometry: feature.geometry,
       properties: feature.properties
@@ -362,25 +551,74 @@ interactiveMap.on('draw:split', (e) => {
 
 Merge multiple contiguous polygons into one. Like `split`, this is a pure computation — it does not touch the map. Listen for the return value or [`draw:merge`](#drawmerge) and call `deleteFeature`/`addFeature` yourself.
 
-| Argument | Type | Description |
-|----------|------|-------------|
-| `featureIds` | `string[]` | IDs of the polygons to merge |
+| Argument | Description |
+|----------|-------------|
+| `featureIds` | **Type:** `string[]`<br />IDs of the polygons to merge |
 
 **Returns:** the merged GeoJSON feature, or `null` if the merge failed (e.g. the polygons aren't actually contiguous).
 
 ```js
 drawPlugin.merge(selectedFeatureIds)
 
-interactiveMap.on('draw:merge', (e) => {
-  drawPlugin.deleteFeature(e.originalFeatureIds)
+interactiveMap.on('draw:merge', (event) => {
+  drawPlugin.deleteFeature(event.originalFeatureIds)
   drawPlugin.addFeature({
-    id: e.originalFeatureIds[0],
-    type: e.feature.type,
-    geometry: e.feature.geometry,
-    properties: e.feature.properties
+    id: event.originalFeatureIds[0],
+    type: event.feature.type,
+    geometry: event.feature.geometry,
+    properties: event.feature.properties
   })
 })
 ```
+
+---
+
+### `setGeometry(geometry)`
+
+Replace the shape in the current edit session, for example with a corrected boundary from a service. The change can be undone, and is checked like any other change, with phase `'change'`. Returns `false` (without doing anything) outside an edit session, or when the geometry type differs from the shape being edited.
+
+| Argument | Description |
+|----------|-------------|
+| `geometry` | **Type:** `GeoJSON.Geometry`<br />**Required**<br />The new geometry, of the same type as the shape being edited |
+
+```js
+drawPlugin.setGeometry(correctedBoundary)
+```
+
+---
+
+### `recheckGeometry(detail?)`
+
+Call `onGeometryChange` again for the current shape, unchanged, with phase `'recheck'`. Use it when your answer may have changed without the shape changing — for example after the user chooses to ignore a warning — or to retry a check that failed. Returns `false` (without doing anything) outside a draw or edit session, or before the shape has been checked.
+
+| Argument | Description |
+|----------|-------------|
+| `detail` | **Type:** `any`<br />Passed to `onGeometryChange` as `event.detail`, for example to tell an ignored warning from a retry |
+
+```js
+const ignoredWarnings = new Set()
+
+let warnings = []
+
+createDrawPlugin({
+  onGeometryChange: async ({ feature, detail }, { signal }) => {
+    // Ignoring a warning reuses the last answer; anything else, including a retry, asks again
+    if (detail?.reason !== 'ignore') {
+      warnings = await checkBoundary(feature, { signal })
+    }
+    return { valid: warnings.every((warning) => ignoredWarnings.has(warning.id)) }
+  }
+})
+
+const onIgnoreWarning = (warning) => {
+  ignoredWarnings.add(warning.id)
+  drawPlugin.recheckGeometry({ reason: 'ignore' })
+}
+
+const onRetry = () => drawPlugin.recheckGeometry({ reason: 'retry' })
+```
+
+---
 
 ## Application mode
 
@@ -405,11 +643,17 @@ new InteractiveMap('map', {
 Or set `draw: false` when every button on the map is deliberate — for example a single-task map that goes straight into editing a shape — so nothing is hidden.
 
 > [!NOTE]
-> The mode only changes the interface. Other plugins' own behaviour keeps running while their buttons are hidden, so disable any that shouldn't respond while drawing — for example, call `interactPlugin.disable()` on [`draw:started`](#drawstarted) and [`draw:editstart`](#draweditstart), and `interactPlugin.enable()` on [`draw:created`](#drawcreated), [`draw:edited`](#drawedited) and [`draw:cancelled`](#drawcancelled).
+> The mode only changes the interface. Other plugins' own behaviour keeps running while their buttons are hidden, so disable any that shouldn't respond while drawing.
+
+> [!IMPORTANT]
+> If you use the [interact plugin](interact.md), disable it while drawing or editing. Otherwise map clicks select features as well as placing points, and both plugins show and hide the same crosshair. Call `interactPlugin.disable()` on [`draw:started`](#drawstarted) and [`draw:editstart`](#draweditstart), and `interactPlugin.enable()` on [`draw:created`](#drawcreated), [`draw:edited`](#drawedited) and [`draw:cancelled`](#drawcancelled).
 
 ## Buttons and keyboard shortcuts
 
-The plugin registers its own toolbar buttons automatically — Cancel, Add point (touch only) and Done in the actions bar, plus Undo, Snap and Delete point in the middle of the top row — which show and enable themselves based on the current draw/edit state. You don't need to render these yourself; augment them with your own trigger buttons (e.g. "Draw polygon", "Draw line") the way the [Draw tools example](../examples/draw-tools.mdx) does.
+The plugin registers its own toolbar buttons automatically — Cancel, Add point and Done in the actions bar, plus Undo, Snap and Delete point in the middle of the top row — which show and enable themselves based on the current draw/edit state. You don't need to render these yourself; augment them with your own trigger buttons (e.g. "Draw polygon", "Draw line") the way the [Draw tools example](../examples/draw-tools.mdx) does.
+
+> [!NOTE]
+> While drawing, a crosshair marks where the next point is placed. On touch, it's shown with the Add point button. Keyboard users get the crosshair and press <kbd>Enter</kbd> to add a point. Opening the map controls shows the crosshair and Add point button for every input type. Edit modes don't use the crosshair: vertices and midpoints are selected directly.
 
 | Shortcut | Action |
 |----------|--------|
@@ -441,7 +685,12 @@ Emitted once the draw plugin has initialised. Safe to call API methods from here
 
 Emitted when `newPolygon`, `newLine`, or `newPoint` starts a new draw session.
 
-**Payload:** `{ mode: 'draw_polygon' | 'draw_line' | 'draw_point' }`
+**Payload:**
+
+| Property | Description |
+|----------|-------------|
+| `payload.mode` | **Type:** `'draw_polygon' \| 'draw_line' \| 'draw_point'`<br />The draw mode |
+| `payload.featureId` | **Type:** `string`<br />ID of the new feature |
 
 ---
 
@@ -449,13 +698,18 @@ Emitted when `newPolygon`, `newLine`, or `newPoint` starts a new draw session.
 
 Emitted when `editFeature` opens an existing feature for editing.
 
-**Payload:** `{ mode: 'edit_polygon' | 'edit_line' | 'edit_point' }`
+**Payload:**
+
+| Property | Description |
+|----------|-------------|
+| `payload.mode` | **Type:** `'edit_polygon' \| 'edit_line' \| 'edit_point'`<br />The kind of shape being edited |
+| `payload.featureId` | **Type:** `string`<br />ID of the feature being edited |
 
 ---
 
 ### `draw:created`
 
-Emitted when a new shape finishes drawing and passes validation. Also fires for a shape that finished invalid, was automatically reopened in edit mode, and was then fixed and finished — from the caller's perspective it's still a creation, not an edit.
+Emitted when a new shape finishes drawing and passes its checks. Also fires for a new shape that was reopened in edit mode ([`draw:reopened`](#drawreopened)) and then finished — from the caller's perspective it's still a creation, not an edit.
 
 **Payload:** the finished `GeoJSON.Feature`
 
@@ -469,9 +723,23 @@ Emitted when an existing feature finishes an edit session (via `editFeature`).
 
 ---
 
+### `draw:reopened`
+
+Emitted when a new shape is finished and reopens in edit mode: because its check failed, or because a passing `onGeometryFinish` result asked to reopen it (see [Reopening a shape that passes](#reopening-a-shape-that-passes)). See [Validation](#validation).
+
+**Payload:**
+
+| Property | Description |
+|----------|-------------|
+| `payload.feature` | **Type:** `GeoJSON.Feature`<br />The reopened shape |
+| `payload.status` | **Type:** `'valid' \| 'invalid' \| 'error'`<br />`'valid'` if a passing result asked to reopen it, `'invalid'` if the check failed, `'error'` if it threw or rejected |
+| `payload.reason` | **Type:** `string \| null`<br />Why the check failed, or `null` if it passed or the result gave no reason |
+
+---
+
 ### `draw:cancelled`
 
-Emitted when the Cancel button is pressed during a draw or edit session.
+Emitted when the Cancel button is pressed during a draw or edit session. Cancelling a new shape that's waiting on its check, or has reopened in edit mode, removes it from the map. Also emitted when a new session starts while a finished shape is still waiting on its check, which discards it.
 
 **Payload:** the feature being drawn/edited at the time of cancellation
 
@@ -479,7 +747,7 @@ Emitted when the Cancel button is pressed during a draw or edit session.
 
 ### `draw:updated`
 
-Emitted after a committed vertex operation (add/move/insert/delete) while editing.
+Emitted after a committed vertex operation (add/move/insert/delete) while editing. It isn't emitted while a new shape is being drawn. To keep a panel up to date while drawing and editing, use [`onGeometryChange`](#ongeometrychangeevent-context).
 
 **Payload:** the updated `GeoJSON.Feature`
 
@@ -489,7 +757,12 @@ Emitted after a committed vertex operation (add/move/insert/delete) while editin
 
 Emitted when the selected vertex changes in edit mode.
 
-**Payload:** `{ index: number, numVertices: number }` — `index` is `-1` when nothing is selected
+**Payload:**
+
+| Property | Description |
+|----------|-------------|
+| `payload.index` | **Type:** `number`<br />The selected vertex, or `-1` when nothing is selected |
+| `payload.numVertices` | **Type:** `number`<br />How many vertices the shape has |
 
 ---
 
@@ -497,15 +770,28 @@ Emitted when the selected vertex changes in edit mode.
 
 Emitted when the input device changes mid-session (e.g. switching from mouse to touch and panning via the Move control) — sync your own `interfaceType` state from this if you're tracking it independently.
 
-**Payload:** `{ interfaceType: 'mouse' | 'touch' | 'keyboard' }`
+**Payload:**
+
+| Property | Description |
+|----------|-------------|
+| `payload.interfaceType` | **Type:** `'mouse' \| 'touch' \| 'keyboard'`<br />The input device now in use |
 
 ---
 
 ### `draw:geometryinvalid`
 
-Emitted whenever a validation check — a built-in rule or your `onGeometryChange` callback — fails, alongside the same hint toast shown to the user (skipped only for an in-progress shape that simply hasn't reached its minimum vertex count yet). See [Validation](#validation).
+Emitted whenever a check — a built-in rule, a placement rejected by `onGeometryPreview`, or an invalid result from `onGeometryChange` for the latest change — fails. Not emitted for the `'edit-start'` check of a feature that was already invalid. The `reason` is also shown as a hint toast, unless the result has its own `announcement`, or the shape simply hasn't reached its minimum vertex count yet. See [Validation](#validation).
 
-**Payload:** `{ feature, reason, phase, mode, vertexIndex? }`
+**Payload:**
+
+| Property | Description |
+|----------|-------------|
+| `payload.feature` | **Type:** `GeoJSON.Feature`<br />The shape that failed the check |
+| `payload.reason` | **Type:** `string`<br />Why the check failed |
+| `payload.source` | **Type:** `'rules' \| 'callback'`<br />`'rules'` for a built-in rule, `'callback'` for `onGeometryPreview`, `onGeometryChange` or `onGeometryFinish` |
+| `payload.phase` | **Type:** `string`<br />The phase of the check that failed. See [Validation](#validation) |
+| `payload.mode` | **Type:** `string`<br />The draw mode |
+| `payload.vertexIndex` | **Type:** `number`<br />The vertex involved, when there is one |
 
 ---
 
@@ -521,7 +807,11 @@ Emitted after `addFeature` adds a feature to the map.
 
 Emitted after `deleteFeature` removes a feature.
 
-**Payload:** `{ featureId: string }`
+**Payload:**
+
+| Property | Description |
+|----------|-------------|
+| `payload.featureId` | **Type:** `string[]`<br />The IDs passed to `deleteFeature` |
 
 ---
 
@@ -529,7 +819,25 @@ Emitted after `deleteFeature` removes a feature.
 
 Emitted after `setStyle` updates a feature's style.
 
-**Payload:** `{ featureId: string, properties: Object }` — the flattened style/symbol properties that were applied
+**Payload:**
+
+| Property | Description |
+|----------|-------------|
+| `payload.featureId` | **Type:** `string`<br />ID of the updated feature |
+| `payload.properties` | **Type:** `Object`<br />The style properties that changed. A removed colour is `null`, so you can merge this into your saved copy of the feature |
+
+---
+
+### `draw:propertieschange`
+
+Emitted after `setProperties` updates a feature's properties.
+
+**Payload:**
+
+| Property | Description |
+|----------|-------------|
+| `payload.featureId` | **Type:** `string`<br />ID of the updated feature |
+| `payload.properties` | **Type:** `Object`<br />The properties that were changed |
 
 ---
 
@@ -537,7 +845,12 @@ Emitted after `setStyle` updates a feature's style.
 
 Emitted when `split` computes a successful split.
 
-**Payload:** `{ originalFeatureId: string, featureCollection: GeoJSON.FeatureCollection }` — the two resulting polygons
+**Payload:**
+
+| Property | Description |
+|----------|-------------|
+| `payload.originalFeatureId` | **Type:** `string`<br />ID of the polygon that was split |
+| `payload.featureCollection` | **Type:** `GeoJSON.FeatureCollection`<br />The two resulting polygons |
 
 ---
 
@@ -545,7 +858,12 @@ Emitted when `split` computes a successful split.
 
 Emitted when `merge` computes a successful merge.
 
-**Payload:** `{ originalFeatureIds: string[], feature: GeoJSON.Feature }` — the single merged polygon
+**Payload:**
+
+| Property | Description |
+|----------|-------------|
+| `payload.originalFeatureIds` | **Type:** `string[]`<br />IDs of the polygons that were merged |
+| `payload.feature` | **Type:** `GeoJSON.Feature`<br />The merged polygon |
 
 ```js
 interactiveMap.on('draw:created', (feature) => {

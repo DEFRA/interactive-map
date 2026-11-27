@@ -5,7 +5,7 @@ import Icon from 'ol/style/Icon.js'
 import { createStyles } from './styles.js'
 import { SIZES } from '../defaults.js'
 import { polygonFeature, lineFeature, pointFeature } from '../__helpers__/harness.js'
-import { SymbolImageCache } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
+import { SymbolImageCache } from '../../../../../../providers/openlayers/src/utils/symbolImages.js'
 
 const colors = {
   editStroke: '#e5',

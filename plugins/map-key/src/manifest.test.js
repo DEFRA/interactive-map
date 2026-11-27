@@ -4,7 +4,6 @@ import { MapKeyInit } from './initialise/MapKeyInit.jsx'
 
 jest.mock('./components/Key/MapKey.jsx', () => ({ MapKey: jest.fn() }))
 jest.mock('./initialise/MapKeyInit.jsx', () => ({ MapKeyInit: jest.fn() }))
-jest.mock('./registry/getDatasetRegistry.js', () => ({}))
 
 describe('manifest', () => {
   it('sets InitComponent to MapKeyInit', () => {

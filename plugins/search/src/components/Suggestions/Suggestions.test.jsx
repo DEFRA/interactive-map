@@ -74,6 +74,17 @@ describe('Suggestions', () => {
     expect(items[1]).toHaveAttribute('aria-selected', 'false')
   })
 
+  it('renders mark tags in labels and other markup as text', () => {
+    const suggestions = [{ id: '1', marked: '<mark>Lon</mark>don <img src=x onerror="alert(1)">' }]
+    const { container } = render(
+      <Suggestions {...baseProps} pluginState={{ ...baseProps.pluginState, suggestions }} />
+    )
+    const label = container.querySelector('.im-c-search-suggestions__label')
+    expect(label.querySelector('mark').textContent).toBe('Lon')
+    expect(label.querySelector('img')).toBeNull()
+    expect(label.textContent).toBe('London <img src=x onerror="alert(1)">')
+  })
+
   it('calls handleSuggestionClick when a suggestion is clicked', () => {
     render(<Suggestions {...baseProps} />)
     const items = screen.getAllByRole('option')

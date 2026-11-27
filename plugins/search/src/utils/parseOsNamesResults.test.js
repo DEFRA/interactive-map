@@ -103,6 +103,24 @@ describe('osNamesUtils', () => {
     expect(output[0].marked).toContain('<mark>')
   })
 
+  test('treats regex characters in the query literally', () => {
+    const entry = {
+      GAZETTEER_ENTRY: { ...sampleEntry.GAZETTEER_ENTRY, NAME1: 'St. Ives', NAME2: 'St. Ives' }
+    }
+    const json = { results: [entry] }
+    const output = parseOsNamesResults(json, 'St.', regions, 'EPSG:27700')
+    expect(output[0].marked).toContain('<mark>St.</mark>')
+  })
+
+  test('does not throw on unbalanced regex characters in the query', () => {
+    const entry = {
+      GAZETTEER_ENTRY: { ...sampleEntry.GAZETTEER_ENTRY, NAME1: 'Newport (Gwent)', NAME2: 'Newport (Gwent)' }
+    }
+    const json = { results: [entry] }
+    const output = parseOsNamesResults(json, 'Newport (', regions, 'EPSG:27700')
+    expect(output[0].marked).toContain('<mark>Newport (</mark>')
+  })
+
   test('handles MBR_XMIN null by using buffered GEOMETRY_X/Y', () => {
     const entry = {
       GAZETTEER_ENTRY: { ...sampleEntry.GAZETTEER_ENTRY, MBR_XMIN: null, MBR_YMIN: null }

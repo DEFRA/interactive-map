@@ -87,7 +87,7 @@ describe('undo via draw.undo event and reinitialisation', () => {
     expect(state.polygon.coordinates[0]).toHaveLength(3)
   })
 
-  test('undo re-validates the committed shape (deferred, phase commit-delete)', () => {
+  test('undo re-validates the committed shape (deferred, phase change)', () => {
     jest.useFakeTimers()
     const { ctx, state } = setup(DrawPolygonMode)
     clickAt(ctx, state, 0, 0)
@@ -98,7 +98,7 @@ describe('undo via draw.undo event and reinitialisation', () => {
     ctx.onUndo(state)
     jest.runAllTimers()
     expect(firedWith(ctx.map, 'draw.geometrychange').pop()).toEqual(expect.objectContaining({
-      phase: 'commit-delete',
+      phase: 'change',
       feature: expect.any(Object)
     }))
     jest.useRealTimers()

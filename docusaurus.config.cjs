@@ -1,5 +1,6 @@
 // @ts-check
-const path = require('path');
+const path = require('node:path');
+const { getBabelOptions } = require('@docusaurus/babel');
 require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 
 /** @type {import('@docusaurus/types').Config} */
@@ -31,8 +32,29 @@ const config = {
 
   presets: [],
 
+  // Docusaurus compiles the map's source with loose Babel, which assumes every iterable
+  // is an array: [...map.values()] becomes [].concat(map.values()), an array holding the
+  // iterator rather than its values. Turning off that one assumption spreads iterables
+  // properly and keeps the rest of the Docusaurus Babel setup.
+  //
+  // It's limited to the map's own source because Docusaurus also compiles its own
+  // CommonJS packages, where the helper imports this adds break their `exports`.
+  webpack: {
+    jsLoader: (isServer) => ({
+      loader: require.resolve('babel-loader'),
+      options: {
+        ...getBabelOptions({ isServer }),
+        overrides: [{
+          include: ['src', 'plugins', 'providers'].map((dir) => path.join(__dirname, dir)),
+          assumptions: { iterableIsArray: false },
+        }],
+      },
+    }),
+  },
+
   themes: [
-    [
+    /** @type {import('@docusaurus/types').PluginConfig} */
+    ([
       require.resolve('@easyops-cn/docusaurus-search-local'),
       /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
       ({
@@ -45,7 +67,7 @@ const config = {
         highlightSearchTermsOnTargetPage: true,
         searchResultContextMaxLength: 60,
       }),
-    ],
+    ]),
     '@defra/docusaurus-theme-govuk',
   ],
 
@@ -55,6 +77,29 @@ const config = {
         name: 'custom-css',
         getClientModules() {
           return [require.resolve('./docs/assets/css/docusaurus.scss')];
+        },
+      };
+    },
+    // Maps only render in the browser, and maplibre-gl only exports an `import`
+    // condition, which the server build doesn't resolve.
+    //
+    // The client build must emit MapLibre's worker as a file. The GOV.UK theme types
+    // every .mjs file as `javascript/auto`, which would bundle the worker as a module
+    // instead, so this rule is added last, after all plugins' rules, to take precedence.
+    function maplibrePlugin() {
+      return {
+        name: 'maplibre',
+        configureWebpack(_webpackConfig, isServer) {
+          if (isServer) {
+            return { resolve: { alias: { 'maplibre-gl$': false } } };
+          }
+          return {
+            plugins: [{
+              apply(compiler) {
+                compiler.options.module.rules.push({ test: /maplibre-gl-worker\.mjs$/, type: 'asset/resource' });
+              },
+            }],
+          };
         },
       };
     },
@@ -89,9 +134,11 @@ const config = {
           sidebar: [
             { text: 'Installation', href: '/getting-started#installation' },
             { text: 'GOV.UK Prototype kit', href: '/getting-started#govuk-prototype-kit' },
-            { text: 'Manual setup', href: '/getting-started#manual-setup' },
-            { text: 'Basic usage', href: '/getting-started#basic-usage' },
-            { text: 'Using plugins', href: '/getting-started#using-plugins' }
+            { text: 'With a bundler', href: '/getting-started#setting-up-a-map-with-a-bundler' },
+            { text: 'Without a bundler', href: '/getting-started#setting-up-a-map-without-a-bundler' },
+            { text: 'Content Security Policy', href: '/getting-started#content-security-policy' },
+            { text: 'Using plugins', href: '/getting-started#using-plugins' },
+            { text: 'Upgrading to v1', href: '/upgrading-to-v1' }
           ],
         },
         {

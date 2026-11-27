@@ -1,11 +1,18 @@
 import { merge } from 'webpack-merge'
 import common from './webpack.dev.mjs'
 import CompressionPlugin from 'compression-webpack-plugin'
-import zlib from 'zlib'
-import path, { dirname } from 'path'
-import { fileURLToPath } from 'url'
+import zlib from 'node:zlib'
+import path, { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-export default merge(common, {
+// Demos that use the Esri provider, left out of the production build
+const esriEntries = new Set(['esri-datasets', 'planning'])
+
+const entry = Object.fromEntries(
+  Object.entries(common.entry).filter(([name]) => !esriEntries.has(name))
+)
+
+export default merge({ ...common, entry }, {
   mode: 'production',
   target: ['web', 'es5'],
   devServer: {

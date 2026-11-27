@@ -31,7 +31,6 @@
 {% block pageScripts %}
   <!-- Defra library scripts -->
   <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
-  <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/interact/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/draw/dist/umd/index.js"></script>
 
@@ -54,7 +53,6 @@
 
     const interactiveMap = new defra.InteractiveMap('map', {
       behaviour: 'hybrid',
-      mapProvider: defra.maplibreProvider(),
       mapStyle: {
         id: 'default',
         url: 'https://tiles.openfreemap.org/styles/liberty',
@@ -146,13 +144,13 @@
       interactPlugin.enable()
     })
 
-    interactiveMap.on('interact:selectionchange', function (e) {
-      var singleFeature = e.selectedFeatures.length === 1
-      var anyFeature = e.selectedFeatures.length > 0
-      var isDrawFeature = singleFeature && DRAW_LAYERS.includes(e.selectedFeatures[0].layerId)
-      var isPolygon = singleFeature && e.selectedFeatures[0].geometryType === 'Polygon'
-      var allDrawFeatures = anyFeature && e.selectedFeatures.every(function (f) { return DRAW_LAYERS.includes(f.layerId) })
-      selectedFeatureIds = e.selectedFeatures.map(function (f) { return f.featureId })
+    interactiveMap.on('interact:selectionchange', function (event) {
+      const singleFeature = event.selectedFeatures.length === 1
+      const anyFeature = event.selectedFeatures.length > 0
+      const isDrawFeature = singleFeature && DRAW_LAYERS.includes(event.selectedFeatures[0].layerId)
+      const isPolygon = singleFeature && event.selectedFeatures[0].geometryType === 'Polygon'
+      const allDrawFeatures = anyFeature && event.selectedFeatures.every(function (feature) { return DRAW_LAYERS.includes(feature.layerId) })
+      selectedFeatureIds = event.selectedFeatures.map(function (feature) { return feature.featureId })
       interactiveMap.toggleButtonState('drawPolygon', 'disabled', singleFeature)
       interactiveMap.toggleButtonState('drawLine', 'disabled', singleFeature)
       interactiveMap.toggleButtonState('editFeature', 'disabled', !isDrawFeature)

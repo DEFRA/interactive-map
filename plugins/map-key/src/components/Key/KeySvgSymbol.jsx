@@ -18,9 +18,13 @@ export const KeySvgSymbol = ({ keySymbol }) => {
   const drawnWidth = width * scale
   const drawnHeight = height * scale
 
+  // The symbol is decorative: the key item's text labels it. The outer svg is aria-hidden via
+  // svgSymbolProps, which already hides the inner one; the inner one repeats aria-hidden so it
+  // can't be exposed as a second, unnamed graphic.
   return (
     <svg {...svgSymbolProps} overflow='visible'>
       <svg
+        aria-hidden='true'
         x={(SVG_SYMBOL_SIZE - drawnWidth) * HALF}
         y={(SVG_SYMBOL_SIZE - drawnHeight) * HALF}
         width={drawnWidth}

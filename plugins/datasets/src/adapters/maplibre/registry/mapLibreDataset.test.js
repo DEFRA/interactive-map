@@ -14,7 +14,7 @@ const STATIC_GEOJSON_SOURCE_ID = `geojson-${hashString('https://example.com/stat
 describe('MapLibreDataset', () => {
   beforeEach(() => {
     logger.warn.mockClear()
-    datasetRegistry.attachCreateDataset(def => new MapLibreDataset(def))
+    datasetRegistry.attachCreateDataset(def => new MapLibreDataset(def, datasetRegistry))
     datasetRegistry.mockExtend({
       // layerIds
       'ds-fill-only': { id: 'ds-fill-only', visible: true, minZoom: 10, maxZoom: 24, style: { fill: 'blue' } },

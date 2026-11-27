@@ -26,6 +26,19 @@ describe('enable', () => {
     })
   })
 
+  it('takes touchTarget from the plugin config, overridden per session by enable options', () => {
+    const touchTargetOf = () => dispatch.mock.calls.at(-1)[0].payload.touchTarget
+
+    enable({ pluginState: { dispatch }, pluginConfig: {} })
+    expect(touchTargetOf()).toBe(true)
+
+    enable({ pluginState: { dispatch }, pluginConfig: { touchTarget: false } })
+    expect(touchTargetOf()).toBe(false)
+
+    enable({ pluginState: { dispatch }, pluginConfig: { touchTarget: false } }, { touchTarget: true })
+    expect(touchTargetOf()).toBe(true)
+  })
+
   it('handles empty or undefined options', () => {
     const pluginConfig = { marker: { symbol: 'pin', backgroundColor: 'blue' } }
 
