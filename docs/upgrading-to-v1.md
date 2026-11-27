@@ -1,5 +1,9 @@
 # Upgrading to v1
 
+:::note
+v1 isn't released yet. Until it is, install the pre-release by adding `@pre-release` to the package name, for example `npm install @defra/interactive-map@pre-release`.
+:::
+
 In v1, each map engine has its own package, and the package sets up the map engine for you. You no longer pass a map provider or tell your bundler to ignore the engines you don't use.
 
 ## 1. Change package if you use OpenLayers or Esri

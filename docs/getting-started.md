@@ -2,6 +2,16 @@
 
 ## Installation
 
+:::note
+v1 isn't released yet. Until it is, install the pre-release by adding `@pre-release` to the package name:
+
+```shell
+npm install @defra/interactive-map@pre-release
+```
+
+This works the same way for `@defra/interactive-map-openlayers` and `@defra/interactive-map-esri`.
+:::
+
 ```shell
 npm install @defra/interactive-map
 ```
